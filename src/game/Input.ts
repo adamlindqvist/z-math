@@ -24,7 +24,6 @@ export class Input {
   };
   private blur = () => {
     this.reset();
-    if (!gameStore.getState().overlay) gameStore.pause();
   };
   private visibility = () => {
     if (document.hidden) this.blur();

@@ -27,10 +27,10 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
   };
   if (state.overlay) return null;
   return (
-    <div className="game-controls">
-      <div className="joystick-wrap">
+    <div className="pointer-events-none absolute inset-x-[35px] bottom-[max(24px,env(safe-area-inset-bottom))] z-6 flex items-end justify-center px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] max-[850px]:inset-x-[25px] max-[540px]:inset-x-5 [@media(pointer:coarse)]:justify-between">
+      <div className="pointer-events-auto hidden text-center [@media(pointer:coarse)]:block">
         <div
-          className="joystick"
+          className="joystick relative grid h-[126px] w-[126px] touch-none select-none place-items-center rounded-full border border-[#fffbdfb0] bg-[#f9f7e660] shadow-[inset_0_0_0_12px_#ffffff20,0_3px_15px_#4a68341a] backdrop-blur-[5px] [@media(max-height:620px)_and_(min-width:541px)]:h-[108px] [@media(max-height:620px)_and_(min-width:541px)]:w-[108px]"
           aria-label="Dra för att gå"
           onPointerDown={(e) => {
             if (active.current !== null) return;
@@ -49,18 +49,18 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             if (active.current === e.pointerId) reset();
           }}
         >
-          <span className="joystick-cross">+</span>
+          <span className="text-[70px] font-extralight text-[#eff1da]">+</span>
           <div
-            className="joystick-knob"
+            className="pointer-events-none absolute grid h-[57px] w-[57px] place-items-center rounded-full bg-[#faf7e9] text-[#8a9977] shadow-[0_4px_8px_#49643b22]"
             style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }}
           >
             <Footprints size={23} />
           </div>
         </div>
-        <span>DRA FÖR ATT GÅ</span>
+        <span className="mt-2.5 block text-[8px] font-extrabold tracking-[1.6px] text-[#7a8a67]">DRA FÖR ATT GÅ</span>
       </div>
       <button
-        className={`interact-button ${state.target ? "available" : ""}`}
+        className={`pointer-events-auto flex min-h-[58px] cursor-pointer items-center gap-3 rounded-[18px] border border-[#fffced] px-[17px] py-2 pl-[9px] text-xs shadow-[0_5px_17px_#54683910] backdrop-blur-lg transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default max-[540px]:max-w-[177px] max-[540px]:gap-2 max-[540px]:rounded-2xl max-[540px]:p-2 max-[540px]:text-[11px] [&>kbd]:ml-3 [&>kbd]:grid [&>kbd]:h-7 [&>kbd]:min-w-[27px] [&>kbd]:place-items-center [&>kbd]:rounded-[5px] [&>kbd]:border [&>kbd]:border-[#dddcca] [&>kbd]:bg-[#fffcf3] [&>kbd]:text-[10px] [&>kbd]:text-[#7b856e] [&>kbd]:shadow-[0_2px_0_#e8e5d7] max-[540px]:[&>kbd]:hidden [@media(pointer:coarse)]:mb-[26px] [@media(pointer:coarse)]:min-h-[66px] [@media(pointer:coarse)]:[&>kbd]:hidden ${state.target ? "bg-[#faf8e9] text-[#496843] shadow-[0_5px_20px_#4d673b25]" : "bg-[#fbf9edce] text-[#8e9a7d] [@media(pointer:coarse)]:max-w-[180px]"}`}
         onClick={() => {
           gameStore.interact();
           if (document.activeElement instanceof HTMLElement)
@@ -68,7 +68,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
         }}
         disabled={!state.target}
       >
-        <span className="action-symbol">
+        <span className="grid h-[39px] w-[39px] place-items-center rounded-xl bg-[#e6ebd6] max-[540px]:h-[34px] max-[540px]:min-w-[34px]">
           {state.target === "npc" ? (
             <MessageCircle size={23} />
           ) : state.target === "chest" ? (
@@ -77,7 +77,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             <Hand size={23} />
           )}
         </span>
-        <span>
+        <span className="[@media(pointer:coarse)]:max-w-[130px] [@media(pointer:coarse)]:text-left">
           {state.target === "npc"
             ? "Prata med Maja"
             : state.target === "chest"

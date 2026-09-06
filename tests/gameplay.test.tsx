@@ -58,7 +58,7 @@ afterEach(() => {
 });
 
 describe("playable controls and interface", () => {
-  it("normalizes diagonal motion and stops input during overlays and lost focus", () => {
+  it("normalizes diagonal motion and stops input without pausing on lost focus", () => {
     key("KeyW");
     key("KeyD");
     expect(Math.hypot(input.direction().x, input.direction().y)).toBeCloseTo(1);
@@ -74,7 +74,7 @@ describe("playable controls and interface", () => {
     key("KeyD");
     act(() => window.dispatchEvent(new Event("blur")));
     expect(input.direction()).toEqual({ x: 0, y: 0 });
-    expect(gameStore.getState().overlay).toBe("pause");
+    expect(gameStore.getState().overlay).toBeNull();
   });
   it("supports one joystick pointer while another finger interacts or lifts", () => {
     const joystick = host.querySelector(".joystick")!;
