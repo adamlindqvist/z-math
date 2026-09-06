@@ -2,7 +2,7 @@ import { PerspectiveCamera, Vector3 } from "three";
 export class GameCamera {
   camera = new PerspectiveCamera(39, 1, 0.1, 120);
   private focus = new Vector3(-1, 0, 0);
-  private offset = new Vector3(12.6, 19, 21.6);
+  private offset = new Vector3(8.33, 12.6, 14.28);
   resize(width: number, height: number) {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
