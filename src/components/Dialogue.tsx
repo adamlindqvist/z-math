@@ -11,10 +11,13 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { gameStore, useGameState } from "../store/gameStore";
 
-const buttonBase = "cursor-pointer transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default";
+const buttonBase =
+  "cursor-pointer transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default";
 export const primaryButton = `${buttonBase} flex min-h-[57px] w-full items-center justify-center gap-3 rounded-[13px] border border-[#577c4b] bg-[#608454] p-3 text-sm font-bold text-[#fffdee] shadow-[0_4px_0_#4d6d42]`;
-export const eyebrow = "mb-1.5 text-[9px] font-extrabold tracking-[1.6px] text-[#8d977b] max-[540px]:text-[7px] max-[540px]:tracking-[1.1px]";
-export const emblem = "mx-auto mb-[21px] grid h-[69px] w-[69px] -rotate-5 place-items-center rounded-[23px] border-[5px] border-[#f3f3e5] bg-[#e9eed8] text-[#72945c] [&_svg]:rotate-5 max-[540px]:mb-4 max-[540px]:h-[59px] max-[540px]:w-[59px] [@media(max-height:620px)_and_(min-width:541px)]:hidden";
+export const eyebrow =
+  "mb-1.5 text-[9px] font-extrabold tracking-[1.6px] text-[#8d977b] max-[540px]:text-[7px] max-[540px]:tracking-[1.1px]";
+export const emblem =
+  "mx-auto mb-[21px] grid h-[69px] w-[69px] -rotate-5 place-items-center rounded-[23px] border-[5px] border-[#f3f3e5] bg-[#e9eed8] text-[#72945c] [&_svg]:rotate-5 max-[540px]:mb-4 max-[540px]:h-[59px] max-[540px]:w-[59px] [@media(max-height:620px)_and_(min-width:541px)]:hidden";
 export function Modal({
   children,
   label,
@@ -68,28 +71,6 @@ export function Modal({
 export function Dialogue() {
   const { overlay } = useGameState();
   if (!overlay || overlay === "quiz") return null;
-  if (overlay === "welcome")
-    return (
-      <Modal label="Välkommen till Gläntan">
-        <div className={emblem}>
-          <Sprout size={36} />
-        </div>
-        <p className={eyebrow}>DITT ÄVENTYR BÖRJAR HÄR</p>
-        <h2>
-          En liten glänta.
-          <br />
-          En gömd skatt.
-        </h2>
-        <p>
-          Följ stigen, träffa en vän och lås upp
-          <br /> en hemlighet med lite matte.
-        </p>
-        <button className={primaryButton} onClick={() => gameStore.start()}>
-          Nu går vi! <ArrowRight size={21} />
-        </button>
-        <span className="mt-[22px] block text-[10px] text-[#a4a68e] [@media(max-height:620px)_and_(min-width:541px)]:mt-3.5">Ingen brådska. Bara nyfikenhet.</span>
-      </Modal>
-    );
   if (overlay === "pause" || overlay === "reset")
     return (
       <Modal label={overlay === "pause" ? "Paus" : "Börja om"}>
@@ -163,7 +144,7 @@ export function Dialogue() {
         {overlay === "npc"
           ? "En skatt väntar bortom dammen! Följ mynten längs stigen. Lite klurig matte är allt som behövs för att öppna kistan."
           : overlay === "locked"
-            ? "Det här låset gillar siffror. Hjälper du till att räkna?"
+            ? "Det här låset gillar siffror. Tre rätta svar öppnar kistan!"
             : "Kistan är tom nu, men det finns mer att upptäcka i gläntan. Har du hittat alla mynt?"}
       </p>
       <button

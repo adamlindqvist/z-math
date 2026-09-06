@@ -10,13 +10,12 @@ const memory = () => {
   };
 };
 const openQuiz = (store: ReturnType<typeof createGameStore>) => {
-  store.start();
   store.setTarget("chest");
   store.interact();
   store.beginQuiz();
 };
 describe("progress", () => {
-  it("retains a question on wrong answers and awards treasure once, atomically", () => {
+  it("requires three correct answers and awards treasure once, atomically", () => {
     const storage = memory();
     const store = createGameStore(storage);
     openQuiz(store);
@@ -26,7 +25,17 @@ describe("progress", () => {
     expect(store.getState().question).toBe(question);
     expect(store.getState().feedback).toBe("retry");
     store.answer(question.correctAnswer);
-    store.answer(question.correctAnswer);
+    expect(store.getState()).toMatchObject({
+      coins: 0,
+      chestOpened: false,
+      quizCorrectAnswers: 1,
+      feedback: "correct",
+    });
+    store.finishQuiz();
+    store.answer(store.getState().question!.correctAnswer);
+    store.finishQuiz();
+    store.answer(store.getState().question!.correctAnswer);
+    store.answer(store.getState().question!.correctAnswer);
     expect(store.getState().coins).toBe(5);
     expect(parseSave(storage.getItem(SAVE_KEY))).toMatchObject({
       coins: 5,
@@ -42,8 +51,7 @@ describe("progress", () => {
     const storage = memory(),
       store = createGameStore(storage);
     store.collect("path-1");
-    expect(store.getState().coins).toBe(0);
-    store.start();
+    expect(store.getState().coins).toBe(1);
     store.collect("path-1");
     store.collect("path-1");
     store.collect("unknown");
@@ -79,7 +87,10 @@ describe("progress", () => {
       },
     });
     openQuiz(store);
-    store.answer(store.getState().question!.correctAnswer);
+    for (let index = 0; index < 3; index++) {
+      store.answer(store.getState().question!.correctAnswer);
+      if (index < 2) store.finishQuiz();
+    }
     expect(store.getState().coins).toBe(5);
     expect(store.getState().savingAvailable).toBe(false);
   });

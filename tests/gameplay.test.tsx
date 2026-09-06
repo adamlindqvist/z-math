@@ -119,7 +119,7 @@ describe("playable controls and interface", () => {
     click("Jag letar efter skatten!");
     expect(gameStore.getState().talkedToNpc).toBe(true);
   });
-  it("completes the quiz UI after a retry and opens the chest with a single reward", () => {
+  it("completes three quiz questions after a retry and opens the chest with a single reward", () => {
     vi.useFakeTimers();
     act(() => gameStore.setTarget("chest"));
     click("Öppna kistan");
@@ -134,13 +134,20 @@ describe("playable controls and interface", () => {
     );
     expect(host.textContent).toContain("Försök igen!");
     expect(gameStore.getState().coins).toBe(0);
-    act(() =>
-      Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
-        .find((b) => b.textContent === String(q.correctAnswer))!
-        .click(),
-    );
-    expect(host.textContent).toContain("Helt rätt!");
-    act(() => vi.advanceTimersByTime(1100));
+    for (let index = 0; index < 3; index++) {
+      const correct = gameStore.getState().question!.correctAnswer;
+      act(() =>
+        Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
+          .find((b) => b.textContent === String(correct))!
+          .click(),
+      );
+      expect(gameStore.getState().quizCorrectAnswers).toBe(index + 1);
+      expect(gameStore.getState().coins).toBe(index === 2 ? 5 : 0);
+      expect(host.textContent).toContain(
+        index === 2 ? "Tre rätt!" : "Helt rätt!",
+      );
+      act(() => vi.advanceTimersByTime(1100));
+    }
     expect(host.querySelector('[aria-label="Kistans mattelås"]')).toBeNull();
     expect(gameStore.getState().coins).toBe(5);
     expect(gameStore.getState().reward).toBe(5);
@@ -183,12 +190,15 @@ describe("playable controls and interface", () => {
     expect(gameStore.getState().target).toBe("chest");
     click("Öppna kistan");
     click("Lös mattelåset");
-    const correct = gameStore.getState().question!.correctAnswer;
-    act(() =>
-      Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
-        .find((b) => b.textContent === String(correct))!
-        .click(),
-    );
+    for (let index = 0; index < 3; index++) {
+      const correct = gameStore.getState().question!.correctAnswer;
+      act(() =>
+        Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
+          .find((b) => b.textContent === String(correct))!
+          .click(),
+      );
+      if (index < 2) act(() => gameStore.finishQuiz());
+    }
     expect(gameStore.getState().coins).toBe(9);
   });
   it("requires confirmation for reset and keeps progress when cancelled", () => {

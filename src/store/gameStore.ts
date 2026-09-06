@@ -3,9 +3,10 @@ import { generateAdditionQuestion } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const COIN_IDS = ["path-1", "path-2", "path-3", "path-4"];
+export const REQUIRED_CORRECT_ANSWERS = 3;
 export type Target = "npc" | "chest" | null;
 export type Overlay =
-  null | "welcome" | "npc" | "locked" | "empty" | "quiz" | "pause" | "reset";
+  null | "npc" | "locked" | "empty" | "quiz" | "pause" | "reset";
 export interface Progress {
   coins: number;
   chestOpened: boolean;
@@ -16,7 +17,8 @@ export interface GameState extends Progress {
   overlay: Overlay;
   target: Target;
   question: MathQuestion | null;
-  feedback: "retry" | "correct" | null;
+  feedback: "retry" | "correct" | "complete" | null;
+  quizCorrectAnswers: number;
   reward: number;
   savingAvailable: boolean;
   resetId: number;
@@ -66,10 +68,11 @@ export function createGameStore(
   }
   let state: GameState = {
     ...progress,
-    overlay: "welcome",
+    overlay: null,
     target: null,
     question: null,
     feedback: null,
+    quizCorrectAnswers: 0,
     reward: 0,
     savingAvailable,
     resetId: 0,
@@ -103,7 +106,6 @@ export function createGameStore(
         listeners.delete(fn);
       };
     },
-    start: () => set({ overlay: null }),
     setTarget: (target: Target) => {
       if (target !== state.target) set({ target });
     },
@@ -113,13 +115,20 @@ export function createGameStore(
         set({ overlay: "npc", talkedToNpc: true }, true);
       else set({ overlay: state.chestOpened ? "empty" : "locked" });
     },
-    close: () => set({ overlay: null, question: null, feedback: null }),
+    close: () =>
+      set({
+        overlay: null,
+        question: null,
+        feedback: null,
+        quizCorrectAnswers: 0,
+      }),
     beginQuiz: () => {
       if (state.overlay === "locked" && !state.chestOpened)
         set({
           overlay: "quiz",
           question: generateAdditionQuestion(),
           feedback: null,
+          quizCorrectAnswers: 0,
         });
     },
     answer: (answer: number) => {
@@ -129,14 +138,32 @@ export function createGameStore(
         set({ feedback: "retry" });
         return;
       }
+      const quizCorrectAnswers = state.quizCorrectAnswers + 1;
+      if (quizCorrectAnswers < REQUIRED_CORRECT_ANSWERS) {
+        set({ quizCorrectAnswers, feedback: "correct" });
+        return;
+      }
       set(
-        { coins: state.coins + 5, chestOpened: true, feedback: "correct" },
+        {
+          coins: state.coins + 5,
+          chestOpened: true,
+          feedback: "complete",
+          quizCorrectAnswers,
+        },
         true,
       );
     },
     finishQuiz: () => {
       if (state.feedback === "correct")
-        set({ overlay: null, question: null, feedback: null, reward: 5 });
+        set({ question: generateAdditionQuestion(), feedback: null });
+      else if (state.feedback === "complete")
+        set({
+          overlay: null,
+          question: null,
+          feedback: null,
+          quizCorrectAnswers: 0,
+          reward: 5,
+        });
     },
     collect: (id: string) => {
       if (
@@ -164,6 +191,7 @@ export function createGameStore(
           target: null,
           question: null,
           feedback: null,
+          quizCorrectAnswers: 0,
           reward: 0,
           resetId: state.resetId + 1,
         },
