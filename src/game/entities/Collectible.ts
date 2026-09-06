@@ -7,21 +7,28 @@ export class Collectible {
     x: number,
     z: number,
   ) {
-    const coin = mesh(
-      new THREE.CylinderGeometry(0.21, 0.21, 0.085, 16),
-      material("#f9c74c", 0.3),
-      this.root,
-    );
-    coin.rotation.x = Math.PI / 2;
-    const inner = mesh(
-      new THREE.TorusGeometry(0.145, 0.018, 4, 16),
-      material("#fff0a0", 0.3),
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.3);
+    shape.lineTo(0.18, 0.08);
+    shape.lineTo(0.12, -0.3);
+    shape.lineTo(-0.12, -0.3);
+    shape.lineTo(-0.18, 0.08);
+    shape.closePath();
+    const rupee = mesh(
+      new THREE.ExtrudeGeometry(shape, {
+        depth: 0.09,
+        bevelEnabled: true,
+        bevelSize: 0.018,
+        bevelThickness: 0.018,
+        bevelSegments: 1,
+      }),
+      material("#38a7ac", 0.35),
       this.root,
       0,
       0,
-      0.05,
+      -0.045,
     );
-    inner.castShadow = false;
+    rupee.castShadow = false;
     this.root.position.set(x, 0.65, z);
   }
   update(time: number, collected: boolean) {

@@ -41,14 +41,14 @@ export class InteractionSystem {
       this.ring.scale.setScalar(1 + Math.sin(time * 3) * 0.05);
     }
     if (!gameStore.getState().overlay)
-      world.coins.forEach((c) => {
+      world.rupees.forEach((rupee) => {
         if (
           Math.hypot(
-            position.x - c.root.position.x,
-            position.z - c.root.position.z,
+            position.x - rupee.root.position.x,
+            position.z - rupee.root.position.z,
           ) < 0.57
         )
-          gameStore.collect(c.id);
+          gameStore.collect(rupee.id);
       });
   }
 }

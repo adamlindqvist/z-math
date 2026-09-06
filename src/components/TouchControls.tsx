@@ -79,7 +79,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
         </span>
         <span className="[@media(pointer:coarse)]:max-w-[130px] [@media(pointer:coarse)]:text-left">
           {state.target === "npc"
-            ? "Prata med Maja"
+            ? "Prata med Zelda"
             : state.target === "chest"
               ? state.chestOpened
                 ? "Undersök kistan"

@@ -21,8 +21,8 @@ npm run preview
 
 - WASD eller piltangenter: gå. E eller Space: prata/öppna. Escape: pausa.
 - På touchskärm: dra joysticken och tryck på actionknappen.
-- Prata med Maja, följ mynten och lös kistans additionsfråga. Fel svar kostar inget.
-- Kistan ger fem mynt en gång; fyra mynt finns längs stigen.
+- Prata med Zelda, följ Rupees längs stigen och lös kistans additionsfråga. Fel svar kostar inget.
+- Kistan ger fem Rupees en gång; fyra Rupees finns längs stigen.
 - Framsteg sparas automatiskt i webbläsaren. Pausmenyn låter dig börja om. Lagring delas inte mellan enheter och kan rensas av webbläsaren.
 
 ## Struktur

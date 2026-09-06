@@ -21,12 +21,12 @@ describe("progress", () => {
     openQuiz(store);
     const question = store.getState().question!;
     store.answer(question.answers.find((n) => n !== question.correctAnswer)!);
-    expect(store.getState().coins).toBe(0);
+    expect(store.getState().rupees).toBe(0);
     expect(store.getState().question).toBe(question);
     expect(store.getState().feedback).toBe("retry");
     store.answer(question.correctAnswer);
     expect(store.getState()).toMatchObject({
-      coins: 0,
+      rupees: 0,
       chestOpened: false,
       quizCorrectAnswers: 1,
       feedback: "correct",
@@ -36,9 +36,9 @@ describe("progress", () => {
     store.finishQuiz();
     store.answer(store.getState().question!.correctAnswer);
     store.answer(store.getState().question!.correctAnswer);
-    expect(store.getState().coins).toBe(5);
+    expect(store.getState().rupees).toBe(5);
     expect(parseSave(storage.getItem(SAVE_KEY))).toMatchObject({
-      coins: 5,
+      rupees: 5,
       chestOpened: true,
     });
     store.finishQuiz();
@@ -47,19 +47,19 @@ describe("progress", () => {
     store.beginQuiz();
     expect(store.getState().question).toBeNull();
   });
-  it("collects only known coins once and restores saved progress", () => {
+  it("collects only known Rupees once and restores saved progress", () => {
     const storage = memory(),
       store = createGameStore(storage);
     store.collect("path-1");
-    expect(store.getState().coins).toBe(1);
+    expect(store.getState().rupees).toBe(1);
     store.collect("path-1");
     store.collect("path-1");
     store.collect("unknown");
-    expect(store.getState().coins).toBe(1);
+    expect(store.getState().rupees).toBe(1);
     expect(createGameStore(storage).getState().collected).toEqual(["path-1"]);
     store.reset();
     expect(createGameStore(storage).getState()).toMatchObject({
-      coins: 0,
+      rupees: 0,
       collected: [],
       chestOpened: false,
     });
@@ -71,13 +71,13 @@ describe("progress", () => {
       "{}",
       JSON.stringify({
         version: 1,
-        coins: 99,
+        rupees: 99,
         chestOpened: false,
         talkedToNpc: false,
         collected: [],
       }),
     ])
-      expect(parseSave(raw).coins).toBe(0);
+      expect(parseSave(raw).rupees).toBe(0);
     const store = createGameStore({
       getItem: () => {
         throw Error();
@@ -91,7 +91,7 @@ describe("progress", () => {
       store.answer(store.getState().question!.correctAnswer);
       if (index < 2) store.finishQuiz();
     }
-    expect(store.getState().coins).toBe(5);
+    expect(store.getState().rupees).toBe(5);
     expect(store.getState().savingAvailable).toBe(false);
   });
 });

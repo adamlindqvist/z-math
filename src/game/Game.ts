@@ -22,7 +22,7 @@ export class Game {
     event.preventDefault();
     gameStore.pause();
     this.onError(
-      "Grafiken pausades. Ladda om sidan för att fortsätta. Dina sparade mynt finns kvar.",
+      "Grafiken pausades. Ladda om sidan för att fortsätta. Dina sparade Rupees finns kvar.",
     );
   };
   constructor(

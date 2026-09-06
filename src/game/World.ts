@@ -10,7 +10,7 @@ export class World {
   collision = new CollisionSystem();
   chest = new Chest(gameStore.getState().chestOpened);
   npc = new NPC();
-  coins = [
+  rupees = [
     new Collectible("path-1", -4.6, 3),
     new Collectible("path-2", -1.3, 2.6),
     new Collectible("path-3", 1.8, 0.6),
@@ -351,7 +351,7 @@ export class World {
     this.root.add(
       this.chest.root,
       this.npc.root,
-      ...this.coins.map((c) => c.root),
+      ...this.rupees.map((rupee) => rupee.root),
     );
     this.collision.add(5.6, -3.7, 0.56, 0.41);
     this.collision.add(-3.5, 1.3, 0.3);
@@ -360,7 +360,9 @@ export class World {
     const state = gameStore.getState();
     this.chest.update(dt, state.chestOpened && state.feedback !== "correct");
     this.npc.update(time);
-    this.coins.forEach((c) => c.update(time, state.collected.includes(c.id)));
+    this.rupees.forEach((rupee) =>
+      rupee.update(time, state.collected.includes(rupee.id)),
+    );
     if (state.chestOpened && !state.overlay && !this.burstShown) {
       this.burstShown = true;
       for (let i = 0; i < 9; i++) {

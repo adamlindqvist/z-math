@@ -2,13 +2,13 @@ import { useSyncExternalStore } from "react";
 import { generateAdditionQuestion } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const COIN_IDS = ["path-1", "path-2", "path-3", "path-4"];
+export const RUPEE_IDS = ["path-1", "path-2", "path-3", "path-4"];
 export const REQUIRED_CORRECT_ANSWERS = 3;
 export type Target = "npc" | "chest" | null;
 export type Overlay =
   null | "npc" | "locked" | "empty" | "quiz" | "pause" | "reset";
 export interface Progress {
-  coins: number;
+  rupees: number;
   chestOpened: boolean;
   collected: string[];
   talkedToNpc: boolean;
@@ -24,7 +24,7 @@ export interface GameState extends Progress {
   resetId: number;
 }
 const fresh = (): Progress => ({
-  coins: 0,
+  rupees: 0,
   chestOpened: false,
   collected: [],
   talkedToNpc: false,
@@ -34,20 +34,20 @@ export function parseSave(raw: string | null): Progress {
     const p = JSON.parse(raw || "null");
     if (
       p?.version !== 1 ||
-      !Number.isInteger(p.coins) ||
-      p.coins < 0 ||
+      !Number.isInteger(p.rupees) ||
+      p.rupees < 0 ||
       typeof p.chestOpened !== "boolean" ||
       typeof p.talkedToNpc !== "boolean" ||
       !Array.isArray(p.collected) ||
       p.collected.some(
-        (id: unknown) => typeof id !== "string" || !COIN_IDS.includes(id),
+        (id: unknown) => typeof id !== "string" || !RUPEE_IDS.includes(id),
       ) ||
       new Set(p.collected).size !== p.collected.length ||
-      p.coins !== p.collected.length + (p.chestOpened ? 5 : 0)
+      p.rupees !== p.collected.length + (p.chestOpened ? 5 : 0)
     )
       return fresh();
     return {
-      coins: p.coins,
+      rupees: p.rupees,
       chestOpened: p.chestOpened,
       collected: p.collected,
       talkedToNpc: p.talkedToNpc,
@@ -86,7 +86,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: 1,
-            coins: state.coins,
+            rupees: state.rupees,
             chestOpened: state.chestOpened,
             collected: state.collected,
             talkedToNpc: state.talkedToNpc,
@@ -145,7 +145,7 @@ export function createGameStore(
       }
       set(
         {
-          coins: state.coins + 5,
+          rupees: state.rupees + 5,
           chestOpened: true,
           feedback: "complete",
           quizCorrectAnswers,
@@ -168,11 +168,11 @@ export function createGameStore(
     collect: (id: string) => {
       if (
         !state.overlay &&
-        COIN_IDS.includes(id) &&
+        RUPEE_IDS.includes(id) &&
         !state.collected.includes(id)
       )
         set(
-          { coins: state.coins + 1, collected: [...state.collected, id] },
+          { rupees: state.rupees + 1, collected: [...state.collected, id] },
           true,
         );
     },

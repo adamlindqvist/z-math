@@ -84,7 +84,7 @@ export function Dialogue() {
         <p>
           {overlay === "pause"
             ? "Ta en paus. Skatten springer ingenstans."
-            : "Dina mynt nollställs och kistan stängs."}
+            : "Dina Rupees nollställs och kistan stängs."}
         </p>
         <button
           className={primaryButton}
@@ -109,7 +109,7 @@ export function Dialogue() {
     );
   return (
     <Modal
-      label={overlay === "npc" ? "Prata med Maja" : "Skattkistan"}
+      label={overlay === "npc" ? "Prata med Zelda" : "Skattkistan"}
       className=""
     >
       <button
@@ -121,7 +121,7 @@ export function Dialogue() {
       </button>
       <div className={`${emblem} bg-[#ede5e6]`}>
         {overlay === "npc" ? (
-          <span className="rotate-5 font-serif text-4xl text-[#a27899]">M</span>
+          <span className="rotate-5 font-serif text-4xl text-[#a27899]">Z</span>
         ) : overlay === "locked" ? (
           <LockKeyhole size={32} />
         ) : (
@@ -130,7 +130,7 @@ export function Dialogue() {
       </div>
       <p className={eyebrow}>
         {overlay === "npc"
-          ? "MAJA · GLÄNTANS TRÄDGÅRDSMÄSTARE"
+          ? "ZELDA · HYRULES PRINSESSA"
           : "EN HEMLIGHET LÄNGS STIGEN"}
       </p>
       <h2>
@@ -142,10 +142,10 @@ export function Dialogue() {
       </h2>
       <p>
         {overlay === "npc"
-          ? "En skatt väntar bortom dammen! Följ mynten längs stigen. Lite klurig matte är allt som behövs för att öppna kistan."
+          ? "En skatt väntar bortom dammen! Följ Rupees längs stigen. Lite klurig matte är allt som behövs för att öppna kistan."
           : overlay === "locked"
             ? "Det här låset gillar siffror. Tre rätta svar öppnar kistan!"
-            : "Kistan är tom nu, men det finns mer att upptäcka i gläntan. Har du hittat alla mynt?"}
+            : "Kistan är tom nu, men det finns mer att upptäcka i gläntan. Har du hittat alla Rupees?"}
       </p>
       <button
         className={primaryButton}
