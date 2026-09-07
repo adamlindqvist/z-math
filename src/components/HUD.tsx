@@ -60,7 +60,7 @@ export function HUD() {
           </div>
           <div>
             <p className="text-base font-bold text-[#536d5e] max-[600px]:text-sm">
-              {current ? current.room.name : "Gläntans skatt"}
+              {current ? current.room.name : "Legend of Matte"}
             </p>
             <h2>{hint}</h2>
           </div>
