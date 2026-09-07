@@ -4,6 +4,7 @@ import {
   DUNGEONS,
 } from "../game/dungeons/definitions";
 import {
+  Backpack,
   RotateCcw,
   Sun,
   Leaf,
@@ -93,6 +94,14 @@ export function HUD() {
         )}
       </div>
       <div className="pointer-events-auto flex shrink-0 gap-3 max-[600px]:gap-1.5">
+        <button
+          className="flex min-h-[72px] min-w-18 cursor-pointer touch-manipulation flex-col items-center justify-center rounded-3xl border-[3px] border-white bg-cream px-3 text-ink font-extrabold disabled:opacity-50 focus-visible:outline-4 focus-visible:outline-teal max-[600px]:min-h-16"
+          disabled={!!state.overlay || !!state.motion}
+          onClick={() => gameStore.openInventory()}
+        >
+          <Backpack size={30} aria-hidden="true" />
+          <span>Väska</span>
+        </button>
         <div
           className="flex min-h-[72px] items-center justify-center gap-2.5 rounded-3xl border-[3px] border-white bg-cream p-3 text-[32px] text-ink [&_svg]:size-9 [&_svg]:fill-[#c4eee0] [&_svg]:text-teal max-[600px]:min-h-16 max-[600px]:p-2 max-[600px]:text-[26px] max-[600px]:[&_svg]:w-7"
           aria-label={`${state.rupees} Rupees`}

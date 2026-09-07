@@ -1,3 +1,4 @@
+import type { ItemId } from "../../items/definitions";
 export type SymbolKind = "sun" | "leaf" | "moon";
 export interface StoneDefinition {
   id: string;
@@ -12,6 +13,7 @@ export interface ChallengeDefinition {
   kind: "counting" | "addition";
   required: number;
   reward: number;
+  items?: ItemId[];
 }
 export interface RoomDefinition {
   id: string;
@@ -83,6 +85,7 @@ export const DUNGEONS: DungeonDefinition[] = [
           kind: "addition",
           required: 5,
           reward: 5,
+          items: ["temple-sword", "temple-shield"],
         },
       },
     ],

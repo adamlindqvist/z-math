@@ -64,7 +64,13 @@ export function Modal({
 }
 export function Dialogue() {
   const { overlay } = useGameState();
-  if (!overlay || overlay === "quiz") return null;
+  if (
+    !overlay ||
+    overlay === "quiz" ||
+    overlay === "inventory" ||
+    overlay === "itemReward"
+  )
+    return null;
   if (overlay === "pause" || overlay === "reset")
     return (
       <Modal label={overlay === "pause" ? "Paus" : "Börja om"}>

@@ -1,4 +1,14 @@
 import {
+  freshInventory,
+  validInventory,
+  receiveItems,
+  isItemId,
+  ITEMS,
+  type Inventory,
+  type ItemId,
+  type EquipmentSlot,
+} from "../items/definitions";
+import {
   DUNGEONS,
   freshDungeons,
   resolveRoom,
@@ -20,8 +30,16 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export type Target =
   "npc" | "chest" | null | { kind: "challenge"; id: string; label: string };
 export type Overlay =
-  null | "npc" | "locked" | "empty" | "quiz" | "pause" | "reset";
-export interface Progress {
+  | null
+  | "npc"
+  | "locked"
+  | "empty"
+  | "quiz"
+  | "pause"
+  | "reset"
+  | "inventory"
+  | "itemReward";
+export interface Progress extends Inventory {
   location: Location;
   dungeons: Record<string, DungeonProgress>;
   rupees: number;
@@ -38,10 +56,12 @@ export interface GameState extends Progress {
   dungeonQuiz: string | null;
   motion: { index: number; from: number; to: number } | null;
   reward: number;
+  rewardItems: ItemId[];
   savingAvailable: boolean;
   resetId: number;
 }
 const fresh = (): Progress => ({
+  ...freshInventory(),
   location: null,
   dungeons: freshDungeons(),
   rupees: 0,
@@ -53,7 +73,8 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 3 ||
+      p?.version !== 4 ||
+      !validInventory(p) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
       !Number.isInteger(p.rupees) ||
@@ -72,6 +93,8 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      items: p.items,
+      equipment: p.equipment,
       location: p.location,
       dungeons: p.dungeons,
       rupees: p.rupees,
@@ -103,6 +126,7 @@ export function createGameStore(
     dungeonQuiz: null,
     motion: null,
     reward: 0,
+    rewardItems: [],
     savingAvailable,
     resetId: 0,
   };
@@ -114,7 +138,9 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 3,
+            version: 4,
+            items: state.items,
+            equipment: state.equipment,
             location: state.location,
             dungeons: state.dungeons,
             rupees: state.rupees,
@@ -131,6 +157,27 @@ export function createGameStore(
   };
   return {
     getState: () => state,
+    grantItems: (ids: readonly ItemId[], equip = false) => {
+      set(receiveItems(state, ids, equip), true);
+    },
+    equipItem: (id: ItemId, slot: EquipmentSlot) => {
+      if (
+        !isItemId(id) ||
+        !state.items.includes(id) ||
+        ITEMS[id].category !== slot
+      )
+        return;
+      set({ equipment: { ...state.equipment, [slot]: id } }, true);
+    },
+    unequipItem: (slot: EquipmentSlot) => {
+      if (slot !== "sword" && slot !== "shield") return;
+      set({ equipment: { ...state.equipment, [slot]: null } }, true);
+    },
+    openInventory: () => {
+      if (state.motion || (state.overlay && state.overlay !== "itemReward"))
+        return;
+      set({ overlay: "inventory", reward: 0, rewardItems: [] });
+    },
     subscribe: (fn: () => void) => {
       listeners.add(fn);
       return () => {
@@ -216,6 +263,8 @@ export function createGameStore(
     close: () =>
       set({
         overlay: null,
+        rewardItems: [],
+        reward: state.overlay === "itemReward" ? 0 : state.reward,
         dungeonQuiz: null,
         question: null,
         feedback: null,
@@ -253,10 +302,15 @@ export function createGameStore(
         }
         const count = progress.answers[c.id] + 1;
         const complete = count === c.required;
+        const itemAward = complete
+          ? (c.items ?? []).filter((id) => !state.items.includes(id))
+          : [];
         const award =
           complete && !progress.rewards.includes(c.id) ? c.reward : 0;
         set(
           {
+            ...receiveItems(state, itemAward, true),
+            rewardItems: itemAward,
             quizCorrectAnswers: count,
             feedback: complete ? "complete" : "correct",
             rupees: state.rupees + award,
@@ -311,7 +365,7 @@ export function createGameStore(
           set({ question: generateTempleQuestion(c.kind), feedback: null });
         else if (state.feedback === "complete")
           set({
-            overlay: null,
+            overlay: state.rewardItems.length ? "itemReward" : null,
             question: null,
             feedback: null,
             dungeonQuiz: null,
@@ -388,6 +442,7 @@ export function createGameStore(
           feedback: null,
           quizCorrectAnswers: 0,
           reward: 0,
+          rewardItems: [],
           resetId: state.resetId + 1,
         },
         true,

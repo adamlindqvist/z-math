@@ -1,3 +1,4 @@
+import { InventoryDialog } from "./components/Inventory";
 import { useEffect, useRef, useState } from "react";
 import { Game } from "./game/Game";
 import { HUD } from "./components/HUD";
@@ -57,6 +58,7 @@ export default function App() {
         <>
           <TouchControls game={game} />
           <Dialogue />
+          <InventoryDialog />
           <MathQuiz />
           <Reward />
         </>

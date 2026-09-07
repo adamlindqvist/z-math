@@ -46,7 +46,7 @@ Lägg till ett objekt i `DUNGEONS` i `src/game/dungeons/definitions.ts` för ett
 
 `DungeonArea` bygger rum, portar, lampor, stenar och kistor från definitionerna. Stenspåren använder fem fasta x-lägen; lämna minst 2,6 enheter mellan spåren och fria gångvägar vid sidorna. Ett mål ska ha samma golvsymbol som stenen och ligga utanför startläget 2. Testa framkomlighet och båda skärmorienteringarna för nya layouter. Nya typer av pussel kräver en ny regel och motsvarande byggdel; ingen baneditor ingår.
 
-Sparformatet är version 3 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
+Sparformatet är version 4 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
 
 ## Verifiering
 
@@ -57,3 +57,9 @@ Automatiska tester täcker frågegenerering, sparning efter enstaka svar och knu
 Gränssnittet använder Tailwind med gemensamma temafärger, stora dialoger, korta instruktioner och SVG-bilder. Joysticken är 160 pixlar bred och kan användas samtidigt som handlingsknappen. Stjärneffekter följer inställningen för minskad rörelse. Uppläsning ingår ännu inte.
 
 Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 × 1024, 1024 × 768, 820 × 1180 och 1180 × 820. Kontrollerna omfattade NPC-, kist-, paus- och återställningsdialoger, matte, återförsök, rätt svar, belöning, tempelfrågor och stenhjälp. Dialogknapparna rymdes utan rullning i dessa format. Kistbelöningen bevarades efter omladdning. Automatiska tester täcker spelvägen och touchavbrott. Detta är inte ett prestandatest eller ett test på fysisk iPad/Safari.
+
+### Väska och utrustning
+
+Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Mosstemplets sista mattelås ger fem ädelstenar, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De påverkar figurens utseende; strid ingår inte.
+
+Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder behöver även kopplas till figurens utseende.

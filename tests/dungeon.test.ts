@@ -375,3 +375,56 @@ describe("walking into portals and pushing stones", () => {
     area.dispose();
   });
 });
+
+describe("temple equipment reward", () => {
+  it("saves items and auto-equips atomically before the reward dialog", () => {
+    const storage = memory(),
+      s = createGameStore(storage);
+    reachStones(s);
+    stones(s);
+    travel(s, "treasure");
+    quiz(s, "treasure-lock");
+    for (let i = 0; i < 5; i++) {
+      s.answer(s.getState().question!.correctAnswer);
+      if (i < 4) s.finishQuiz();
+    }
+    const restored = createGameStore(storage);
+    expect(restored.getState().items).toEqual([
+      "green-clothes",
+      "temple-sword",
+      "temple-shield",
+    ]);
+    expect(restored.getState().equipment).toEqual({
+      clothes: "green-clothes",
+      sword: "temple-sword",
+      shield: "temple-shield",
+    });
+    s.answer(s.getState().question!.correctAnswer);
+    s.finishQuiz();
+    expect(s.getState().overlay).toBe("itemReward");
+    s.finishQuiz();
+    expect(s.getState().overlay).toBe("itemReward");
+    s.openInventory();
+    expect(s.getState().overlay).toBe("inventory");
+    quiz(restored, "treasure-lock");
+    expect(restored.getState().question).toBeNull();
+    expect(restored.getState().items).toHaveLength(3);
+    restored.reset();
+    expect(createGameStore(storage).getState().items).toEqual([
+      "green-clothes",
+    ]);
+  });
+  it("does not open the bag during a quiz or a moving stone", () => {
+    const s = createGameStore();
+    travel(s, "light");
+    quiz(s, "light-lock");
+    s.openInventory();
+    expect(s.getState().overlay).toBe("quiz");
+    s.close();
+    solve(s, "light-lock");
+    travel(s, "stones");
+    push(s, 0, -1);
+    s.openInventory();
+    expect(s.getState().overlay).toBeNull();
+  });
+});

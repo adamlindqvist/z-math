@@ -1,3 +1,4 @@
+import { freshInventory, type Equipment } from "../items/definitions";
 import { Vector3 } from "three";
 import { character } from "./models";
 import type { Input } from "./Input";
@@ -8,6 +9,11 @@ export class Player {
   private phase = 0;
   constructor() {
     this.reset();
+    this.setEquipment(freshInventory().equipment);
+  }
+  setEquipment(equipment: Equipment) {
+    this.root.getObjectByName("sword")!.visible = equipment.sword !== null;
+    this.root.getObjectByName("shield")!.visible = equipment.shield !== null;
   }
   reset() {
     this.root.position.set(-6.2, 0, 2.9);

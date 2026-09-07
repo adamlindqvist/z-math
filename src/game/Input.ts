@@ -5,7 +5,11 @@ export class Input {
   private down = (e: KeyboardEvent) => {
     if (e.code === "Escape" && !e.repeat) {
       e.preventDefault();
-      gameStore.pause();
+      if (
+        ["inventory", "itemReward"].includes(gameStore.getState().overlay ?? "")
+      )
+        gameStore.close();
+      else gameStore.pause();
       return;
     }
     if ((e.target as HTMLElement)?.closest?.("button, input, textarea")) return;

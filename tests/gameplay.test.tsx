@@ -1,3 +1,4 @@
+import { InventoryDialog } from "../src/components/Inventory";
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -45,6 +46,7 @@ beforeEach(() => {
         <HUD />
         <TouchControls game={{ current: { input } as Game }} />
         <Dialogue />
+        <InventoryDialog />
         <MathQuiz />
       </>,
     ),
@@ -335,6 +337,33 @@ describe("walking controls in the stone room", () => {
     expect(button("Knuffa")).toBeUndefined();
     expect(button("Nästa rum")).toBeUndefined();
     pointer(joystick, "pointercancel", 1, 38, 80);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe("inventory interface", () => {
+  it("stops held input, shows only the bag, equips items and closes with Escape", () => {
+    act(() => gameStore.grantItems(["temple-sword", "temple-shield"], true));
+    key("KeyW");
+    click("Väska");
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    expect(host.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(host.textContent).toContain("Gröna kläder");
+    expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[aria-label="Ta av svärd"]')!
+        .click(),
+    );
+    expect(gameStore.getState().equipment.sword).toBeNull();
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[aria-label="Ta på svärd"]')!
+        .click(),
+    );
+    expect(gameStore.getState().equipment.sword).toBe("temple-sword");
+    key("Escape");
+    expect(gameStore.getState().overlay).toBeNull();
     expect(input.direction()).toEqual({ x: 0, y: 0 });
   });
 });

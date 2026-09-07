@@ -18,6 +18,7 @@ export class Game {
   camera = new GameCamera();
   input = new Input();
   interactions: InteractionSystem;
+  private unsubscribeEquipment: () => void = () => {};
   private frame = 0;
   private last = 0;
   private time = 0;
@@ -92,6 +93,15 @@ export class Game {
     this.observer.observe(container);
     this.resize();
     this.camera.update(this.player.position, 1);
+    this.player.setEquipment(gameStore.getState().equipment);
+    let equipment = gameStore.getState().equipment;
+    this.unsubscribeEquipment = gameStore.subscribe(() => {
+      const next = gameStore.getState().equipment;
+      if (next !== equipment) {
+        equipment = next;
+        this.player.setEquipment(next);
+      }
+    });
     this.frame = requestAnimationFrame(this.tick);
   }
   private createArea(): Area {
@@ -159,6 +169,7 @@ export class Game {
   };
   dispose() {
     cancelAnimationFrame(this.frame);
+    this.unsubscribeEquipment();
     this.observer.disconnect();
     this.input.dispose();
     this.world.dispose();
