@@ -23,4 +23,12 @@ describe("collisions", () => {
     expect(p.x).toBeLessThanOrEqual(10.78);
     expect(p.z).toBeLessThanOrEqual(7.78);
   });
+  it("follows the curved edge of an elliptical obstacle", () => {
+    const c = new CollisionSystem();
+    c.addEllipse(0, 0, 2.2, 1.65);
+
+    expect(c.free(2, 0)).toBe(false);
+    expect(c.free(0, 1.5)).toBe(false);
+    expect(c.free(2, 1.5)).toBe(true);
+  });
 });

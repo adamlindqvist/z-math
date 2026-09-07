@@ -355,7 +355,7 @@ export class World implements Area {
     );
     this.water.scale.set(2.05, 1, 1.5);
     this.water.castShadow = false;
-    this.collision.add(6.7, 3.1, 2.2, 1.65);
+    this.collision.addEllipse(6.7, 3.1, 2.2, 1.65);
     for (const [x, z] of [
       [5.7, 3.3],
       [7.5, 2.8],

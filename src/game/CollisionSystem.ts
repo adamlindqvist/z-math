@@ -4,9 +4,16 @@ export interface Obstacle {
   halfX: number;
   halfZ: number;
 }
+interface EllipseObstacle {
+  x: number;
+  z: number;
+  radiusX: number;
+  radiusZ: number;
+}
 export class CollisionSystem {
   obstacles: Obstacle[] = [];
   dynamic: Obstacle[] = [];
+  ellipses: EllipseObstacle[] = [];
   constructor(
     private halfWidth = 11.1,
     private halfDepth = 8.1,
@@ -14,16 +21,28 @@ export class CollisionSystem {
   add(x: number, z: number, halfX: number, halfZ = halfX) {
     this.obstacles.push({ x, z, halfX, halfZ });
   }
+  addEllipse(x: number, z: number, radiusX: number, radiusZ: number) {
+    this.ellipses.push({ x, z, radiusX, radiusZ });
+  }
   free(x: number, z: number, radius = 0.32) {
     if (
       Math.abs(x) > this.halfWidth - radius ||
       Math.abs(z) > this.halfDepth - radius
     )
       return false;
-    return ![...this.obstacles, ...this.dynamic].some((o) => {
+    const hitsBox = [...this.obstacles, ...this.dynamic].some((o) => {
       const dx = Math.max(Math.abs(x - o.x) - o.halfX, 0);
       const dz = Math.max(Math.abs(z - o.z) - o.halfZ, 0);
       return dx * dx + dz * dz < radius * radius;
+    });
+    if (hitsBox) return false;
+
+    return !this.ellipses.some((o) => {
+      // Expanding both ellipse radii by the player's radius closely models a
+      // round character touching the curved shore.
+      const dx = (x - o.x) / (o.radiusX + radius);
+      const dz = (z - o.z) / (o.radiusZ + radius);
+      return dx * dx + dz * dz < 1;
     });
   }
   visible(from: { x: number; z: number }, to: { x: number; z: number }) {
