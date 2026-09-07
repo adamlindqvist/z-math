@@ -1,23 +1,17 @@
-import {
-  ArrowRight,
-  LockKeyhole,
-  Sparkles,
-  Sprout,
-  RotateCcw,
-  Play,
-  X,
-} from "lucide-react";
+import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { StoryPicture } from "./StoryPicture";
 import { gameStore, useGameState } from "../store/gameStore";
 
 const buttonBase =
-  "cursor-pointer transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default";
-export const primaryButton = `${buttonBase} flex min-h-[57px] w-full items-center justify-center gap-3 rounded-[13px] border border-[#577c4b] bg-[#608454] p-3 text-sm font-bold text-[#fffdee] shadow-[0_4px_0_#4d6d42]`;
+  "cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none";
+export const primaryButton =
+  "cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none flex min-h-[76px] w-full items-center justify-center gap-3.5 rounded-3xl bg-forest p-4 text-2xl text-white shadow-[0_5px_0_#22603b] [&_svg]:size-[30px]";
 export const eyebrow =
-  "mb-1.5 text-[9px] font-extrabold tracking-[1.6px] text-[#8d977b] max-[540px]:text-[7px] max-[540px]:tracking-[1.1px]";
+  "mx-[58px]! mt-1! mb-2.5! text-xl! font-extrabold text-teal [@media(max-height:850px)]:grid [@media(max-height:850px)]:min-h-12 [@media(max-height:850px)]:place-items-center";
 export const emblem =
-  "mx-auto mb-[21px] grid h-[69px] w-[69px] -rotate-5 place-items-center rounded-[23px] border-[5px] border-[#f3f3e5] bg-[#e9eed8] text-[#72945c] [&_svg]:rotate-5 max-[540px]:mb-4 max-[540px]:h-[59px] max-[540px]:w-[59px] [@media(max-height:620px)_and_(min-width:541px)]:hidden";
+  "mx-auto mb-3 grid h-[108px] w-[120px] place-items-center rounded-[32px] bg-[#fff0b8] text-forest [&>svg]:size-14";
 export function Modal({
   children,
   label,
@@ -36,13 +30,13 @@ export function Modal({
     };
   }, []);
   return (
-    <div className="absolute inset-0 z-10 grid place-items-center overflow-auto bg-[#30483022] p-[max(20px,env(safe-area-inset-top))] backdrop-blur-[3px] max-[540px]:p-[15px] [@media(max-height:620px)_and_(min-width:541px)]:p-3">
+    <div className="absolute inset-0 z-10 grid place-items-center overflow-auto bg-[#223c4666] pt-[max(18px,env(safe-area-inset-top))] pr-[max(18px,env(safe-area-inset-right))] pb-[max(18px,env(safe-area-inset-bottom))] pl-[max(18px,env(safe-area-inset-left))] backdrop-blur-sm">
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        className={`relative w-full max-w-[430px] rounded-[26px] border border-[#fffff5] bg-[#fffbef] px-[34px] pt-[30px] pb-[27px] text-center shadow-[0_25px_85px_#30402c33] [&>h2]:my-3 [&>h2]:text-[29px] [&>h2]:leading-[1.2] [&>h2]:font-extrabold [&>h2]:tracking-[-1px] [&>p:not(.eyebrow)]:mb-[23px] [&>p:not(.eyebrow)]:text-sm [&>p:not(.eyebrow)]:leading-[1.8] [&>p:not(.eyebrow)]:text-[#87907b] max-[540px]:max-w-[360px] max-[540px]:rounded-[23px] max-[540px]:p-6 max-[540px]:[&>h2]:text-[27px] max-[540px]:[&>p:not(.eyebrow)]:text-[13px] [@media(max-height:620px)_and_(min-width:541px)]:max-w-[410px] [@media(max-height:620px)_and_(min-width:541px)]:px-7 [@media(max-height:620px)_and_(min-width:541px)]:py-[19px] [@media(max-height:620px)_and_(min-width:541px)]:[&>h2]:my-2 [@media(max-height:620px)_and_(min-width:541px)]:[&>h2]:text-2xl [@media(max-height:620px)_and_(min-width:541px)]:[&>p:not(.eyebrow)]:mb-[15px] [@media(max-height:620px)_and_(min-width:541px)]:[&>p:not(.eyebrow)]:text-xs ${className}`}
+        className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${className}`}
         onKeyDown={(e) => {
           if (e.key !== "Tab") return;
           const buttons = Array.from(
@@ -77,14 +71,12 @@ export function Dialogue() {
         <div className={emblem}>
           <Sprout size={32} />
         </div>
-        <p className={eyebrow}>EN LITEN VILOSTUND</p>
-        <h2>
-          {overlay === "pause" ? "Gläntan väntar på dig." : "Ett nytt äventyr?"}
-        </h2>
+
+        <h2>{overlay === "pause" ? "En liten paus" : "Ett nytt äventyr?"}</h2>
         <p>
           {overlay === "pause"
-            ? "Ta en paus. Skatten springer ingenstans."
-            : "Dina Rupees nollställs. Kistan och templet börjar om."}
+            ? "Vi leker mer när du vill!"
+            : "Alla dina skatter försvinner. Vill du börja om?"}
         </p>
         <button
           className={primaryButton}
@@ -93,17 +85,17 @@ export function Dialogue() {
           }
         >
           {overlay === "pause" ? <Play size={20} /> : <RotateCcw size={20} />}{" "}
-          {overlay === "pause" ? "Fortsätt äventyret" : "Ja, börja om"}
+          {overlay === "pause" ? "Spela vidare" : "Ja, börja om"}
         </button>
         <button
-          className={`${buttonBase} mt-[9px] block min-h-14 w-full border-0 bg-transparent text-[13px] text-[#879178]`}
+          className={`${buttonBase} mt-4 min-h-16 w-full rounded-[20px] bg-[#e8efdc] text-[21px] text-ink`}
           onClick={() =>
             overlay === "pause"
               ? gameStore.confirmReset()
               : gameStore.cancelReset()
           }
         >
-          {overlay === "pause" ? "Börja om" : "Behåll mitt äventyr"}
+          {overlay === "pause" ? "Börja om" : "Nej, spela vidare"}
         </button>
       </Modal>
     );
@@ -113,7 +105,7 @@ export function Dialogue() {
       className=""
     >
       <button
-        className={`${buttonBase} absolute top-[9px] right-[9px] grid h-14 w-14 place-items-center rounded-xl border-0 bg-transparent text-[#8c947c]`}
+        className={`${buttonBase} absolute top-3 right-3 grid size-16 place-items-center rounded-[22px] bg-[#e4eddd] text-ink [&_svg]:size-8`}
         aria-label="Stäng dialog"
         onClick={() => gameStore.close()}
       >
@@ -121,18 +113,13 @@ export function Dialogue() {
       </button>
       <div className={`${emblem} bg-[#ede5e6]`}>
         {overlay === "npc" ? (
-          <span className="rotate-5 font-serif text-4xl text-[#a27899]">Z</span>
+          <StoryPicture kind="princess" />
         ) : overlay === "locked" ? (
-          <LockKeyhole size={32} />
+          <StoryPicture kind="chest" />
         ) : (
-          <Sparkles size={32} />
+          <StoryPicture kind="chest" />
         )}
       </div>
-      <p className={eyebrow}>
-        {overlay === "npc"
-          ? "ZELDA · HYRULES PRINSESSA"
-          : "EN HEMLIGHET LÄNGS STIGEN"}
-      </p>
       <h2>
         {overlay === "npc"
           ? "Hej, lilla äventyrare!"
@@ -142,10 +129,10 @@ export function Dialogue() {
       </h2>
       <p>
         {overlay === "npc"
-          ? "En skatt väntar bortom dammen! Följ Rupees längs stigen. Lite klurig matte är allt som behövs för att öppna kistan."
+          ? "Följ de gröna ädelstenarna. Hitta kistan!"
           : overlay === "locked"
-            ? "Det här låset gillar siffror. Tre rätta svar öppnar kistan!"
-            : "Kistan är tom nu. Hitta stenporten till Mosstemplet! Har du hittat alla Rupees?"}
+            ? "Räkna och samla tre stjärnor!"
+            : "Kistan är tom nu. Leta efter stenporten!"}
       </p>
       <button
         className={primaryButton}
@@ -154,10 +141,10 @@ export function Dialogue() {
         }
       >
         {overlay === "locked"
-          ? "Lös mattelåset"
+          ? "Räkna!"
           : overlay === "npc"
-            ? "Jag letar efter skatten!"
-            : "Utforska vidare"}
+            ? "Leta efter kistan"
+            : "Spela vidare"}
         <ArrowRight size={20} />
       </button>
     </Modal>

@@ -2,4 +2,16 @@
 
 @theme {
   --font-sans: "Avenir Next", "Nunito", "Trebuchet MS", sans-serif;
+  --color-ink: #304d42;
+  --color-cream: #fffbee;
+  --color-forest: #338354;
+  --color-sunshine: #ffd466;
+  --color-teal: #157c83;
+  --animate-star-pop: star-pop 0.4s ease-out;
+
+  @keyframes star-pop {
+    50% {
+      transform: scale(1.12) rotate(-4deg);
+    }
+  }
 }

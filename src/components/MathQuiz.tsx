@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { resolveRoom } from "../game/dungeons/definitions";
 import { useEffect } from "react";
-import { LockKeyhole, Sparkles, Star, X } from "lucide-react";
+import { LockKeyhole, Sparkles, Star, X, Check, Heart } from "lucide-react";
 import {
   gameStore,
   REQUIRED_CORRECT_ANSWERS,
@@ -30,9 +30,12 @@ export function MathQuiz() {
   }, [feedback]);
   if (overlay !== "quiz" || !question) return null;
   return (
-    <Modal label={title} className="max-w-[450px]">
+    <Modal
+      label={title}
+      className="[@media(max-height:850px)]:pt-[18px] [@media(max-height:850px)]:pb-5 [@media(max-height:850px)]:[&>p]:mt-2.5 [@media(max-height:850px)]:[&>p]:mb-4"
+    >
       <button
-        className="absolute top-[9px] right-[9px] grid h-14 w-14 cursor-pointer place-items-center rounded-xl border-0 bg-transparent text-[#8c947c] transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default"
+        className="cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none absolute top-3 right-3 grid size-16 place-items-center rounded-[22px] bg-[#e4eddd] text-ink [&_svg]:size-8"
         aria-label="Försök senare"
         disabled={feedback === "correct" || feedback === "complete"}
         onClick={() => gameStore.close()}
@@ -40,7 +43,7 @@ export function MathQuiz() {
         <X size={20} />
       </button>
       <div
-        className={`${emblem} ${feedback === "correct" || feedback === "complete" ? "scale-110 rotate-3" : ""}`}
+        className={`${emblem} h-16! w-[76px]! mb-1! [&>svg]:size-10! [@media(max-height:850px)]:hidden ${feedback === "correct" || feedback === "complete" ? "scale-110 rotate-3" : ""}`}
       >
         {feedback === "correct" || feedback === "complete" ? (
           <Sparkles size={32} />
@@ -49,19 +52,29 @@ export function MathQuiz() {
         )}
       </div>
       <p className={eyebrow}>{title}</p>
-      <p aria-label={`${quizCorrectAnswers} av ${required} rätt`}>
-        {Array.from({ length: required }, (_, index) =>
-          index < quizCorrectAnswers ? "⭐" : "☆",
-        ).join(" ")}
-      </p>
-      <h2
-        className={`${question.groups ? "text-2xl! max-[540px]:text-2xl!" : "text-5xl! max-[540px]:text-[40px]!"} my-5! tracking-[1px]! text-[#465e40] [@media(max-height:620px)_and_(min-width:541px)]:my-2.5! [@media(max-height:620px)_and_(min-width:541px)]:text-3xl!`}
+      <div
+        className="my-3 flex justify-center gap-3 [&_svg]:size-[38px]"
+        aria-label={`${quizCorrectAnswers} av ${required} rätt`}
       >
+        {Array.from({ length: required }, (_, index) => (
+          <Star
+            key={index}
+            aria-hidden="true"
+            className={
+              index < quizCorrectAnswers
+                ? "text-[#bc7b09] motion-safe:animate-star-pop"
+                : "text-[#998f71]"
+            }
+            fill={index < quizCorrectAnswers ? "currentColor" : "none"}
+          />
+        ))}
+      </div>
+      <h2 className="my-3.5! text-[44px]! max-[600px]:text-[36px]!">
         {question.question}
       </h2>
       {question.groups && (
         <div
-          className="mb-5 flex items-center justify-center gap-3"
+          className="my-3 flex items-center justify-center gap-3"
           aria-label="Bilder att räkna"
         >
           {question.groups.map((count, group) => (
@@ -71,11 +84,11 @@ export function MathQuiz() {
                   +
                 </span>
               )}
-              <div className="flex max-w-40 flex-wrap justify-center gap-2 rounded-xl bg-[#f0eedb] p-3">
+              <div className="flex max-w-60 flex-wrap justify-center gap-2 rounded-[22px] bg-[#fff0be] p-3 max-[600px]:gap-1 max-[600px]:p-2 max-[600px]:[&_svg]:size-8">
                 {Array.from({ length: count }, (_, i) => (
                   <Star
                     key={i}
-                    size={32}
+                    size={40}
                     fill="#ebbf57"
                     className="text-[#ac7e27]"
                     aria-label="Stjärna"
@@ -86,32 +99,26 @@ export function MathQuiz() {
           ))}
         </div>
       )}
-      <p>
-        {challenge
-          ? "Räkna bilderna. Tryck på antalet."
-          : "Få tre rätt för att öppna kistan!"}
-      </p>
+      <p>{challenge ? "Tryck på rätt antal." : "Tryck på rätt svar."}</p>
       <div
-        className={`grid gap-3 ${question.answerDots ? "grid-cols-3" : "grid-cols-2 [@media(max-height:620px)_and_(min-width:541px)]:grid-cols-4"}`}
+        className={`grid gap-4 max-[600px]:gap-2.5 ${question.answerDots ? "grid-cols-3" : "grid-cols-2"}`}
       >
         {question.answers.map((answer) => (
           <button
             key={answer}
-            className={`answer-button min-h-[76px] cursor-pointer rounded-[15px] border-2 text-[28px] font-extrabold shadow-[0_4px_0_#e7e6d5] transition hover:border-[#b6c995] hover:bg-[#edf1dc] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default max-[540px]:min-h-16 [@media(max-height:620px)_and_(min-width:541px)]:min-h-[60px] ${(feedback === "correct" || feedback === "complete") && answer === question.correctAnswer ? "border-[#92b572] bg-[#dcefc4] text-[#4c763d]" : "border-[#e3e5d1] bg-[#f7f5e7] text-[#5f7250]"}`}
+            data-testid="answer"
+            className={`cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none min-h-24 rounded-3xl border-[3px] border-[#56a7a2] bg-[#e6f6ef] p-2.5 text-[40px] text-ink shadow-[0_5px_0_#b0d8c7] max-[600px]:text-[34px] ${(feedback === "correct" || feedback === "complete") && answer === question.correctAnswer ? "border-[#448036]! bg-[#d5ef9e]!" : ""}`}
             disabled={feedback === "correct" || feedback === "complete"}
             onClick={() => gameStore.answer(answer)}
           >
             {answer}
             {question.answerDots && (
               <span
-                className="mx-auto mt-1 flex max-w-16 flex-wrap justify-center gap-1 pb-2"
+                className="mx-auto my-1 flex max-w-[100px] flex-wrap justify-center gap-1.5"
                 aria-hidden="true"
               >
                 {Array.from({ length: answer }, (_, i) => (
-                  <span
-                    key={i}
-                    className="h-2.5 w-2.5 rounded-full bg-current"
-                  />
+                  <span key={i} className="size-3.5 rounded-full bg-current" />
                 ))}
               </span>
             )}
@@ -119,9 +126,14 @@ export function MathQuiz() {
         ))}
       </div>
       <div
-        className={`mt-[22px] min-h-[25px] text-xs [@media(max-height:620px)_and_(min-width:541px)]:mt-[17px] ${feedback === "correct" || feedback === "complete" ? "font-extrabold text-[#628848]" : feedback === "retry" ? "text-[#a98045]" : "text-[#9c9e87]"}`}
+        className={`mt-[18px] flex min-h-12 items-center justify-center gap-2.5 text-[22px] font-bold [&_svg]:size-[30px] [&_svg]:shrink-0 ${feedback === "correct" || feedback === "complete" ? "text-[#286b3d] motion-safe:animate-star-pop" : ""}`}
         aria-live="polite"
       >
+        {feedback === "retry" ? (
+          <Heart aria-hidden="true" />
+        ) : feedback ? (
+          <Check aria-hidden="true" />
+        ) : null}
         {feedback === "complete"
           ? challenge
             ? challenge.reward
@@ -129,9 +141,9 @@ export function MathQuiz() {
               : "Rätt! Porten är öppen!"
             : "Tre rätt! Skatten är din!"
           : feedback === "correct"
-            ? "Helt rätt! En stjärna till!"
+            ? "Bra jobbat!"
             : feedback === "retry"
-              ? "Försök igen! Du kan ta det i din takt."
+              ? "Prova igen!"
               : "Räkna gärna på fingrarna."}
       </div>
     </Modal>

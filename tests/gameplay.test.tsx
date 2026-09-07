@@ -66,7 +66,7 @@ describe("playable controls and interface", () => {
     expect(gameStore.getState().overlay).toBe("pause");
     expect(input.direction()).toEqual({ x: 0, y: 0 });
     act(() =>
-      button("Fortsätt").dispatchEvent(
+      button("Spela vidare").dispatchEvent(
         new KeyboardEvent("keydown", { code: "Escape", bubbles: true }),
       ),
     );
@@ -77,29 +77,52 @@ describe("playable controls and interface", () => {
     expect(gameStore.getState().overlay).toBeNull();
   });
   it("supports one joystick pointer while another finger interacts or lifts", () => {
-    const joystick = host.querySelector(".joystick")!;
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
     Object.assign(joystick, {
       setPointerCapture: () => {},
       getBoundingClientRect: () => ({
         left: 0,
         top: 0,
-        width: 126,
-        height: 126,
+        width: 160,
+        height: 160,
       }),
     });
-    pointer(joystick, "pointerdown", 1, 102, 63);
+    pointer(joystick, "pointerdown", 1, 122, 80);
     expect(input.direction().x).toBeCloseTo(1);
-    pointer(joystick, "pointerdown", 2, 24, 63);
-    pointer(joystick, "pointerup", 2, 24, 63);
+    pointer(joystick, "pointerdown", 2, 38, 80);
+    pointer(joystick, "pointerup", 2, 38, 80);
     expect(input.direction().x).toBeCloseTo(1);
-    pointer(joystick, "pointercancel", 1, 102, 63);
+    pointer(joystick, "pointercancel", 1, 122, 80);
     expect(input.direction()).toEqual({ x: 0, y: 0 });
-    pointer(joystick, "pointerdown", 3, 102, 63);
+    pointer(joystick, "pointerdown", 3, 122, 80);
     act(() => gameStore.setTarget("npc"));
-    click("Prata med Zelda");
+    click("Prata");
     expect(gameStore.getState().overlay).toBe("npc");
     expect(input.direction()).toEqual({ x: 0, y: 0 });
-    expect(host.querySelector(".joystick")).toBeNull();
+    expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+  });
+  it("scales joystick travel and clears input on lost capture or hidden page", () => {
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 200,
+        height: 200,
+      }),
+    });
+    pointer(joystick, "pointerdown", 1, 131, 100);
+    expect(input.direction().x).toBeCloseTo(0.5);
+    pointer(joystick, "pointermove", 1, 300, 100);
+    expect(input.direction().x).toBe(1);
+    pointer(joystick, "lostpointercapture", 1, 300, 100);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    pointer(joystick, "pointerdown", 2, 162, 100);
+    const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    hidden.mockRestore();
   });
   it("reaches the NPC with actual camera-relative movement and E interaction", () => {
     const player = new Player(),
@@ -116,42 +139,46 @@ describe("playable controls and interface", () => {
     expect(gameStore.getState().target).toBe("npc");
     key("KeyE");
     expect(host.textContent).toContain("Hej, lilla äventyrare!");
-    click("Jag letar efter skatten!");
+    click("Leta efter kistan");
     expect(gameStore.getState().talkedToNpc).toBe(true);
   });
   it("completes three quiz questions after a retry and opens the chest with a single reward", () => {
     vi.useFakeTimers();
     act(() => gameStore.setTarget("chest"));
-    click("Öppna kistan");
-    click("Lös mattelåset");
+    click("Öppna");
+    click("Räkna!");
     const q = gameStore.getState().question!;
-    expect(host.querySelectorAll(".answer-button")).toHaveLength(4);
+    expect(host.querySelectorAll('[data-testid="answer"]')).toHaveLength(4);
     const wrong = q.answers.find((n) => n !== q.correctAnswer)!;
     act(() =>
-      Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
+      Array.from(
+        host.querySelectorAll<HTMLButtonElement>('[data-testid="answer"]'),
+      )
         .find((b) => b.textContent === String(wrong))!
         .click(),
     );
-    expect(host.textContent).toContain("Försök igen!");
+    expect(host.textContent).toContain("Prova igen!");
     expect(gameStore.getState().rupees).toBe(0);
     for (let index = 0; index < 3; index++) {
       const correct = gameStore.getState().question!.correctAnswer;
       act(() =>
-        Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
+        Array.from(
+          host.querySelectorAll<HTMLButtonElement>('[data-testid="answer"]'),
+        )
           .find((b) => b.textContent === String(correct))!
           .click(),
       );
       expect(gameStore.getState().quizCorrectAnswers).toBe(index + 1);
       expect(gameStore.getState().rupees).toBe(index === 2 ? 5 : 0);
       expect(host.textContent).toContain(
-        index === 2 ? "Tre rätt!" : "Helt rätt!",
+        index === 2 ? "Tre rätt!" : "Bra jobbat!",
       );
       act(() => vi.advanceTimersByTime(1100));
     }
     expect(host.querySelector('[aria-label="Kistans mattelås"]')).toBeNull();
     expect(gameStore.getState().rupees).toBe(5);
     expect(gameStore.getState().reward).toBe(5);
-    click("Undersök kistan");
+    click("Titta i kistan");
     expect(host.textContent).toContain("Kistan är tom nu");
     expect(gameStore.getState().rupees).toBe(5);
   });
@@ -188,12 +215,14 @@ describe("playable controls and interface", () => {
     });
     expect(gameStore.getState().rupees).toBe(4);
     expect(gameStore.getState().target).toBe("chest");
-    click("Öppna kistan");
-    click("Lös mattelåset");
+    click("Öppna");
+    click("Räkna!");
     for (let index = 0; index < 3; index++) {
       const correct = gameStore.getState().question!.correctAnswer;
       act(() =>
-        Array.from(host.querySelectorAll<HTMLButtonElement>(".answer-button"))
+        Array.from(
+          host.querySelectorAll<HTMLButtonElement>('[data-testid="answer"]'),
+        )
           .find((b) => b.textContent === String(correct))!
           .click(),
       );
@@ -205,7 +234,7 @@ describe("playable controls and interface", () => {
     act(() => gameStore.collect("path-1"));
     key("Escape");
     click("Börja om");
-    click("Behåll mitt äventyr");
+    click("Nej, spela vidare");
     expect(gameStore.getState().rupees).toBe(1);
     click("Börja om");
     click("Ja, börja om");
@@ -218,25 +247,25 @@ describe("temple interface and input", () => {
   const enter = () =>
     act(() => gameStore.travelTo({ dungeon: "moss", room: "light" }));
   it("resets held joystick input on travel, focus loss and puzzle reset", () => {
-    const joystick = host.querySelector(".joystick")!;
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
     Object.assign(joystick, {
       setPointerCapture: () => {},
       getBoundingClientRect: () => ({
         left: 0,
         top: 0,
-        width: 126,
-        height: 126,
+        width: 160,
+        height: 160,
       }),
     });
-    pointer(joystick, "pointerdown", 1, 102, 63);
+    pointer(joystick, "pointerdown", 1, 122, 80);
     expect(input.direction().x).toBe(1);
     enter();
     expect(input.direction()).toEqual({ x: 0, y: 0 });
-    pointer(joystick, "pointermove", 1, 102, 63);
+    pointer(joystick, "pointermove", 1, 122, 80);
     expect(input.direction()).toEqual({ x: 0, y: 0 });
-    pointer(joystick, "pointerdown", 2, 102, 63);
+    pointer(joystick, "pointerdown", 2, 122, 80);
     act(() => window.dispatchEvent(new Event("blur")));
-    pointer(joystick, "pointermove", 2, 102, 63);
+    pointer(joystick, "pointermove", 2, 122, 80);
     expect(input.direction()).toEqual({ x: 0, y: 0 });
   });
   it("shows picture groups and three dot answers, resumes a partial challenge and opens the gate", () => {
@@ -250,12 +279,12 @@ describe("temple interface and input", () => {
       }),
     );
     click("Tänd lamporna");
-    expect(host.querySelectorAll(".answer-button")).toHaveLength(3);
+    expect(host.querySelectorAll('[data-testid="answer"]')).toHaveLength(3);
     expect(host.querySelectorAll('[aria-label="Stjärna"]')).toHaveLength(
       gameStore.getState().question!.correctAnswer,
     );
     act(() => gameStore.answer(99));
-    expect(host.textContent).toContain("Försök igen");
+    expect(host.textContent).toContain("Prova igen");
     act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
     act(() => vi.advanceTimersByTime(1100));
     act(() => gameStore.close());
@@ -288,24 +317,24 @@ describe("walking controls in the stone room", () => {
       }
       gameStore.travelTo({ dungeon: "moss", room: "stones" });
     });
-    const joystick = host.querySelector(".joystick")!;
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
     Object.assign(joystick, {
       setPointerCapture: () => {},
       getBoundingClientRect: () => ({
         left: 0,
         top: 0,
-        width: 126,
-        height: 126,
+        width: 160,
+        height: 160,
       }),
     });
-    pointer(joystick, "pointerdown", 1, 24, 63);
+    pointer(joystick, "pointerdown", 1, 38, 80);
     act(() => gameStore.pushStone(0, -1));
     expect(input.direction().x).toBe(-1);
     act(() => gameStore.finishMotion());
     expect(input.direction().x).toBe(-1);
     expect(button("Knuffa")).toBeUndefined();
     expect(button("Nästa rum")).toBeUndefined();
-    pointer(joystick, "pointercancel", 1, 24, 63);
+    pointer(joystick, "pointercancel", 1, 38, 80);
     expect(input.direction()).toEqual({ x: 0, y: 0 });
   });
 });

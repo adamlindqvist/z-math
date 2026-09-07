@@ -47,3 +47,9 @@ Sparformatet är version 3 under nyckeln `glantans-skatt-v1`; äldre och ogiltig
 ## Verifiering
 
 Automatiska tester täcker frågegenerering, sparning efter enstaka svar och knuffar, engångsbelöningar, rumsordning, stenregler, kollisioner, tangentbordsrörelse, multitouch, fokusförlust och vägen till båda skatterna. Mosstemplet har granskats i Chrome med simulerade iPad-format 820 × 1180 och 1180 × 820. Automatisk passage genom portarna, stenknuffar genom fingerdrag och vägen till tempelskatten har också kontrollerats i samma webbläsare, inklusive omladdning efter belöningen. Fysisk iPad/Safari och faktisk bildfrekvens på enheten behöver fortfarande provas.
+
+### Barnanpassat gränssnitt
+
+Gränssnittet använder Tailwind med gemensamma temafärger, stora dialoger, korta instruktioner och SVG-bilder. Joysticken är 160 pixlar bred och kan användas samtidigt som handlingsknappen. Stjärneffekter följer inställningen för minskad rörelse. Uppläsning ingår ännu inte.
+
+Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 × 1024, 1024 × 768, 820 × 1180 och 1180 × 820. Kontrollerna omfattade NPC-, kist-, paus- och återställningsdialoger, matte, återförsök, rätt svar, belöning, tempelfrågor och stenhjälp. Dialogknapparna rymdes utan rullning i dessa format. Kistbelöningen bevarades efter omladdning. Automatiska tester täcker spelvägen och touchavbrott. Detta är inte ett prestandatest eller ett test på fysisk iPad/Safari.

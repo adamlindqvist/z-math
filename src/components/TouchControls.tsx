@@ -32,20 +32,23 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
     const rect = e.currentTarget.getBoundingClientRect();
     let x = e.clientX - rect.left - rect.width / 2,
       y = e.clientY - rect.top - rect.height / 2;
+    const radius = Math.max(1, rect.width / 2 - 38);
     const d = Math.hypot(x, y);
-    if (d > 39) {
-      x = (x / d) * 39;
-      y = (y / d) * 39;
+    if (d > radius) {
+      x = (x / d) * radius;
+      y = (y / d) * radius;
     }
     setKnob({ x, y });
-    if (game.current) game.current.input.touch = { x: x / 39, y: y / 39 };
+    if (game.current)
+      game.current.input.touch = { x: x / radius, y: y / radius };
   };
   if (state.overlay) return null;
   return (
-    <div className="pointer-events-none absolute inset-x-[35px] bottom-[max(24px,env(safe-area-inset-bottom))] z-6 flex items-end justify-center px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] max-[850px]:inset-x-[25px] max-[540px]:inset-x-5 [@media(pointer:coarse)]:justify-between">
+    <div className="pointer-events-none absolute right-[max(24px,env(safe-area-inset-right))] bottom-[max(20px,env(safe-area-inset-bottom))] left-[max(24px,env(safe-area-inset-left))] z-6 flex items-end justify-center gap-5 [@media(pointer:coarse)]:justify-between max-[600px]:right-4 max-[600px]:left-4 max-[600px]:gap-3">
       <div className="pointer-events-auto hidden text-center [@media(pointer:coarse)]:block">
         <div
-          className="joystick relative grid h-[126px] w-[126px] touch-none select-none place-items-center rounded-full border border-[#fffbdfb0] bg-[#f9f7e660] shadow-[inset_0_0_0_12px_#ffffff20,0_3px_15px_#4a68341a] backdrop-blur-[5px] [@media(max-height:620px)_and_(min-width:541px)]:h-[108px] [@media(max-height:620px)_and_(min-width:541px)]:w-[108px]"
+          className="relative grid size-40 touch-none place-items-center rounded-full border-4 border-cream bg-[#d4edcfbb] shadow-[inset_0_0_0_12px_#ffffff40,0_5px_0_#345d3826] select-none"
+          data-testid="joystick"
           aria-label="Dra för att gå"
           onPointerDown={(e) => {
             if (active.current !== null) return;
@@ -66,19 +69,19 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
         >
           <span className="text-[70px] font-extralight text-[#eff1da]">+</span>
           <div
-            className="pointer-events-none absolute grid h-[57px] w-[57px] place-items-center rounded-full bg-[#faf7e9] text-[#8a9977] shadow-[0_4px_8px_#49643b22]"
+            className="pointer-events-none absolute grid size-[76px] place-items-center rounded-full bg-cream text-forest shadow-[0_5px_0_#345d3844] [&_svg]:size-9"
             style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }}
           >
             <Footprints size={23} />
           </div>
         </div>
-        <span className="mt-2.5 block text-[8px] font-extrabold tracking-[1.6px] text-[#7a8a67]">
-          DRA FÖR ATT GÅ
+        <span className="mt-2 block rounded-xl bg-[#fffbeeec] text-lg font-extrabold text-ink">
+          Dra för att gå
         </span>
       </div>
       {(!state.location || state.target) && (
         <button
-          className={`pointer-events-auto flex min-h-[58px] cursor-pointer items-center gap-3 rounded-[18px] border border-[#fffced] px-[17px] py-2 pl-[9px] text-xs shadow-[0_5px_17px_#54683910] backdrop-blur-lg transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default max-[540px]:max-w-[177px] max-[540px]:gap-2 max-[540px]:rounded-2xl max-[540px]:p-2 max-[540px]:text-[11px] [&>kbd]:ml-3 [&>kbd]:grid [&>kbd]:h-7 [&>kbd]:min-w-[27px] [&>kbd]:place-items-center [&>kbd]:rounded-[5px] [&>kbd]:border [&>kbd]:border-[#dddcca] [&>kbd]:bg-[#fffcf3] [&>kbd]:text-[10px] [&>kbd]:text-[#7b856e] [&>kbd]:shadow-[0_2px_0_#e8e5d7] max-[540px]:[&>kbd]:hidden [@media(pointer:coarse)]:mb-[26px] [@media(pointer:coarse)]:min-h-[66px] [@media(pointer:coarse)]:[&>kbd]:hidden ${state.target ? "bg-[#faf8e9] text-[#496843] shadow-[0_5px_20px_#4d673b25]" : "bg-[#fbf9edce] text-[#8e9a7d] [@media(pointer:coarse)]:max-w-[180px]"}`}
+          className="cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none pointer-events-auto flex min-h-[88px] max-w-[310px] items-center gap-3.5 rounded-[28px] border-[3px] border-white bg-sunshine p-4 text-2xl text-ink shadow-[0_6px_0_#a8782c] disabled:bg-[#fffbeed9] disabled:text-[#546a5c] disabled:shadow-none [&_svg]:size-9 [&_kbd]:rounded-lg [&_kbd]:border-2 [&_kbd]:border-[#a8782c] [&_kbd]:px-2 [&_kbd]:py-1 [&_kbd]:text-base [@media(pointer:coarse)]:mb-7 [@media(pointer:coarse)]:[&_kbd]:hidden max-[600px]:max-w-[180px] max-[600px]:gap-1.5 max-[600px]:p-2.5 max-[600px]:text-xl"
           onClick={() => {
             gameStore.interact();
             if (document.activeElement instanceof HTMLElement)
@@ -86,7 +89,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           }}
           disabled={!state.target || !!state.motion}
         >
-          <span className="grid h-[39px] w-[39px] place-items-center rounded-xl bg-[#e6ebd6] max-[540px]:h-[34px] max-[540px]:min-w-[34px]">
+          <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
             {state.target === "npc" ? (
               <MessageCircle size={23} />
             ) : state.target === "chest" ? (
@@ -95,16 +98,16 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
               <Hand size={23} />
             )}
           </span>
-          <span className="[@media(pointer:coarse)]:max-w-[130px] [@media(pointer:coarse)]:text-left">
+          <span className="min-w-0 break-words text-left">
             {typeof state.target === "object" && state.target
               ? state.target.label
               : state.target === "npc"
-                ? "Prata med Zelda"
+                ? "Prata"
                 : state.target === "chest"
                   ? state.chestOpened
-                    ? "Undersök kistan"
-                    : "Öppna kistan"
-                  : "Hitta något att upptäcka"}
+                    ? "Titta i kistan"
+                    : "Öppna"
+                  : "Gå och leta"}
           </span>
           <kbd>E</kbd>
         </button>
