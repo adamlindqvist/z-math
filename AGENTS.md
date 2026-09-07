@@ -36,6 +36,7 @@ The project uses React 19, TypeScript with strict type checking, Three.js, Tailw
 - Keep 3D rendering lightweight for iPad. Preserve the pixel-ratio cap and clean up listeners, the render loop, geometries, and materials when the game unmounts.
 - Maintain understandable error handling when WebGL is unavailable or the graphics context is lost.
 - Keep changes focused on the task and update the README when usage or project structure changes.
+- Always use Tailwind for UI styling.
 
 ## Commands
 
