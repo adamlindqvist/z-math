@@ -213,3 +213,99 @@ describe("playable controls and interface", () => {
     expect(gameStore.getState().overlay).toBeNull();
   });
 });
+
+describe("temple interface and input", () => {
+  const enter = () =>
+    act(() => gameStore.travelTo({ dungeon: "moss", room: "light" }));
+  it("resets held joystick input on travel, focus loss and puzzle reset", () => {
+    const joystick = host.querySelector(".joystick")!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 126,
+        height: 126,
+      }),
+    });
+    pointer(joystick, "pointerdown", 1, 102, 63);
+    expect(input.direction().x).toBe(1);
+    enter();
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    pointer(joystick, "pointermove", 1, 102, 63);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    pointer(joystick, "pointerdown", 2, 102, 63);
+    act(() => window.dispatchEvent(new Event("blur")));
+    pointer(joystick, "pointermove", 2, 102, 63);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+  });
+  it("shows picture groups and three dot answers, resumes a partial challenge and opens the gate", () => {
+    vi.useFakeTimers();
+    enter();
+    act(() =>
+      gameStore.setTarget({
+        kind: "challenge",
+        id: "light-lock",
+        label: "Tänd lamporna",
+      }),
+    );
+    click("Tänd lamporna");
+    expect(host.querySelectorAll(".answer-button")).toHaveLength(3);
+    expect(host.querySelectorAll('[aria-label="Stjärna"]')).toHaveLength(
+      gameStore.getState().question!.correctAnswer,
+    );
+    act(() => gameStore.answer(99));
+    expect(host.textContent).toContain("Försök igen");
+    act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
+    act(() => vi.advanceTimersByTime(1100));
+    act(() => gameStore.close());
+    click("Tänd lamporna");
+    expect(gameStore.getState().quizCorrectAnswers).toBe(1);
+    for (let i = 0; i < 4; i++) {
+      act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
+      if (i < 3) act(() => vi.advanceTimersByTime(1100));
+    }
+    expect(host.textContent).toContain("Porten är öppen");
+    act(() => vi.advanceTimersByTime(1100));
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+    expect(host.textContent).toContain("öppna porten");
+  });
+});
+
+describe("walking controls in the stone room", () => {
+  it("keeps a held joystick during a push, clears it on cancellation and hides the action button", () => {
+    act(() => {
+      gameStore.travelTo({ dungeon: "moss", room: "light" });
+      gameStore.setTarget({
+        kind: "challenge",
+        id: "light-lock",
+        label: "Räkna",
+      });
+      gameStore.interact();
+      for (let i = 0; i < 5; i++) {
+        gameStore.answer(gameStore.getState().question!.correctAnswer);
+        gameStore.finishQuiz();
+      }
+      gameStore.travelTo({ dungeon: "moss", room: "stones" });
+    });
+    const joystick = host.querySelector(".joystick")!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 126,
+        height: 126,
+      }),
+    });
+    pointer(joystick, "pointerdown", 1, 24, 63);
+    act(() => gameStore.pushStone(0, -1));
+    expect(input.direction().x).toBe(-1);
+    act(() => gameStore.finishMotion());
+    expect(input.direction().x).toBe(-1);
+    expect(button("Knuffa")).toBeUndefined();
+    expect(button("Nästa rum")).toBeUndefined();
+    pointer(joystick, "pointercancel", 1, 24, 63);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+  });
+});

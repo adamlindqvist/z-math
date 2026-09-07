@@ -84,7 +84,7 @@ export function Dialogue() {
         <p>
           {overlay === "pause"
             ? "Ta en paus. Skatten springer ingenstans."
-            : "Dina Rupees nollställs och kistan stängs."}
+            : "Dina Rupees nollställs. Kistan och templet börjar om."}
         </p>
         <button
           className={primaryButton}
@@ -145,7 +145,7 @@ export function Dialogue() {
           ? "En skatt väntar bortom dammen! Följ Rupees längs stigen. Lite klurig matte är allt som behövs för att öppna kistan."
           : overlay === "locked"
             ? "Det här låset gillar siffror. Tre rätta svar öppnar kistan!"
-            : "Kistan är tom nu, men det finns mer att upptäcka i gläntan. Har du hittat alla Rupees?"}
+            : "Kistan är tom nu. Hitta stenporten till Mosstemplet! Har du hittat alla Rupees?"}
       </p>
       <button
         className={primaryButton}

@@ -5,6 +5,8 @@ export interface MathQuestion {
   question: string;
   answers: number[];
   correctAnswer: number;
+  groups?: number[];
+  answerDots?: boolean;
   difficulty: number;
   category: MathCategory;
 }

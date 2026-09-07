@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RefObject, PointerEvent } from "react";
 import { Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
 import type { Game } from "../game/Game";
@@ -12,8 +12,23 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
     setKnob({ x: 0, y: 0 });
     if (game.current) game.current.input.touch = { x: 0, y: 0 };
   };
+  const locationKey = JSON.stringify(state.location);
+  useEffect(() => {
+    reset();
+  }, [state.overlay, locationKey, state.resetId]);
+  useEffect(() => {
+    const hidden = () => {
+      if (document.hidden) reset();
+    };
+    window.addEventListener("blur", reset);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("blur", reset);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, []);
   const move = (e: PointerEvent<HTMLDivElement>) => {
-    if (active.current !== e.pointerId) return;
+    if (active.current !== e.pointerId || gameStore.getState().overlay) return;
     const rect = e.currentTarget.getBoundingClientRect();
     let x = e.clientX - rect.left - rect.width / 2,
       y = e.clientY - rect.top - rect.height / 2;
@@ -57,37 +72,43 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             <Footprints size={23} />
           </div>
         </div>
-        <span className="mt-2.5 block text-[8px] font-extrabold tracking-[1.6px] text-[#7a8a67]">DRA FÖR ATT GÅ</span>
+        <span className="mt-2.5 block text-[8px] font-extrabold tracking-[1.6px] text-[#7a8a67]">
+          DRA FÖR ATT GÅ
+        </span>
       </div>
-      <button
-        className={`pointer-events-auto flex min-h-[58px] cursor-pointer items-center gap-3 rounded-[18px] border border-[#fffced] px-[17px] py-2 pl-[9px] text-xs shadow-[0_5px_17px_#54683910] backdrop-blur-lg transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default max-[540px]:max-w-[177px] max-[540px]:gap-2 max-[540px]:rounded-2xl max-[540px]:p-2 max-[540px]:text-[11px] [&>kbd]:ml-3 [&>kbd]:grid [&>kbd]:h-7 [&>kbd]:min-w-[27px] [&>kbd]:place-items-center [&>kbd]:rounded-[5px] [&>kbd]:border [&>kbd]:border-[#dddcca] [&>kbd]:bg-[#fffcf3] [&>kbd]:text-[10px] [&>kbd]:text-[#7b856e] [&>kbd]:shadow-[0_2px_0_#e8e5d7] max-[540px]:[&>kbd]:hidden [@media(pointer:coarse)]:mb-[26px] [@media(pointer:coarse)]:min-h-[66px] [@media(pointer:coarse)]:[&>kbd]:hidden ${state.target ? "bg-[#faf8e9] text-[#496843] shadow-[0_5px_20px_#4d673b25]" : "bg-[#fbf9edce] text-[#8e9a7d] [@media(pointer:coarse)]:max-w-[180px]"}`}
-        onClick={() => {
-          gameStore.interact();
-          if (document.activeElement instanceof HTMLElement)
-            document.activeElement.blur();
-        }}
-        disabled={!state.target}
-      >
-        <span className="grid h-[39px] w-[39px] place-items-center rounded-xl bg-[#e6ebd6] max-[540px]:h-[34px] max-[540px]:min-w-[34px]">
-          {state.target === "npc" ? (
-            <MessageCircle size={23} />
-          ) : state.target === "chest" ? (
-            <LockKeyhole size={23} />
-          ) : (
-            <Hand size={23} />
-          )}
-        </span>
-        <span className="[@media(pointer:coarse)]:max-w-[130px] [@media(pointer:coarse)]:text-left">
-          {state.target === "npc"
-            ? "Prata med Zelda"
-            : state.target === "chest"
-              ? state.chestOpened
-                ? "Undersök kistan"
-                : "Öppna kistan"
-              : "Hitta något att upptäcka"}
-        </span>
-        <kbd>E</kbd>
-      </button>
+      {(!state.location || state.target) && (
+        <button
+          className={`pointer-events-auto flex min-h-[58px] cursor-pointer items-center gap-3 rounded-[18px] border border-[#fffced] px-[17px] py-2 pl-[9px] text-xs shadow-[0_5px_17px_#54683910] backdrop-blur-lg transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default max-[540px]:max-w-[177px] max-[540px]:gap-2 max-[540px]:rounded-2xl max-[540px]:p-2 max-[540px]:text-[11px] [&>kbd]:ml-3 [&>kbd]:grid [&>kbd]:h-7 [&>kbd]:min-w-[27px] [&>kbd]:place-items-center [&>kbd]:rounded-[5px] [&>kbd]:border [&>kbd]:border-[#dddcca] [&>kbd]:bg-[#fffcf3] [&>kbd]:text-[10px] [&>kbd]:text-[#7b856e] [&>kbd]:shadow-[0_2px_0_#e8e5d7] max-[540px]:[&>kbd]:hidden [@media(pointer:coarse)]:mb-[26px] [@media(pointer:coarse)]:min-h-[66px] [@media(pointer:coarse)]:[&>kbd]:hidden ${state.target ? "bg-[#faf8e9] text-[#496843] shadow-[0_5px_20px_#4d673b25]" : "bg-[#fbf9edce] text-[#8e9a7d] [@media(pointer:coarse)]:max-w-[180px]"}`}
+          onClick={() => {
+            gameStore.interact();
+            if (document.activeElement instanceof HTMLElement)
+              document.activeElement.blur();
+          }}
+          disabled={!state.target || !!state.motion}
+        >
+          <span className="grid h-[39px] w-[39px] place-items-center rounded-xl bg-[#e6ebd6] max-[540px]:h-[34px] max-[540px]:min-w-[34px]">
+            {state.target === "npc" ? (
+              <MessageCircle size={23} />
+            ) : state.target === "chest" ? (
+              <LockKeyhole size={23} />
+            ) : (
+              <Hand size={23} />
+            )}
+          </span>
+          <span className="[@media(pointer:coarse)]:max-w-[130px] [@media(pointer:coarse)]:text-left">
+            {typeof state.target === "object" && state.target
+              ? state.target.label
+              : state.target === "npc"
+                ? "Prata med Zelda"
+                : state.target === "chest"
+                  ? state.chestOpened
+                    ? "Undersök kistan"
+                    : "Öppna kistan"
+                  : "Hitta något att upptäcka"}
+          </span>
+          <kbd>E</kbd>
+        </button>
+      )}
     </div>
   );
 }

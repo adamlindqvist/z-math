@@ -1,3 +1,6 @@
+import { type Area } from "./Area";
+import { DungeonArea } from "./dungeons/DungeonArea";
+import { DUNGEONS, resolveRoom } from "./dungeons/definitions";
 import * as THREE from "three";
 import { World } from "./World";
 import { Player } from "./Player";
@@ -8,7 +11,9 @@ import { gameStore } from "../store/gameStore";
 export class Game {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
-  world = new World();
+  world: Area;
+  private areaKey = "";
+  private previousDungeon: string | null = null;
   player = new Player();
   camera = new GameCamera();
   input = new Input();
@@ -71,7 +76,9 @@ export class Game {
     sun.shadow.bias = -0.0003;
     sun.shadow.radius = 4;
     this.scene.add(sun);
-    this.scene.add(this.world.root, this.player.root);
+    this.world = this.createArea();
+    this.scene.add(this.player.root);
+    this.mountArea();
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
       new THREE.ShadowMaterial({ opacity: 0.12 }),
@@ -87,6 +94,31 @@ export class Game {
     this.camera.update(this.player.position, 1);
     this.frame = requestAnimationFrame(this.tick);
   }
+  private createArea(): Area {
+    const location = gameStore.getState().location;
+    this.areaKey = JSON.stringify(location);
+    const found = resolveRoom(location);
+    return found ? new DungeonArea(found.dungeon, found.room) : new World();
+  }
+  private mountArea() {
+    this.scene.add(this.world.root);
+    const entrance = DUNGEONS.find(
+      (d) => d.id === this.previousDungeon,
+    )?.entrance;
+    const spawn =
+      this.world.cameraMode === "glade" && entrance
+        ? { x: entrance.x, z: entrance.z + 1.4 }
+        : this.world.spawn;
+    this.player.reset();
+    this.player.position.set(spawn.x, 0, spawn.z);
+    this.input.reset();
+    this.camera.setMode(this.world.cameraMode, this.player.position);
+    this.renderer.domElement.setAttribute(
+      "aria-label",
+      resolveRoom(gameStore.getState().location)?.room.name ??
+        "Gläntan med Mosstemplets ingång",
+    );
+  }
   private resize() {
     const { clientWidth: w, clientHeight: h } = this.container;
     if (w && h) {
@@ -99,14 +131,27 @@ export class Game {
     this.last = now;
     this.time += dt;
     const state = gameStore.getState();
+    if (this.areaKey !== JSON.stringify(state.location)) {
+      const previous = JSON.parse(this.areaKey);
+      this.previousDungeon = previous?.dungeon ?? null;
+      this.world.dispose();
+      this.world = this.createArea();
+      this.mountArea();
+    }
     if (state.resetId !== this.resetId) {
       this.resetId = state.resetId;
-      this.player.reset();
-      this.input.reset();
+      this.previousDungeon = null;
+      this.mountArea();
     }
-    if (!state.overlay)
-      this.player.update(dt, this.input, this.world.collision);
     this.world.update(dt, this.time);
+    if (!state.overlay && !state.motion)
+      this.player.update(
+        dt,
+        this.input,
+        this.world.collision,
+        this.world.cameraMode === "room",
+        this.world.tryPush?.bind(this.world),
+      );
     this.interactions.update(this.player.position, this.world, this.time);
     this.camera.update(this.player.position, dt);
     this.renderer.render(this.scene, this.camera.camera);
@@ -116,6 +161,7 @@ export class Game {
     cancelAnimationFrame(this.frame);
     this.observer.disconnect();
     this.input.dispose();
+    this.world.dispose();
     this.renderer.domElement.removeEventListener(
       "webglcontextlost",
       this.contextLost,

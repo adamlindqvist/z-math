@@ -13,12 +13,19 @@ export class Player {
     this.root.position.set(-6.2, 0, 2.9);
     this.root.rotation.y = 0.35;
   }
-  update(dt: number, input: Input, collision: CollisionSystem) {
+  update(
+    dt: number,
+    input: Input,
+    collision: CollisionSystem,
+    room = false,
+    tryPush?: (position: Vector3, dx: number, dz: number) => boolean,
+  ) {
     const { x, y } = input.direction();
-    const dx = (x * 0.864 + y * 0.504) * dt * 3.5;
-    const dz = (-x * 0.504 + y * 0.864) * dt * 3.5;
+    const dx = (room ? x : x * 0.864 + y * 0.504) * dt * 3.5;
+    const dz = (room ? y : -x * 0.504 + y * 0.864) * dt * 3.5;
     const before = this.root.position.clone();
-    collision.move(this.root.position, dx, dz);
+    if (!tryPush?.(this.root.position, dx, dz))
+      collision.move(this.root.position, dx, dz);
     const moving = this.root.position.distanceToSquared(before) > 0.000001;
     if (moving) {
       const angle = Math.atan2(dx, dz);

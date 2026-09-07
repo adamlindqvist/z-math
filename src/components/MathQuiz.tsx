@@ -1,5 +1,7 @@
+import { Fragment } from "react";
+import { resolveRoom } from "../game/dungeons/definitions";
 import { useEffect } from "react";
-import { LockKeyhole, Sparkles, X } from "lucide-react";
+import { LockKeyhole, Sparkles, Star, X } from "lucide-react";
 import {
   gameStore,
   REQUIRED_CORRECT_ANSWERS,
@@ -7,7 +9,19 @@ import {
 } from "../store/gameStore";
 import { Modal, emblem, eyebrow } from "./Dialogue";
 export function MathQuiz() {
-  const { overlay, question, feedback, quizCorrectAnswers } = useGameState();
+  const {
+    overlay,
+    question,
+    feedback,
+    quizCorrectAnswers,
+    location,
+    dungeonQuiz,
+  } = useGameState();
+  const challenge = dungeonQuiz
+    ? resolveRoom(location)?.room.challenge
+    : undefined;
+  const required = challenge?.required ?? REQUIRED_CORRECT_ANSWERS;
+  const title = challenge?.title ?? "Kistans mattelås";
   useEffect(() => {
     if (feedback === "correct" || feedback === "complete") {
       const timer = setTimeout(() => gameStore.finishQuiz(), 1000);
@@ -16,7 +30,7 @@ export function MathQuiz() {
   }, [feedback]);
   if (overlay !== "quiz" || !question) return null;
   return (
-    <Modal label="Kistans mattelås" className="max-w-[450px]">
+    <Modal label={title} className="max-w-[450px]">
       <button
         className="absolute top-[9px] right-[9px] grid h-14 w-14 cursor-pointer place-items-center rounded-xl border-0 bg-transparent text-[#8c947c] transition hover:brightness-[1.03] active:translate-y-0.5 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-[#d89743] disabled:cursor-default"
         aria-label="Försök senare"
@@ -34,19 +48,52 @@ export function MathQuiz() {
           <LockKeyhole size={32} />
         )}
       </div>
-      <p className={eyebrow}>KISTANS MATTELÅS</p>
-      <p
-        aria-label={`${quizCorrectAnswers} av ${REQUIRED_CORRECT_ANSWERS} rätt`}
-      >
-        {Array.from({ length: REQUIRED_CORRECT_ANSWERS }, (_, index) =>
+      <p className={eyebrow}>{title}</p>
+      <p aria-label={`${quizCorrectAnswers} av ${required} rätt`}>
+        {Array.from({ length: required }, (_, index) =>
           index < quizCorrectAnswers ? "⭐" : "☆",
         ).join(" ")}
       </p>
-      <h2 className="my-5! text-5xl! tracking-[1px]! text-[#465e40] max-[540px]:text-[40px]! [@media(max-height:620px)_and_(min-width:541px)]:my-2.5! [@media(max-height:620px)_and_(min-width:541px)]:text-4xl!">
+      <h2
+        className={`${question.groups ? "text-2xl! max-[540px]:text-2xl!" : "text-5xl! max-[540px]:text-[40px]!"} my-5! tracking-[1px]! text-[#465e40] [@media(max-height:620px)_and_(min-width:541px)]:my-2.5! [@media(max-height:620px)_and_(min-width:541px)]:text-3xl!`}
+      >
         {question.question}
       </h2>
-      <p>Få tre rätt för att öppna kistan!</p>
-      <div className="grid grid-cols-2 gap-[13px] [@media(max-height:620px)_and_(min-width:541px)]:grid-cols-4 [@media(max-height:620px)_and_(min-width:541px)]:gap-[9px]">
+      {question.groups && (
+        <div
+          className="mb-5 flex items-center justify-center gap-3"
+          aria-label="Bilder att räkna"
+        >
+          {question.groups.map((count, group) => (
+            <Fragment key={group}>
+              {group > 0 && (
+                <span className="text-3xl" aria-label="plus">
+                  +
+                </span>
+              )}
+              <div className="flex max-w-40 flex-wrap justify-center gap-2 rounded-xl bg-[#f0eedb] p-3">
+                {Array.from({ length: count }, (_, i) => (
+                  <Star
+                    key={i}
+                    size={32}
+                    fill="#ebbf57"
+                    className="text-[#ac7e27]"
+                    aria-label="Stjärna"
+                  />
+                ))}
+              </div>
+            </Fragment>
+          ))}
+        </div>
+      )}
+      <p>
+        {challenge
+          ? "Räkna bilderna. Tryck på antalet."
+          : "Få tre rätt för att öppna kistan!"}
+      </p>
+      <div
+        className={`grid gap-3 ${question.answerDots ? "grid-cols-3" : "grid-cols-2 [@media(max-height:620px)_and_(min-width:541px)]:grid-cols-4"}`}
+      >
         {question.answers.map((answer) => (
           <button
             key={answer}
@@ -55,6 +102,19 @@ export function MathQuiz() {
             onClick={() => gameStore.answer(answer)}
           >
             {answer}
+            {question.answerDots && (
+              <span
+                className="mx-auto mt-1 flex max-w-16 flex-wrap justify-center gap-1 pb-2"
+                aria-hidden="true"
+              >
+                {Array.from({ length: answer }, (_, i) => (
+                  <span
+                    key={i}
+                    className="h-2.5 w-2.5 rounded-full bg-current"
+                  />
+                ))}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -63,7 +123,11 @@ export function MathQuiz() {
         aria-live="polite"
       >
         {feedback === "complete"
-          ? "Tre rätt! Skatten är din!"
+          ? challenge
+            ? challenge.reward
+              ? "Rätt! Skatten är din!"
+              : "Rätt! Porten är öppen!"
+            : "Tre rätt! Skatten är din!"
           : feedback === "correct"
             ? "Helt rätt! En stjärna till!"
             : feedback === "retry"

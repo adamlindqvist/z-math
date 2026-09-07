@@ -1,3 +1,6 @@
+import { type Area, disposeTree } from "./Area";
+import { DUNGEONS } from "./dungeons/definitions";
+import { portal } from "./dungeons/models";
 import * as THREE from "three";
 import { ball, box, material, mesh } from "./models";
 import { CollisionSystem } from "./CollisionSystem";
@@ -5,7 +8,33 @@ import { Chest } from "./entities/Chest";
 import { NPC } from "./entities/NPC";
 import { Collectible } from "./entities/Collectible";
 import { gameStore } from "../store/gameStore";
-export class World {
+export class World implements Area {
+  spawn = { x: -6.2, z: 2.9 };
+  cameraMode = "glade" as const;
+  interactions() {
+    return [
+      {
+        target: "npc" as const,
+        x: this.npc.root.position.x,
+        z: this.npc.root.position.z,
+      },
+      {
+        target: "chest" as const,
+        x: this.chest.root.position.x,
+        z: this.chest.root.position.z,
+      },
+    ];
+  }
+  passages() {
+    return DUNGEONS.map((d) => ({
+      x: d.entrance.x,
+      z: d.entrance.z,
+      destination: { dungeon: d.id, room: d.rooms[0].id },
+    }));
+  }
+  dispose() {
+    disposeTree(this.root);
+  }
   root = new THREE.Group();
   collision = new CollisionSystem();
   chest = new Chest(gameStore.getState().chestOpened);
@@ -288,6 +317,27 @@ export class World {
       );
       tip.rotation.z = r;
     }
+    DUNGEONS.forEach((d) => {
+      portal(this.root, d.entrance.x, d.entrance.z, true);
+      for (const side of [-1, 1])
+        this.collision.add(
+          d.entrance.x + side * 0.95,
+          d.entrance.z,
+          0.25,
+          0.28,
+        );
+      for (let i = 0; i < 4; i++)
+        box(
+          this.root,
+          path,
+          d.entrance.x,
+          0.05,
+          d.entrance.z + 0.9 + i * 0.72,
+          1.1,
+          0.06,
+          0.5,
+        );
+    });
     // Deterministic scattered flowers and grass, never on the main path.
     let seed = 19;
     const random = () => {

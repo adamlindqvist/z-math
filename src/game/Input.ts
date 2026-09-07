@@ -28,6 +28,8 @@ export class Input {
   private visibility = () => {
     if (document.hidden) this.blur();
   };
+  private location = JSON.stringify(gameStore.getState().location);
+  private resetId = gameStore.getState().resetId;
   private unsubscribe: () => void;
   constructor() {
     window.addEventListener("keydown", this.down);
@@ -35,7 +37,16 @@ export class Input {
     window.addEventListener("blur", this.blur);
     document.addEventListener("visibilitychange", this.visibility);
     this.unsubscribe = gameStore.subscribe(() => {
-      if (gameStore.getState().overlay) this.reset();
+      const state = gameStore.getState();
+      const location = JSON.stringify(state.location);
+      if (
+        state.overlay ||
+        location !== this.location ||
+        state.resetId !== this.resetId
+      )
+        this.reset();
+      this.location = location;
+      this.resetId = state.resetId;
     });
   }
   reset() {
