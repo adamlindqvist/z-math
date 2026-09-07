@@ -1,3 +1,5 @@
+import { Bokoblin } from "./entities/Bokoblin";
+import { buildSouthGlade } from "./SouthGlade";
 import { type Area, disposeTree } from "./Area";
 import { DUNGEONS } from "./dungeons/definitions";
 import { portal } from "./dungeons/models";
@@ -12,14 +14,32 @@ export class World implements Area {
   spawn = { x: -6.2, z: 2.9 };
   cameraMode = "glade" as const;
   interactions() {
+    const state = gameStore.getState();
     return [
+      ...(!state.bridgeUnlocked
+        ? [{ target: "bokoblin" as const, x: 0, z: 7.9 }]
+        : [
+            {
+              target: {
+                kind: "chest" as const,
+                id: "south" as const,
+                label: state.chests.south ? "Titta i kistan" : "Öppna",
+              },
+              x: 3.5,
+              z: 23,
+            },
+          ]),
       {
         target: "npc" as const,
         x: this.npc.root.position.x,
         z: this.npc.root.position.z,
       },
       {
-        target: "chest" as const,
+        target: {
+          kind: "chest" as const,
+          id: "glade" as const,
+          label: "Öppna",
+        },
         x: this.chest.root.position.x,
         z: this.chest.root.position.z,
       },
@@ -36,8 +56,10 @@ export class World implements Area {
     disposeTree(this.root);
   }
   root = new THREE.Group();
-  collision = new CollisionSystem();
-  chest = new Chest(gameStore.getState().chestOpened);
+  collision = new CollisionSystem(11.1, 17.55, 9.45);
+  bokoblin = new Bokoblin(gameStore.getState().bridgeUnlocked);
+  southChest = new Chest(gameStore.getState().chests.south);
+  chest = new Chest(gameStore.getState().chests.glade);
   npc = new NPC();
   rupees = [
     new Collectible("path-1", -4.6, 3),
@@ -51,8 +73,14 @@ export class World implements Area {
     velocity: THREE.Vector3;
     life: number;
   }[] = [];
-  private burstShown = gameStore.getState().chestOpened;
+  private burstShown = { ...gameStore.getState().chests };
   constructor() {
+    buildSouthGlade(this.root, this.collision);
+    this.southChest.root.position.set(3.5, 0, 23);
+    this.root.add(this.southChest.root, this.bokoblin.root);
+    this.collision.dynamic = gameStore.getState().bridgeUnlocked
+      ? []
+      : [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }];
     const grass = material("#94bd64"),
       earth = material("#b28c5b"),
       soil = material("#8b7050"),
@@ -499,15 +527,28 @@ export class World implements Area {
   }
   update(dt: number, time: number) {
     const state = gameStore.getState();
-    this.chest.update(dt, state.chestOpened && state.feedback !== "correct");
+    this.collision.dynamic = state.bridgeUnlocked
+      ? []
+      : [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }];
+    this.bokoblin.update(dt, state.bridgeUnlocked, !!state.overlay);
+    this.southChest.update(
+      dt,
+      state.chests.south &&
+        !(state.activeChest === "south" && state.overlay === "quiz"),
+    );
+    this.chest.update(dt, state.chests.glade && state.feedback !== "correct");
     this.npc.update(time);
     this.rupees.forEach((rupee) =>
       rupee.update(time, state.collected.includes(rupee.id)),
     );
-    if (state.chestOpened && !state.overlay && !this.burstShown) {
-      this.burstShown = true;
+    for (const id of ["glade", "south"] as const) {
+      if (!state.chests[id]) this.burstShown[id] = false;
+      if (!state.chests[id] || state.overlay || this.burstShown[id]) continue;
+      this.burstShown[id] = true;
+      const position = (id === "glade" ? this.chest : this.southChest).root
+        .position;
       for (let i = 0; i < 9; i++) {
-        const c = new Collectible("reward", 5.6, -3.7);
+        const c = new Collectible("reward", position.x, position.z);
         c.root.position.y = 0.8;
         this.root.add(c.root);
         const angle = (i / 9) * Math.PI * 2;
@@ -522,7 +563,6 @@ export class World implements Area {
         });
       }
     }
-    if (!state.chestOpened) this.burstShown = false;
     this.sparkles = this.sparkles.filter((p) => {
       p.life -= dt;
       p.velocity.y -= dt * 4;

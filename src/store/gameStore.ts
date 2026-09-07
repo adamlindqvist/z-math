@@ -27,11 +27,19 @@ import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const RUPEE_IDS = ["path-1", "path-2", "path-3", "path-4"];
 export const REQUIRED_CORRECT_ANSWERS = 3;
+export type ChestId = "glade" | "south";
+export const hasBridgeEquipment = (state: Inventory) =>
+  state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
-  "npc" | "chest" | null | { kind: "challenge"; id: string; label: string };
+  | "npc"
+  | "bokoblin"
+  | null
+  | { kind: "chest"; id: ChestId; label: string }
+  | { kind: "challenge"; id: string; label: string };
 export type Overlay =
   | null
   | "npc"
+  | "bokoblin"
   | "locked"
   | "empty"
   | "quiz"
@@ -43,7 +51,8 @@ export interface Progress extends Inventory {
   location: Location;
   dungeons: Record<string, DungeonProgress>;
   rupees: number;
-  chestOpened: boolean;
+  chests: Record<ChestId, boolean>;
+  bridgeUnlocked: boolean;
   collected: string[];
   talkedToNpc: boolean;
 }
@@ -54,6 +63,7 @@ export interface GameState extends Progress {
   feedback: "retry" | "correct" | "complete" | null;
   quizCorrectAnswers: number;
   dungeonQuiz: string | null;
+  activeChest: ChestId | null;
   motion: { index: number; from: number; to: number } | null;
   reward: number;
   rewardItems: ItemId[];
@@ -65,7 +75,8 @@ const fresh = (): Progress => ({
   location: null,
   dungeons: freshDungeons(),
   rupees: 0,
-  chestOpened: false,
+  chests: { glade: false, south: false },
+  bridgeUnlocked: false,
   collected: [],
   talkedToNpc: false,
 });
@@ -73,13 +84,19 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 4 ||
+      p?.version !== 5 ||
       !validInventory(p) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
       !Number.isInteger(p.rupees) ||
       p.rupees < 0 ||
-      typeof p.chestOpened !== "boolean" ||
+      !p.chests ||
+      Object.keys(p.chests).length !== 2 ||
+      typeof p.chests.glade !== "boolean" ||
+      typeof p.chests.south !== "boolean" ||
+      typeof p.bridgeUnlocked !== "boolean" ||
+      (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
+      (p.chests.south && !p.bridgeUnlocked) ||
       typeof p.talkedToNpc !== "boolean" ||
       !Array.isArray(p.collected) ||
       p.collected.some(
@@ -88,7 +105,7 @@ export function parseSave(raw: string | null): Progress {
       new Set(p.collected).size !== p.collected.length ||
       p.rupees !==
         p.collected.length +
-          (p.chestOpened ? 5 : 0) +
+          (Number(p.chests.glade) + Number(p.chests.south)) * 5 +
           dungeonRewardTotal(p.dungeons)
     )
       return fresh();
@@ -98,7 +115,8 @@ export function parseSave(raw: string | null): Progress {
       location: p.location,
       dungeons: p.dungeons,
       rupees: p.rupees,
-      chestOpened: p.chestOpened,
+      chests: p.chests,
+      bridgeUnlocked: p.bridgeUnlocked,
       collected: p.collected,
       talkedToNpc: p.talkedToNpc,
     };
@@ -124,6 +142,7 @@ export function createGameStore(
     feedback: null,
     quizCorrectAnswers: 0,
     dungeonQuiz: null,
+    activeChest: null,
     motion: null,
     reward: 0,
     rewardItems: [],
@@ -138,13 +157,14 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 4,
+            version: 5,
             items: state.items,
             equipment: state.equipment,
             location: state.location,
             dungeons: state.dungeons,
             rupees: state.rupees,
-            chestOpened: state.chestOpened,
+            chests: state.chests,
+            bridgeUnlocked: state.bridgeUnlocked,
             collected: state.collected,
             talkedToNpc: state.talkedToNpc,
           }),
@@ -240,6 +260,18 @@ export function createGameStore(
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "chest") {
+          if (
+            state.location ||
+            (target.id === "south" && !state.bridgeUnlocked)
+          )
+            return;
+          set({
+            activeChest: target.id,
+            overlay: state.chests[target.id] ? "empty" : "locked",
+          });
+          return;
+        }
         const found = resolveRoom(state.location);
         if (found && found.room.challenge?.id === target.id) {
           const c = found.room.challenge;
@@ -258,7 +290,11 @@ export function createGameStore(
       if (state.location) return;
       if (state.target === "npc")
         set({ overlay: "npc", talkedToNpc: true }, true);
-      else set({ overlay: state.chestOpened ? "empty" : "locked" });
+      else if (state.target === "bokoblin" && !state.bridgeUnlocked) {
+        if (hasBridgeEquipment(state))
+          set({ bridgeUnlocked: true, target: null }, true);
+        else set({ overlay: "bokoblin" });
+      }
     },
     close: () =>
       set({
@@ -266,13 +302,18 @@ export function createGameStore(
         rewardItems: [],
         reward: state.overlay === "itemReward" ? 0 : state.reward,
         dungeonQuiz: null,
+        activeChest: null,
         question: null,
         feedback: null,
         quizCorrectAnswers: 0,
       }),
     beginQuiz: () => {
       if (state.dungeonQuiz) return;
-      if (state.overlay === "locked" && !state.chestOpened)
+      if (
+        state.overlay === "locked" &&
+        state.activeChest &&
+        !state.chests[state.activeChest]
+      )
         set({
           overlay: "quiz",
           question: generateAdditionQuestion(),
@@ -333,7 +374,8 @@ export function createGameStore(
       if (
         state.overlay !== "quiz" ||
         !state.question ||
-        state.chestOpened ||
+        !state.activeChest ||
+        state.chests[state.activeChest] ||
         state.feedback === "correct" ||
         state.feedback === "complete"
       )
@@ -350,7 +392,7 @@ export function createGameStore(
       set(
         {
           rupees: state.rupees + 5,
-          chestOpened: true,
+          chests: { ...state.chests, [state.activeChest]: true },
           feedback: "complete",
           quizCorrectAnswers,
         },
@@ -369,6 +411,7 @@ export function createGameStore(
             question: null,
             feedback: null,
             dungeonQuiz: null,
+            activeChest: null,
             quizCorrectAnswers: 0,
             reward: c.reward,
           });
@@ -383,6 +426,7 @@ export function createGameStore(
           feedback: null,
           quizCorrectAnswers: 0,
           reward: 5,
+          activeChest: null,
         });
     },
     collect: (id: string) => {
@@ -435,6 +479,7 @@ export function createGameStore(
         {
           ...fresh(),
           dungeonQuiz: null,
+          activeChest: null,
           motion: null,
           overlay: null,
           target: null,

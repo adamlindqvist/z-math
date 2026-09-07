@@ -10,7 +10,7 @@ const memory = () => {
   };
 };
 const openQuiz = (store: ReturnType<typeof createGameStore>) => {
-  store.setTarget("chest");
+  store.setTarget({ kind: "chest", id: "glade", label: "Öppna" });
   store.interact();
   store.beginQuiz();
 };
@@ -27,7 +27,8 @@ describe("progress", () => {
     store.answer(question.correctAnswer);
     expect(store.getState()).toMatchObject({
       rupees: 0,
-      chestOpened: false,
+      chests: { glade: false, south: false },
+      bridgeUnlocked: false,
       quizCorrectAnswers: 1,
       feedback: "correct",
     });
@@ -39,7 +40,7 @@ describe("progress", () => {
     expect(store.getState().rupees).toBe(5);
     expect(parseSave(storage.getItem(SAVE_KEY))).toMatchObject({
       rupees: 5,
-      chestOpened: true,
+      chests: { glade: true, south: false },
     });
     store.finishQuiz();
     store.interact();
@@ -61,7 +62,8 @@ describe("progress", () => {
     expect(createGameStore(storage).getState()).toMatchObject({
       rupees: 0,
       collected: [],
-      chestOpened: false,
+      chests: { glade: false, south: false },
+      bridgeUnlocked: false,
     });
   });
   it("tolerates invalid or blocked storage", () => {
@@ -72,7 +74,8 @@ describe("progress", () => {
       JSON.stringify({
         version: 1,
         rupees: 99,
-        chestOpened: false,
+        chests: { glade: false, south: false },
+        bridgeUnlocked: false,
         talkedToNpc: false,
         collected: [],
       }),

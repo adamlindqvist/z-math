@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject, PointerEvent } from "react";
 import { Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
 import type { Game } from "../game/Game";
-import { gameStore, useGameState } from "../store/gameStore";
+import {
+  gameStore,
+  useGameState,
+  hasBridgeEquipment,
+} from "../store/gameStore";
 export function TouchControls({ game }: { game: RefObject<Game | null> }) {
   const state = useGameState();
   const active = useRef<number | null>(null);
@@ -92,7 +96,8 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
             {state.target === "npc" ? (
               <MessageCircle size={23} />
-            ) : state.target === "chest" ? (
+            ) : typeof state.target === "object" &&
+              state.target?.kind === "chest" ? (
               <LockKeyhole size={23} />
             ) : (
               <Hand size={23} />
@@ -100,13 +105,17 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           </span>
           <span className="min-w-0 break-words text-left">
             {typeof state.target === "object" && state.target
-              ? state.target.label
-              : state.target === "npc"
-                ? "Prata"
-                : state.target === "chest"
-                  ? state.chestOpened
-                    ? "Titta i kistan"
-                    : "Öppna"
+              ? state.target.kind === "chest"
+                ? state.chests[state.target.id]
+                  ? "Titta i kistan"
+                  : "Öppna"
+                : state.target.label
+              : state.target === "bokoblin"
+                ? hasBridgeEquipment(state)
+                  ? "Skräm iväg"
+                  : "Bokoblin"
+                : state.target === "npc"
+                  ? "Prata"
                   : "Gå och leta"}
           </span>
           <kbd>E</kbd>

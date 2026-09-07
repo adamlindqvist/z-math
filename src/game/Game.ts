@@ -68,10 +68,10 @@ export class Game {
     Object.assign(sun.shadow.camera, {
       left: -18,
       right: 18,
-      top: 18,
-      bottom: -18,
+      top: 35,
+      bottom: -35,
       near: 1,
-      far: 50,
+      far: 80,
     });
     sun.shadow.normalBias = 0.04;
     sun.shadow.bias = -0.0003;
@@ -126,7 +126,7 @@ export class Game {
     this.renderer.domElement.setAttribute(
       "aria-label",
       resolveRoom(gameStore.getState().location)?.room.name ??
-        "Gläntan med ett slott, prinsessan Zelda och Mosstemplets ingång",
+        "Gläntan med slottet, Zelda, Mosstemplet och Bokoblins bro till södra gläntan",
     );
   }
   private resize() {

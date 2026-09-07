@@ -1,3 +1,4 @@
+import { Sword, Shield } from "lucide-react";
 import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
@@ -71,6 +72,23 @@ export function Dialogue() {
     overlay === "itemReward"
   )
     return null;
+  if (overlay === "bokoblin")
+    return (
+      <Modal label="Bokoblin">
+        <div className="flex justify-center gap-6 text-forest">
+          <Sword size={64} />
+          <Shield size={64} />
+        </div>
+        <h2>Bokoblin vaktar bron</h2>
+        <p>Hitta svärdet och skölden i Mosstemplet!</p>
+        <button
+          className="min-h-16 rounded-2xl bg-sunshine px-8 text-2xl font-bold"
+          onClick={() => gameStore.close()}
+        >
+          Okej!
+        </button>
+      </Modal>
+    );
   if (overlay === "pause" || overlay === "reset")
     return (
       <Modal label={overlay === "pause" ? "Paus" : "Börja om"}>

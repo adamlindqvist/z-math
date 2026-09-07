@@ -17,6 +17,7 @@ export class CollisionSystem {
   constructor(
     private halfWidth = 11.1,
     private halfDepth = 8.1,
+    private centerZ = 0,
   ) {}
   add(x: number, z: number, halfX: number, halfZ = halfX) {
     this.obstacles.push({ x, z, halfX, halfZ });
@@ -27,7 +28,7 @@ export class CollisionSystem {
   free(x: number, z: number, radius = 0.32) {
     if (
       Math.abs(x) > this.halfWidth - radius ||
-      Math.abs(z) > this.halfDepth - radius
+      Math.abs(z - this.centerZ) > this.halfDepth - radius
     )
       return false;
     const hitsBox = [...this.obstacles, ...this.dynamic].some((o) => {

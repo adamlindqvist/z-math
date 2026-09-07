@@ -1,8 +1,4 @@
-import {
-  resolveRoom,
-  roomSolved,
-  DUNGEONS,
-} from "../game/dungeons/definitions";
+import { resolveRoom, roomSolved } from "../game/dungeons/definitions";
 import {
   Backpack,
   RotateCcw,
@@ -14,8 +10,13 @@ import {
   Pause,
   MessageCircle,
   DoorOpen,
+  Sword,
 } from "lucide-react";
-import { gameStore, useGameState } from "../store/gameStore";
+import {
+  gameStore,
+  useGameState,
+  hasBridgeEquipment,
+} from "../store/gameStore";
 import { StoryPicture } from "./StoryPicture";
 export function HUD() {
   const state = useGameState();
@@ -23,20 +24,21 @@ export function HUD() {
   const solved = current
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
-  const templeDone = DUNGEONS.every((d) =>
-    d.rooms.every((r) => roomSolved(r, state.dungeons[d.id])),
-  );
   const hint = current
     ? solved
       ? "Gå genom den öppna porten!"
       : current.room.hint
-    : state.chestOpened
-      ? templeDone
-        ? "Du hittade templets skatt!"
-        : "Hitta stenporten!"
-      : state.talkedToNpc
-        ? "Leta efter kistan!"
-        : "Prata med Zelda!";
+    : state.bridgeUnlocked
+      ? state.chests.south
+        ? "Du hittade södra gläntans skatt!"
+        : "Gå över bron till kistan!"
+      : hasBridgeEquipment(state)
+        ? "Gå till bron. Skräm iväg Bokoblin!"
+        : state.chests.glade
+          ? "Hitta svärd och sköld i stenporten!"
+          : state.talkedToNpc
+            ? "Leta efter kistan!"
+            : "Prata med Zelda!";
   return (
     <div className="pointer-events-none absolute top-[max(20px,env(safe-area-inset-top))] right-[max(20px,env(safe-area-inset-right))] left-[max(20px,env(safe-area-inset-left))] z-4 flex items-start justify-between gap-4 max-[600px]:right-3 max-[600px]:left-3 max-[600px]:gap-2">
       <div className="min-w-0 max-w-[430px]">
@@ -51,8 +53,16 @@ export function HUD() {
               ) : (
                 <Sun />
               )
-            ) : state.chestOpened ? (
-              <Check />
+            ) : state.bridgeUnlocked ? (
+              state.chests.south ? (
+                <Check />
+              ) : (
+                <StoryPicture kind="chest" />
+              )
+            ) : hasBridgeEquipment(state) ? (
+              <DoorOpen />
+            ) : state.chests.glade ? (
+              <Sword />
             ) : state.talkedToNpc ? (
               <StoryPicture kind="chest" />
             ) : (

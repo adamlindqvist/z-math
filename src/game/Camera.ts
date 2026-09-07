@@ -9,7 +9,11 @@ export class GameCamera {
     this.focus.copy(
       mode === "room"
         ? new Vector3(0, 0, 0)
-        : new Vector3(position.x * 0.3, 0, position.z * 0.3 + 0.9),
+        : new Vector3(
+            position.x * 0.3,
+            0,
+            position.z * 0.3 + 0.9 + Math.max(0, position.z - 4) * 0.7,
+          ),
     );
     this.update(position, 1);
   }
@@ -21,7 +25,11 @@ export class GameCamera {
     const desired =
       this.mode === "room"
         ? new Vector3(0, 0, 0)
-        : new Vector3(position.x * 0.3, 0, position.z * 0.3 + 0.9);
+        : new Vector3(
+            position.x * 0.3,
+            0,
+            position.z * 0.3 + 0.9 + Math.max(0, position.z - 4) * 0.7,
+          );
     this.focus.lerp(desired, 1 - Math.exp(-dt * 3));
     const zoom =
       this.mode === "room"

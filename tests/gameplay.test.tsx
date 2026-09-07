@@ -146,7 +146,9 @@ describe("playable controls and interface", () => {
   });
   it("completes three quiz questions after a retry and opens the chest with a single reward", () => {
     vi.useFakeTimers();
-    act(() => gameStore.setTarget("chest"));
+    act(() =>
+      gameStore.setTarget({ kind: "chest", id: "glade", label: "Öppna" }),
+    );
     click("Öppna");
     click("Räkna!");
     const q = gameStore.getState().question!;
@@ -216,7 +218,10 @@ describe("playable controls and interface", () => {
       }
     });
     expect(gameStore.getState().rupees).toBe(4);
-    expect(gameStore.getState().target).toBe("chest");
+    expect(gameStore.getState().target).toMatchObject({
+      kind: "chest",
+      id: "glade",
+    });
     click("Öppna");
     click("Räkna!");
     for (let index = 0; index < 3; index++) {

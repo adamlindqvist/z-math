@@ -32,6 +32,9 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - I Stensalen: matcha sol, löv och måne. Gå mot stenen från vänster eller höger för att knuffa den längs spåret. Pilen visar riktningen. Ingen actionknapp behövs. Stenar på rätt symbol kan flyttas igen tills alla tre ligger rätt; då låses alla och porten öppnas. Knappen med återställningspilen börjar om med den olösta stengåtan.
 - I Skattkammaren öppnar fem bildadditioner (summa högst fem) kistan och ger fem Rupees en gång. Gå genom porten så teleporteras du tillbaka till gläntan. Den låga porten bakom dig leder alltid tillbaka.
 - Rätt mattesvar och stenknuffar i templet sparas direkt. Efter omladdning börjar du vid det sparade rummets säkra startpunkt. Lösta rum förblir lösta tills du börjar om med hela äventyret.
+- Följ stigen söderut till träbron. Bokoblin vaktar bron tills du har fått både svärd och sköld i Mosstemplet. Tryck på **Skräm iväg** så springer Bokoblin undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
+- Gå över bron till södra gläntan. Den nya kistan har tre additionsfrågor och ger fem ädelstenar en gång, oberoende av den första kistan. Fel svar kostar inget; stänger du ett pågående kistquiz börjar dess tre frågor om nästa gång.
+- Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 5. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.
 - Framsteg sparas automatiskt i webbläsaren. Pausmenyn låter dig börja om. Lagring delas inte mellan enheter och kan rensas av webbläsaren.
 
 ## Struktur
@@ -46,7 +49,7 @@ Lägg till ett objekt i `DUNGEONS` i `src/game/dungeons/definitions.ts` för ett
 
 `DungeonArea` bygger rum, portar, lampor, stenar och kistor från definitionerna. Stenspåren använder fem fasta x-lägen; lämna minst 2,6 enheter mellan spåren och fria gångvägar vid sidorna. Ett mål ska ha samma golvsymbol som stenen och ligga utanför startläget 2. Testa framkomlighet och båda skärmorienteringarna för nya layouter. Nya typer av pussel kräver en ny regel och motsvarande byggdel; ingen baneditor ingår.
 
-Sparformatet är version 4 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
+Sparformatet är version 5 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
 
 ## Verifiering
 
@@ -60,6 +63,10 @@ Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 ×
 
 ### Väska och utrustning
 
-Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Mosstemplets sista mattelås ger fem ädelstenar, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De påverkar figurens utseende; strid ingår inte.
+Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Mosstemplets sista mattelås ger fem ädelstenar, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg Bokoblin vid bron; de behöver inte vara påtagna. Strid ingår inte.
 
 Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder behöver även kopplas till figurens utseende.
+
+### Södra gläntan
+
+`World` håller ihop båda landytorna och bron i samma scen. `SouthGlade` bygger den södra miljön och brons gränser; `Bokoblin` äger vaktens modell och flykt. Utomhuskistor identifieras med `glade` och `south`, och den aktiva kistan behålls under hela frågeomgången.
