@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Gem, Sparkles } from "lucide-react";
+import { Gem } from "lucide-react";
 import { gameStore, useGameState } from "../store/gameStore";
 export function Reward() {
   const { reward } = useGameState();
@@ -11,17 +11,15 @@ export function Reward() {
   }, [reward]);
   return reward ? (
     <div
-      className="absolute top-[max(180px,calc(env(safe-area-inset-top)+160px))] left-1/2 z-8 flex w-max max-w-[calc(100%-40px)] -translate-x-1/2 items-center gap-[18px] rounded-[30px] border-4 border-white bg-[#fff0b8] p-[22px] text-ink shadow-[0_8px_0_#a8782c33] [&_strong]:text-[28px] [&_p]:text-[22px] [&>svg]:size-11 [&>svg]:shrink-0 [&>svg]:text-teal max-[600px]:gap-2.5 max-[600px]:p-4 max-[600px]:[&_strong]:text-[23px] max-[600px]:[&_p]:text-[19px]"
+      className="pointer-events-none absolute top-[max(12px,env(safe-area-inset-top))] left-1/2 z-8 flex w-max max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-2.5 rounded-2xl border-2 border-white bg-[#fff8dcf2] px-4 py-2.5 text-ink shadow-[0_4px_14px_#344e3030] backdrop-blur-sm max-[600px]:max-w-[calc(100%-24px)] max-[600px]:px-3 max-[600px]:py-2"
       role="status"
     >
-      <span className="rounded-[14px] bg-[#f8e6a7] p-2.5 text-[#c79834]">
-        <Gem size={30} />
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#f8e6a7] text-[#a9741d]">
+        <Gem size={22} aria-hidden="true" />
       </span>
-      <div>
-        <strong>Skatten är din!</strong>
-        <p>+{reward} ädelstenar · Bra jobbat!</p>
-      </div>
-      <Sparkles size={24} />
+      <p className="text-lg leading-tight whitespace-nowrap max-[600px]:text-base">
+        <span className="font-bold text-[#536d5e]">Du fick  +{reward} ädelstenar</span>
+      </p>
     </div>
   ) : null;
 }
