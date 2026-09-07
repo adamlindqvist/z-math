@@ -17,6 +17,10 @@ npm run build
 npm run preview
 ```
 
+## Publicering
+
+Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera först **Settings → Pages → Build and deployment → Source: GitHub Actions** i GitHub-repot. Spelet blir sedan tillgängligt på `https://adamlindqvist.github.io/z-math/`.
+
 ## Spela
 
 - WASD eller piltangenter: gå. E eller Space: prata/öppna. Escape: pausa.
