@@ -1,6 +1,6 @@
 import { character } from "../models";
 export class NPC {
-  root = character("#a878a0", true).root;
+  root = character("princess").root;
   constructor() {
     this.root.position.set(-3.5, 0, 1.3);
     this.root.rotation.y = 0.6;

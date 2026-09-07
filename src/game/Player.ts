@@ -3,7 +3,7 @@ import { character } from "./models";
 import type { Input } from "./Input";
 import type { CollisionSystem } from "./CollisionSystem";
 export class Player {
-  model = character("#4f8b9b");
+  model = character("hero");
   root = this.model.root;
   private phase = 0;
   constructor() {

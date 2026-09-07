@@ -52,7 +52,7 @@ export class Game {
     this.renderer.toneMappingExposure = 1.1;
     this.renderer.domElement.setAttribute(
       "aria-label",
-      "Gläntan: en tredimensionell värld med ett hus, en stig och en skattkista",
+      "Gläntan: en tredimensionell värld med ett medeltida slott, en stig och en skattkista",
     );
     container.appendChild(this.renderer.domElement);
     this.renderer.domElement.addEventListener(
@@ -116,7 +116,7 @@ export class Game {
     this.renderer.domElement.setAttribute(
       "aria-label",
       resolveRoom(gameStore.getState().location)?.room.name ??
-        "Gläntan med Mosstemplets ingång",
+        "Gläntan med ett slott, prinsessan Zelda och Mosstemplets ingång",
     );
   }
   private resize() {

@@ -2,7 +2,7 @@ import { type Area, disposeTree } from "./Area";
 import { DUNGEONS } from "./dungeons/definitions";
 import { portal } from "./dungeons/models";
 import * as THREE from "three";
-import { ball, box, material, mesh } from "./models";
+import { ball, box, material, mesh, silhouette } from "./models";
 import { CollisionSystem } from "./CollisionSystem";
 import { Chest } from "./entities/Chest";
 import { NPC } from "./entities/NPC";
@@ -121,54 +121,145 @@ export class World implements Area {
     pathGeometry.computeVertexNormals();
     const pathMesh = mesh(pathGeometry, path, this.root);
     pathMesh.castShadow = false;
-    // Cottage, terracotta roof and a tiny front garden.
-    const house = new THREE.Group();
-    house.position.set(-7, 0, -2);
-    this.root.add(house);
-    box(house, material("#f7e6bf"), 0, 1.25, 0, 2.9, 2.5, 2.5);
-    box(house, material("#b6a68a"), 0, 0.15, 0, 3.04, 0.3, 2.6);
-    const roofShape = new THREE.Shape();
-    roofShape.moveTo(-1.75, 0);
-    roofShape.lineTo(1.75, 0);
-    roofShape.lineTo(0, 1.3);
-    roofShape.closePath();
-    const roofGeometry = new THREE.ExtrudeGeometry(roofShape, {
-      depth: 3.05,
-      bevelEnabled: true,
-      bevelSize: 0.04,
-      bevelThickness: 0.04,
-      bevelSegments: 1,
-      steps: 1,
-    });
-    mesh(roofGeometry, material("#bd7252"), house, 0, 2.48, -1.52);
-    for (let i = 0; i < 7; i++)
-      for (const side of [-1, 1]) {
-        const tile = box(
-          house,
-          material("#cf8865"),
-          side * 0.87,
-          3.15,
-          -1.4 + i * 0.45,
-          2.18,
-          0.035,
-          0.045,
-        );
-        tile.rotation.z = -side * Math.atan2(1.3, 1.75);
+    // A compact castle stays inside the original building's collision footprint.
+    const castle = new THREE.Group();
+    castle.name = "castle";
+    castle.position.set(-7, 0, -2);
+    this.root.add(castle);
+    const stone = material("#c4c6c4"),
+      trim = material("#e1dfd2"),
+      mortar = material("#a2aaa8"),
+      roof = material("#667aa5"),
+      gold = material("#e9bc5b"),
+      banner = material("#b375ad"),
+      window = material("#4b6573");
+    box(castle, stone, 0, 1.25, 0, 2.5, 2.5, 2.3);
+    box(castle, mortar, 0, 0.13, 0, 3.15, 0.26, 2.75);
+    box(castle, trim, 0, 2.42, 0, 2.6, 0.16, 2.4);
+    for (let row = 0; row < 5; row++) {
+      const y = 0.4 + row * 0.41;
+      box(castle, mortar, 0, y, 1.156, 2.5, 0.025, 0.012);
+      box(castle, mortar, 1.256, y, 0, 0.012, 0.025, 2.3);
+      for (let col = 0; col < 3; col++) {
+        const offset = -0.85 + col * 0.78 + (row % 2) * 0.3;
+        box(castle, mortar, offset, y + 0.2, 1.156, 0.025, 0.38, 0.012);
+        box(castle, mortar, 1.256, y + 0.2, offset, 0.012, 0.38, 0.025);
       }
-    box(house, material("#ebd6b7"), 0.8, 3.4, -0.55, 0.5, 1.3, 0.55);
-    box(house, material("#ae6b50"), 0.8, 4.05, -0.55, 0.65, 0.16, 0.68);
-    box(house, material("#738e81"), 0, 0.88, 1.27, 0.82, 1.5, 0.08);
-    ball(house, material("#e7c25e"), 0.25, 0.85, 1.34, 0.065);
-    box(house, material("#efe4c8"), 0, 1.68, 1.32, 1, 0.12, 0.16);
-    for (const x of [-1, 1]) {
-      box(house, material("#78a9aa"), x, 1.45, 1.27, 0.52, 0.6, 0.08);
-      box(house, material("#fff0cb"), x, 1.45, 1.33, 0.055, 0.62, 0.04);
-      box(house, material("#fff0cb"), x, 1.45, 1.33, 0.54, 0.05, 0.04);
-      box(house, material("#9b7954"), x, 1.03, 1.4, 0.69, 0.19, 0.3);
-      for (let j = 0; j < 3; j++)
-        ball(house, material("#eaa3a2"), x - 0.2 + j * 0.2, 1.2, 1.42, 0.13);
     }
-    box(house, material("#d3c7aa"), 0, 0.1, 1.55, 1.1, 0.2, 0.6);
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 5; i++) {
+        box(castle, trim, -1.1 + i * 0.55, 2.68, side * 1.08, 0.3, 0.42, 0.28);
+        box(castle, trim, side * 1.1, 2.68, -0.55 + i * 0.28, 0.28, 0.42, 0.17);
+      }
+      // Round corner towers and open battlements.
+      mesh(
+        new THREE.CylinderGeometry(0.39, 0.43, 3.05, 12),
+        stone,
+        castle,
+        side * 1.13,
+        1.525,
+        0.94,
+      );
+      mesh(
+        new THREE.CylinderGeometry(0.45, 0.4, 0.18, 12),
+        trim,
+        castle,
+        side * 1.13,
+        3.03,
+        0.94,
+      );
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const merlon = box(
+          castle,
+          trim,
+          side * 1.13 + Math.cos(angle) * 0.35,
+          3.24,
+          0.94 + Math.sin(angle) * 0.35,
+          0.2,
+          0.32,
+          0.19,
+        );
+        merlon.rotation.y = -angle;
+      }
+      box(castle, window, side * 1.13, 2.14, 1.338, 0.13, 0.52, 0.025);
+      const pennant = silhouette(castle, banner, [
+        [-0.17, 0],
+        [-0.17, -0.58],
+        [0, -0.73],
+        [0.17, -0.58],
+        [0.17, 0],
+      ]);
+      pennant.position.set(side * 0.78, 2.23, 1.18);
+      box(castle, gold, side * 0.78, 2.24, 1.21, 0.42, 0.055, 0.07);
+    }
+    // Rounded arch with a wooden, iron-banded gate.
+    const arch = new THREE.Shape();
+    arch.moveTo(-0.54, 0.16);
+    arch.lineTo(-0.54, 1.22);
+    arch.absarc(0, 1.22, 0.54, Math.PI, 0, true);
+    arch.lineTo(0.54, 0.16);
+    arch.closePath();
+    mesh(
+      new THREE.ExtrudeGeometry(arch, {
+        depth: 0.07,
+        bevelEnabled: false,
+        curveSegments: 8,
+      }),
+      trim,
+      castle,
+      0,
+      0,
+      1.16,
+    );
+    const gate = mesh(
+      new THREE.ShapeGeometry(arch, 8),
+      material("#80563b"),
+      castle,
+      0,
+      0.035,
+      1.24,
+    );
+    gate.scale.set(0.78, 0.89, 1);
+    for (const x of [-0.25, 0, 0.25])
+      box(castle, mortar, x, 0.65, 1.25, 0.025, 1.06, 0.02);
+    for (const y of [0.42, 0.98])
+      box(castle, material("#434b51"), 0, y, 1.27, 0.8, 0.065, 0.035);
+    ball(castle, gold, 0.22, 0.73, 1.29, 0.055);
+    // Rear keep, steep slate roof and a royal flag above the battlements.
+    box(castle, stone, 0, 2.7, -0.34, 1.3, 1.35, 1.3);
+    box(castle, trim, 0, 3.31, -0.34, 1.4, 0.14, 1.4);
+    const spire = mesh(
+      new THREE.ConeGeometry(1.1, 1.05, 4),
+      roof,
+      castle,
+      0,
+      3.88,
+      -0.34,
+    );
+    spire.rotation.y = Math.PI / 4;
+    box(castle, window, 0, 2.98, 0.321, 0.25, 0.46, 0.025);
+    mesh(
+      new THREE.CylinderGeometry(0.025, 0.025, 0.67, 6),
+      gold,
+      castle,
+      0,
+      4.6,
+      -0.34,
+    );
+    const flag = silhouette(
+      castle,
+      banner,
+      [
+        [0, 0],
+        [0.64, -0.04],
+        [0.48, -0.2],
+        [0.64, -0.36],
+        [0, -0.32],
+      ],
+      0.025,
+    );
+    flag.position.set(0, 4.91, -0.34);
     this.collision.add(-7, -2, 1.6, 1.4);
     const trunk = material("#8e7250");
     const greens = ["#5c9460", "#6fa45e", "#80ab60"];
