@@ -1,3 +1,4 @@
+import { gladeDistance } from "../gladeLayout";
 import * as THREE from "three";
 import { ball, box, material, mesh } from "../models";
 
@@ -44,7 +45,7 @@ export class Bokoblin {
     this.root.position.set(
       this.flight * 3.8,
       Math.sin(this.flight * Math.PI * 8) * 0.08,
-      7.9 - this.flight * 1.2,
+      gladeDistance(7.9) - this.flight * 1.2,
     );
     this.root.rotation.y = unlocked ? -Math.PI / 2 : 0;
     for (const mat of this.materials) mat.opacity = opacity;

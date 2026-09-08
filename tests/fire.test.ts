@@ -136,18 +136,18 @@ describe("Eldtemplet", () => {
       true,
     );
     const player = new Player();
-    player.position.set(0, 0, 13.4);
-    walk(player, world.collision, -1.6, 18);
+    player.position.set(0, 0, 16.75);
+    walk(player, world.collision, -2, 22.5);
     expect(world.root.getObjectByName("fire-entrance")!.rotation.y).toBeCloseTo(
       Math.PI / 2,
     );
     const interactions = new InteractionSystem(new Scene());
     interactions.update(player.position, world, 0);
     expect(gameStore.getState().location).toBeNull();
-    walk(player, world.collision, -4.6, 18);
+    walk(player, world.collision, -5.85, 22.5);
     interactions.update(player.position, world, 0);
     expect(gameStore.getState().location).toBeNull();
-    walk(player, world.collision, -4.8, 18);
+    walk(player, world.collision, -6.05, 22.5);
     interactions.update(player.position, world, 0);
     expect(gameStore.getState().location).toEqual({
       dungeon: "fire",

@@ -1,3 +1,4 @@
+import { gladeDistance } from "./gladeLayout";
 import * as THREE from "three";
 import { ball, material, mesh } from "./models";
 import type { CollisionSystem } from "./CollisionSystem";
@@ -8,6 +9,11 @@ export function gladePath(
   curve: THREE.CatmullRomCurve3,
   path: THREE.Material,
 ) {
+  curve = curve.clone();
+  curve.points.forEach((point) => {
+    point.x = gladeDistance(point.x);
+    point.z = gladeDistance(point.z);
+  });
   const points = curve.getPoints(80);
   const positions: number[] = [];
   const indices: number[] = [];
@@ -41,7 +47,9 @@ export function gladeTrees(
 ) {
   const trunk = material("#8e7250");
   const greens = ["#5c9460", "#6fa45e", "#80ab60"];
-  positions.forEach(([x, z, s], i) => {
+  positions.forEach(([layoutX, layoutZ, s], i) => {
+    const x = gladeDistance(layoutX),
+      z = gladeDistance(layoutZ);
     const t = new THREE.Group();
     t.position.set(x, 0, z);
     t.scale.setScalar(s);
@@ -61,7 +69,9 @@ export function gladeRocks(
   collision: CollisionSystem,
   positions: number[][],
 ) {
-  positions.forEach(([x, z, s]) => {
+  positions.forEach(([layoutX, layoutZ, s]) => {
+    const x = gladeDistance(layoutX),
+      z = gladeDistance(layoutZ);
     const rock = mesh(
       new THREE.DodecahedronGeometry(s, 0),
       material("#a5aea2"),
@@ -81,7 +91,9 @@ export function gladeBushes(
   collision: CollisionSystem,
   positions: number[][],
 ) {
-  positions.forEach(([x, z], i) => {
+  positions.forEach(([layoutX, layoutZ], i) => {
+    const x = gladeDistance(layoutX),
+      z = gladeDistance(layoutZ);
     const bush = material("#71994f");
     ball(root, bush, x, 0.38, z, 0.62, 0.5, 0.6);
     ball(root, bush, x + 0.38, 0.28, z + 0.1, 0.37);
@@ -120,8 +132,8 @@ export function gladeFlowers(
   const stem = material("#6c984f"),
     petals = [material("#fff4d1"), material("#e8aaa1"), material("#d8c4e5")];
   for (let i = 0; i < options.count; i++) {
-    const x = options.minX + random() * options.width,
-      z = options.minZ + random() * options.depth;
+    const x = gladeDistance(options.minX + random() * options.width),
+      z = gladeDistance(options.minZ + random() * options.depth);
     if (
       !collision.free(x, z, 0.3) ||
       points.some((p) => Math.hypot(p.x - x, p.z - z) < 1.1)

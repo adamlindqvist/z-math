@@ -333,13 +333,13 @@ describe("walking into portals and pushing stones", () => {
   it("teleports on entry without interaction, never at spawn, and respects locked gates and pauses", () => {
     const world = new World(),
       interactions = new InteractionSystem(new Scene());
-    interactions.update(new Vector3(2, 0, -2.95), world, 0);
+    interactions.update(new Vector3(2.5, 0, -3.8), world, 0);
     expect(gameStore.getState().location).toBeNull();
     gameStore.pause();
-    interactions.update(new Vector3(2, 0, -3.15), world, 0);
+    interactions.update(new Vector3(2.5, 0, -4), world, 0);
     expect(gameStore.getState().location).toBeNull();
     gameStore.close();
-    interactions.update(new Vector3(2, 0, -3.15), world, 0);
+    interactions.update(new Vector3(2.5, 0, -4), world, 0);
     expect(gameStore.getState().location?.room).toBe("light");
     const first = new DungeonArea(DUNGEONS[0], DUNGEONS[0].rooms[0]);
     interactions.update(new Vector3(first.spawn.x, 0, first.spawn.z), first, 0);

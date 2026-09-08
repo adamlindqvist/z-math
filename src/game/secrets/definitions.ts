@@ -1,3 +1,4 @@
+import { gladePosition } from "../gladeLayout";
 import type { ChestId } from "../entities/chestDefinitions";
 
 export type WorldSecret = {
@@ -15,13 +16,13 @@ export const WORLD_SECRETS = [
     chestId: "butterfly-01",
     requiresBridge: false,
     waypoints: [
-      { x: 4.8, z: 1.2 },
-      { x: 0, z: 4.2 },
-      { x: -5.8, z: 5 },
-      { x: 0.5, z: -1.6 },
-      { x: -3.4, z: -4.8 },
+      gladePosition(4.8, 1.2),
+      gladePosition(0, 4.2),
+      gladePosition(-5.8, 5),
+      gladePosition(0.5, -1.6),
+      gladePosition(-3.4, -4.8),
     ],
-    chestPosition: { x: -3.4, z: -5.2 },
+    chestPosition: gladePosition(-3.4, -5.2),
   },
   {
     id: "butterfly-02",
@@ -29,13 +30,13 @@ export const WORLD_SECRETS = [
     chestId: "butterfly-02",
     requiresBridge: true,
     waypoints: [
-      { x: 0, z: 21 },
-      { x: 4, z: 17.4 },
-      { x: -2, z: 18.7 },
-      { x: 2, z: 23 },
-      { x: -4.5, z: 24 },
+      gladePosition(0, 21),
+      gladePosition(4, 17.4),
+      gladePosition(-2, 18.7),
+      gladePosition(2, 23),
+      gladePosition(-4.5, 24),
     ],
-    chestPosition: { x: -4.5, z: 24.4 },
+    chestPosition: gladePosition(-4.5, 24.4),
   },
 ] as const satisfies readonly WorldSecret[];
 export type SecretId = (typeof WORLD_SECRETS)[number]["id"];

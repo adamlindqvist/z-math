@@ -10,7 +10,7 @@ export class GameCamera {
       mode === "room"
         ? new Vector3(0, 0, 0)
         : new Vector3(
-            position.x * 0.3,
+            position.x,
             0,
             position.z * 0.3 + 0.9 + Math.max(0, position.z - 4) * 0.7,
           ),
@@ -26,7 +26,7 @@ export class GameCamera {
       this.mode === "room"
         ? new Vector3(0, 0, 0)
         : new Vector3(
-            position.x * 0.3,
+            position.x,
             0,
             position.z * 0.3 + 0.9 + Math.max(0, position.z - 4) * 0.7,
           );

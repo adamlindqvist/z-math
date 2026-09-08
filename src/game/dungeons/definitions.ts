@@ -1,3 +1,4 @@
+import { gladePosition } from "../gladeLayout";
 import type { ItemId } from "../../items/definitions";
 export type SymbolKind = "sun" | "leaf" | "moon";
 export interface StoneDefinition {
@@ -38,7 +39,7 @@ export const DUNGEONS: DungeonDefinition[] = [
     id: "moss",
     name: "Vattentemplet",
     theme: "water",
-    entrance: { x: 2, z: -3.4 },
+    entrance: gladePosition(2, -3.4),
     rooms: [
       {
         id: "light",
@@ -102,7 +103,7 @@ export const DUNGEONS: DungeonDefinition[] = [
     id: "fire",
     name: "Eldtemplet",
     theme: "fire",
-    entrance: { x: -5, z: 18, rotation: Math.PI / 2 },
+    entrance: { ...gladePosition(-5, 18), rotation: Math.PI / 2 },
     requiresBridge: true,
     rooms: [
       {

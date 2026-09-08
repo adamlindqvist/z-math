@@ -232,13 +232,14 @@ describe("playable controls and interface", () => {
   it("keeps the entire path to the treasure traversable", () => {
     const player = new Player();
     const world = new World();
+    player.position.set(world.spawn.x, 0, world.spawn.z);
     const interaction = new InteractionSystem(new Scene());
     const waypoints = [
-      [-4.6, 3],
-      [-1.3, 2.6],
-      [1.8, 0.6],
-      [4.1, -1.8],
-      [5, -2.8],
+      [-5.75, 3.75],
+      [-1.625, 3.25],
+      [2.25, 0.75],
+      [5.125, -2.25],
+      [6.5, -3.5],
     ];
     act(() => {
       for (const [x, z] of waypoints) {

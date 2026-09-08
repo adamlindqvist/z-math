@@ -1,3 +1,4 @@
+import { GLADE_SCALE, gladeDistance } from "./gladeLayout";
 import {
   gladePath,
   gladeTrees,
@@ -36,7 +37,8 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
       bevelThickness: 0.08,
     });
     geometry.rotateX(-Math.PI / 2);
-    mesh(geometry, surface, root, 0, y, 20);
+    geometry.scale(GLADE_SCALE, 1, GLADE_SCALE);
+    mesh(geometry, surface, root, 0, y, gladeDistance(20));
   }
   // A continuous, softly bending trail meets the bridge squarely at both ends.
   const points = gladePath(
@@ -65,15 +67,57 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
   const wood = material("#b68b59"),
     rail = material("#ead5a6");
   for (let i = 0; i < 15; i++)
-    box(root, wood, 0, -0.025, 7.7 + i * 0.4, 3, 0.16, 0.37);
+    box(
+      root,
+      wood,
+      0,
+      -0.025,
+      gladeDistance(7.7 + i * 0.4),
+      gladeDistance(3),
+      0.16,
+      gladeDistance(0.37),
+    );
   for (const side of [-1, 1]) {
-    box(root, rail, side * 1.5, 0.65, 10.5, 0.12, 0.13, 5.8);
+    box(
+      root,
+      rail,
+      gladeDistance(side * 1.5),
+      0.65,
+      gladeDistance(10.5),
+      0.12,
+      0.13,
+      gladeDistance(5.8),
+    );
     for (let i = 0; i < 6; i++)
-      box(root, rail, side * 1.5, 0.4, 7.8 + i * 1.1, 0.16, 0.9, 0.16);
-    collision.add(side * 1.55, 10.5, 0.1, 2.8);
+      box(
+        root,
+        rail,
+        gladeDistance(side * 1.5),
+        0.4,
+        gladeDistance(7.8 + i * 1.1),
+        0.16,
+        0.9,
+        0.16,
+      );
+    collision.add(
+      gladeDistance(side * 1.55),
+      gladeDistance(10.5),
+      0.1,
+      gladeDistance(2.8),
+    );
     // Solid boundaries around the gap and the narrower southern island.
-    collision.add(side * 6.4, 10.5, 4.9, 2.5);
-    collision.add(side * 10.15, 20, 1.15, 7);
+    collision.add(
+      gladeDistance(side * 6.4),
+      gladeDistance(10.5),
+      gladeDistance(4.9),
+      gladeDistance(2.5),
+    );
+    collision.add(
+      gladeDistance(side * 10.15),
+      gladeDistance(20),
+      gladeDistance(1.15),
+      gladeDistance(7),
+    );
   }
   gladeTrees(root, collision, [
     [-6, 15, 1.1],
@@ -101,12 +145,12 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
     new THREE.CylinderGeometry(1.35, 1.4, 0.06, 16),
     material("#c5c493"),
     root,
-    3.5,
+    gladeDistance(3.5),
     0.03,
-    23,
+    gladeDistance(23),
   );
   clearing.castShadow = false;
-  collision.add(3.5, 23, 0.56, 0.41);
+  collision.add(gladeDistance(3.5), gladeDistance(23), 0.56, 0.41);
   gladeFlowers(root, collision, points, {
     seed: 37,
     count: 110,

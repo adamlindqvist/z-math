@@ -30,6 +30,39 @@ const solve = (store: ReturnType<typeof createGameStore>, id: ChestId) => {
 };
 afterEach(() => gameStore.reset());
 describe("southern glade", () => {
+  it("opens extra ground in both glades while keeping landmarks solid at their new positions", () => {
+    const world = new World();
+    try {
+      expect(world.collision.free(world.spawn.x, world.spawn.z)).toBe(true);
+      for (const [x, z] of [
+        [13, 2],
+        [0, -9.5],
+        [10.5, 27],
+        [3, 33],
+      ])
+        expect(world.collision.free(x, z), `new ground at ${x}, ${z}`).toBe(
+          true,
+        );
+      for (const [x, z] of [
+        [14.5, 2],
+        [0, -10.5],
+        [11.8, 27],
+        [3, 34.5],
+      ])
+        expect(world.collision.free(x, z), `edge at ${x}, ${z}`).toBe(false);
+      const castle = world.root.getObjectByName("castle")!;
+      expect(castle.position.toArray()).toEqual([-8.75, 0, -2.5]);
+      expect(castle.scale.toArray()).toEqual([1, 1, 1]);
+      expect(world.collision.free(-8.75, -2.5)).toBe(false);
+      expect(world.collision.free(-6.7, -2)).toBe(true);
+      expect(world.collision.free(8.375, 3.875)).toBe(false);
+      expect(world.chest.root.position.toArray()).toEqual([7, 0, -4.625]);
+      expect(world.chest.root.scale.toArray()).toEqual([1, 1, 1]);
+      expect(world.collision.free(7, -4.625)).toBe(false);
+    } finally {
+      world.dispose();
+    }
+  });
   it("requires both owned items, even when unequipped, and unlocks only once", () => {
     for (const items of [[], ["temple-sword"], ["temple-shield"]] as const) {
       const s = createGameStore();
@@ -139,25 +172,25 @@ describe("southern glade", () => {
     const w = new World();
     try {
       const interactions = new InteractionSystem(new Scene());
-      interactions.update(new Vector3(0, 0, 6.5), w, 0);
+      interactions.update(new Vector3(0, 0, 8.475), w, 0);
       expect(gameStore.getState().target).toBe("bokoblin");
-      for (const x of [-1.1, 0, 1.1]) {
-        const p = { x, z: 6.8 };
+      for (const x of [-1.5, 0, 1.5]) {
+        const p = { x, z: 8.5 };
         w.collision.move(p, 0, 8);
-        expect(p.z).toBeLessThan(7.3);
+        expect(p.z).toBeLessThan(9.3);
       }
       for (const x of [-10, -3, 3, 10])
-        expect(w.collision.free(x, 10)).toBe(false);
+        expect(w.collision.free(x * 1.25, 12.5)).toBe(false);
       unlock(gameStore);
       w.update(1, 1);
-      const p = { x: 0, z: 6.8 };
+      const p = { x: 0, z: 8.5 };
       w.collision.move(p, 0, 14);
-      expect(p.z).toBeCloseTo(20.8);
+      expect(p.z).toBeCloseTo(22.5);
       w.collision.move(p, 0, -14);
-      expect(p.z).toBeCloseTo(6.8);
-      expect(w.collision.free(9.2, 20)).toBe(false);
-      expect(w.collision.free(0, 27.5)).toBe(false);
-      interactions.update(new Vector3(3.5, 0, 24.2), w, 0);
+      expect(p.z).toBeCloseTo(8.5);
+      expect(w.collision.free(11.5, 25)).toBe(false);
+      expect(w.collision.free(0, 34.375)).toBe(false);
+      interactions.update(new Vector3(4.375, 0, 29.95), w, 0);
       expect(gameStore.getState().target).toMatchObject({
         kind: "chest",
         id: "south",
@@ -165,7 +198,7 @@ describe("southern glade", () => {
       gameStore.reset();
       w.update(0, 0);
       expect(w.bokoblin.root.visible).toBe(true);
-      expect(w.collision.free(0, 7.9)).toBe(false);
+      expect(w.collision.free(0, 9.875)).toBe(false);
     } finally {
       w.dispose();
     }
@@ -176,13 +209,14 @@ describe("southern glade", () => {
       const southernRupees = w.rupees.filter(({ id }) =>
         id.startsWith("south-path-"),
       );
-      expect(southernRupees.map(({ root }) => [root.position.x, root.position.z]))
-        .toEqual([
-          [0, 14.6],
-          [-0.8, 17],
-          [-0.6, 19.8],
-          [0.8, 22],
-        ]);
+      expect(
+        southernRupees.map(({ root }) => [root.position.x, root.position.z]),
+      ).toEqual([
+        [0, 18.25],
+        [-1, 21.25],
+        [-0.75, 24.75],
+        [1, 27.5],
+      ]);
       for (const rupee of southernRupees) gameStore.collect(rupee.id);
       expect(gameStore.getState()).toMatchObject({
         rupees: 4,

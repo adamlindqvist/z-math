@@ -1,3 +1,4 @@
+import { GLADE_SCALE, gladeDistance, gladePosition } from "./gladeLayout";
 import { Butterfly } from "./entities/Butterfly";
 import { WORLD_SECRETS } from "./secrets/definitions";
 import {
@@ -20,7 +21,7 @@ import { NPC } from "./entities/NPC";
 import { Collectible } from "./entities/Collectible";
 import { gameStore } from "../store/gameStore";
 export class World implements Area {
-  spawn = { x: -6.2, z: 2.9 };
+  spawn = gladePosition(-6.2, 2.9);
   cameraMode = "glade" as const;
   interactions() {
     const state = gameStore.getState();
@@ -43,7 +44,7 @@ export class World implements Area {
           ...definition.chestPosition,
         })),
       ...(!state.bridgeUnlocked
-        ? [{ target: "bokoblin" as const, x: 0, z: 7.9 }]
+        ? [{ target: "bokoblin" as const, ...gladePosition(0, 7.9) }]
         : [
             {
               target: {
@@ -51,8 +52,7 @@ export class World implements Area {
                 id: "south" as const,
                 label: state.chests.south ? "Titta i kistan" : "Öppna",
               },
-              x: 3.5,
-              z: 23,
+              ...gladePosition(3.5, 23),
             },
           ]),
       {
@@ -85,7 +85,11 @@ export class World implements Area {
     disposeTree(this.root);
   }
   root = new THREE.Group();
-  collision = new CollisionSystem(11.1, 17.55, 9.45);
+  collision = new CollisionSystem(
+    gladeDistance(11.1),
+    gladeDistance(17.55),
+    gladeDistance(9.45),
+  );
   bokoblin = new Bokoblin(gameStore.getState().bridgeUnlocked);
   southChest = new Chest(gameStore.getState().chests.south);
   chest = new Chest(gameStore.getState().chests.glade);
@@ -112,14 +116,14 @@ export class World implements Area {
   ];
   npc = new NPC();
   rupees = [
-    new Collectible("path-1", -4.6, 3),
-    new Collectible("path-2", -1.3, 2.6),
-    new Collectible("path-3", 1.8, 0.6),
-    new Collectible("path-4", 4.1, -1.8),
-    new Collectible("south-path-1", 0, 14.6),
-    new Collectible("south-path-2", -0.8, 17),
-    new Collectible("south-path-3", -0.6, 19.8),
-    new Collectible("south-path-4", 0.8, 22),
+    new Collectible("path-1", gladeDistance(-4.6), gladeDistance(3)),
+    new Collectible("path-2", gladeDistance(-1.3), gladeDistance(2.6)),
+    new Collectible("path-3", gladeDistance(1.8), gladeDistance(0.6)),
+    new Collectible("path-4", gladeDistance(4.1), gladeDistance(-1.8)),
+    new Collectible("south-path-1", gladeDistance(0), gladeDistance(14.6)),
+    new Collectible("south-path-2", gladeDistance(-0.8), gladeDistance(17)),
+    new Collectible("south-path-3", gladeDistance(-0.6), gladeDistance(19.8)),
+    new Collectible("south-path-4", gladeDistance(0.8), gladeDistance(22)),
   ];
   water: THREE.Mesh;
   private sparkles: {
@@ -138,11 +142,13 @@ export class World implements Area {
       );
       this.root.add(chest.root, butterfly.root);
     }
-    this.southChest.root.position.set(3.5, 0, 23);
+    this.southChest.root.position.set(gladeDistance(3.5), 0, gladeDistance(23));
+    this.chest.root.position.set(gladeDistance(5.6), 0, gladeDistance(-3.7));
+    this.npc.root.position.set(gladeDistance(-3.5), 0, gladeDistance(1.3));
     this.root.add(this.southChest.root, this.bokoblin.root);
     this.collision.dynamic = [
       ...(!gameStore.getState().bridgeUnlocked
-        ? [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }]
+        ? [{ ...gladePosition(0, 7.9), halfX: gladeDistance(1.5), halfZ: 0.35 }]
         : []),
       ...this.secrets
         .filter(({ chest }) => chest.root.visible)
@@ -176,6 +182,7 @@ export class World implements Area {
       bevelThickness: 0.2,
     });
     baseGeometry.rotateX(-Math.PI / 2);
+    baseGeometry.scale(GLADE_SCALE, 1, GLADE_SCALE);
     mesh(baseGeometry, earth, this.root, 0, -1.0);
     const grassGeometry = new THREE.ExtrudeGeometry(shape, {
       depth: 0.1,
@@ -186,8 +193,18 @@ export class World implements Area {
       bevelThickness: 0.08,
     });
     grassGeometry.rotateX(-Math.PI / 2);
+    grassGeometry.scale(GLADE_SCALE, 1, GLADE_SCALE);
     mesh(grassGeometry, grass, this.root, 0, -0.13);
-    box(this.root, soil, 0, -0.95, 0, 21, 0.3, 14.7);
+    box(
+      this.root,
+      soil,
+      0,
+      -0.95,
+      0,
+      gladeDistance(21),
+      0.3,
+      gladeDistance(14.7),
+    );
     const curve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-7, 0.08, -0.5),
       new THREE.Vector3(-6, 0.08, 2.7),
@@ -201,7 +218,7 @@ export class World implements Area {
     // A compact castle stays inside the original building's collision footprint.
     const castle = new THREE.Group();
     castle.name = "castle";
-    castle.position.set(-7, 0, -2);
+    castle.position.set(gladeDistance(-7), 0, gladeDistance(-2));
     this.root.add(castle);
     const stone = material("#c4c6c4"),
       trim = material("#e1dfd2"),
@@ -337,7 +354,7 @@ export class World implements Area {
       0.025,
     );
     flag.position.set(0, 4.91, -0.34);
-    this.collision.add(-7, -2, 1.6, 1.4);
+    this.collision.add(gladeDistance(-7), gladeDistance(-2), 1.6, 1.4);
     const trunk = material("#8e7250");
     const treePositions = [
       [-9, -5, 1.1],
@@ -378,27 +395,34 @@ export class World implements Area {
       new THREE.CylinderGeometry(1, 1, 0.12, 32),
       material("#d9cba0"),
       this.root,
-      6.7,
+      gladeDistance(6.7),
       0.025,
-      3.1,
+      gladeDistance(3.1),
     );
     shore.scale.set(2.25, 1, 1.7);
     this.water = mesh(
       new THREE.CylinderGeometry(1, 1, 0.06, 40),
       material("#75bdb9", 0.22),
       this.root,
-      6.7,
+      gladeDistance(6.7),
       0.1,
-      3.1,
+      gladeDistance(3.1),
     );
     this.water.scale.set(2.05, 1, 1.5);
     this.water.castShadow = false;
-    this.collision.addEllipse(6.7, 3.1, 2.2, 1.65);
-    for (const [x, z] of [
+    this.collision.addEllipse(
+      gladeDistance(6.7),
+      gladeDistance(3.1),
+      2.2,
+      1.65,
+    );
+    for (const [layoutX, layoutZ] of [
       [5.7, 3.3],
       [7.5, 2.8],
       [7.1, 4],
     ]) {
+      const x = gladeDistance(6.7) + layoutX - 6.7;
+      const z = gladeDistance(3.1) + layoutZ - 3.1;
       const lily = mesh(
         new THREE.CylinderGeometry(0.22, 0.22, 0.08, 12),
         material("#6caa75"),
@@ -412,13 +436,31 @@ export class World implements Area {
     }
     const fence = material("#eee1b8");
     for (let i = 0; i < 5; i++) {
-      box(this.root, fence, -10 + i * 0.7, 0.43, -0.05, 0.13, 0.86, 0.13);
+      box(
+        this.root,
+        fence,
+        gladeDistance(-8.6) - 1.4 + i * 0.7,
+        0.43,
+        gladeDistance(-0.05),
+        0.13,
+        0.86,
+        0.13,
+      );
     }
-    box(this.root, fence, -8.6, 0.5, -0.05, 2.9, 0.13, 0.12);
-    this.collision.add(-8.6, -0.05, 1.5, 0.08);
+    box(
+      this.root,
+      fence,
+      gladeDistance(-8.6),
+      0.5,
+      gladeDistance(-0.05),
+      2.9,
+      0.13,
+      0.12,
+    );
+    this.collision.add(gladeDistance(-8.6), gladeDistance(-0.05), 1.5, 0.08);
     // Small stepping stones and a sign establish the route.
     const sign = new THREE.Group();
-    sign.position.set(-0.7, 0, 0.6);
+    sign.position.set(gladeDistance(-0.7), 0, gladeDistance(0.6));
     this.root.add(sign);
     box(sign, trunk, 0, 0.45, 0, 0.1, 0.9, 0.1);
     box(sign, material("#d3aa70"), 0, 0.89, 0, 0.7, 0.36, 0.11);
@@ -494,9 +536,9 @@ export class World implements Area {
       new THREE.CylinderGeometry(1.35, 1.4, 0.06, 16),
       material("#c5c493"),
       this.root,
-      5.6,
+      gladeDistance(5.6),
       0.03,
-      -3.7,
+      gladeDistance(-3.7),
     );
     clearing.castShadow = false;
     this.root.add(
@@ -504,8 +546,8 @@ export class World implements Area {
       this.npc.root,
       ...this.rupees.map((rupee) => rupee.root),
     );
-    this.collision.add(5.6, -3.7, 0.56, 0.41);
-    this.collision.add(-3.5, 1.3, 0.3);
+    this.collision.add(gladeDistance(5.6), gladeDistance(-3.7), 0.56, 0.41);
+    this.collision.add(gladeDistance(-3.5), gladeDistance(1.3), 0.3);
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
     const state = gameStore.getState();
@@ -548,7 +590,7 @@ export class World implements Area {
     }
     this.collision.dynamic = [
       ...(!state.bridgeUnlocked
-        ? [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }]
+        ? [{ ...gladePosition(0, 7.9), halfX: gladeDistance(1.5), halfZ: 0.35 }]
         : []),
       ...this.secrets
         .filter(

@@ -248,7 +248,7 @@ describe("secret in the existing world", () => {
           b = secret.waypoints[leg + 1];
         const length = Math.hypot(b.x - a.x, b.z - a.z);
         expect(length).toBeGreaterThanOrEqual(5);
-        expect(length).toBeLessThanOrEqual(10);
+        expect(length).toBeLessThanOrEqual(12.5);
         for (let i = 0; i <= 100; i++) {
           const x = a.x + ((b.x - a.x) * i) / 100,
             z = a.z + ((b.z - a.z) * i) / 100;
@@ -260,12 +260,12 @@ describe("secret in the existing world", () => {
           )
             continue;
           expect(w.collision.free(x, z), `blocked at ${x}, ${z}`).toBe(true);
-          expect(Math.abs(x - 2) < 0.55 && Math.abs(z + 3.4) < 0.28).toBe(
+          expect(Math.abs(x - 2.5) < 0.55 && Math.abs(z + 4.25) < 0.28).toBe(
             false,
           );
         }
       }
-      const opening = new Vector3(-3.4, 0, -4);
+      const opening = new Vector3(-4.25, 0, -5.3);
       expect(w.secrets[0].chest.root.visible).toBe(false);
       expect(
         w.collision.free(secret.chestPosition.x, secret.chestPosition.z),
@@ -402,12 +402,14 @@ describe("independent southern butterfly", () => {
           b = south.waypoints[i + 1];
         const length = Math.hypot(a.x - b.x, a.z - b.z);
         expect(length).toBeGreaterThanOrEqual(5);
-        expect(length).toBeLessThanOrEqual(10);
+        expect(length).toBeLessThanOrEqual(12.5);
         for (let step = 0; step <= 100; step++) {
           const x = a.x + ((b.x - a.x) * step) / 100,
             z = a.z + ((b.z - a.z) * step) / 100;
           expect(w.collision.free(x, z), `blocked at ${x},${z}`).toBe(true);
-          expect(Math.abs(z - 18) < 0.55 && Math.abs(x + 5) < 0.28).toBe(false);
+          expect(Math.abs(z - 22.5) < 0.55 && Math.abs(x + 6.25) < 0.28).toBe(
+            false,
+          );
         }
         const player = new Vector3(a.x, 0, a.z);
         w.update(1, 0, player);
@@ -422,7 +424,7 @@ describe("independent southern butterfly", () => {
         revealed: false,
         completed: false,
       });
-      const position = new Vector3(-4.5, 0, 23.2);
+      const position = new Vector3(-5.625, 0, 29.3);
       w.update(1.5, 0, position);
       expect(w.collision.free(position.x, position.z)).toBe(true);
       const scene = new Scene();

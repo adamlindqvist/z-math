@@ -46,7 +46,7 @@ describe("Bokoblin flight", () => {
     }
     bokoblin.update(0, false, true);
     expect(bokoblin.root.visible).toBe(true);
-    expect(bokoblin.root.position.toArray()).toEqual([0, 0, 7.9]);
+    expect(bokoblin.root.position.toArray()).toEqual([0, 0, 9.875]);
     expect(bokoblin.root.rotation.y).toBe(0);
     expect(
       materials(bokoblin).every((mat) => mat.opacity === 1),
