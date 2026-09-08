@@ -126,7 +126,7 @@ export class Game {
     this.renderer.domElement.setAttribute(
       "aria-label",
       resolveRoom(gameStore.getState().location)?.room.name ??
-        "Gläntan med slottet, Zelda, Mosstemplet och Bokoblins bro till södra gläntan",
+        "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan",
     );
   }
   private resize() {

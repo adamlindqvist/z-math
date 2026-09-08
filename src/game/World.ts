@@ -437,7 +437,7 @@ export class World implements Area {
       tip.rotation.z = r;
     }
     DUNGEONS.forEach((d) => {
-      portal(this.root, d.entrance.x, d.entrance.z, true);
+      portal(this.root, d.entrance.x, d.entrance.z, d.theme, true);
       for (const side of [-1, 1])
         this.collision.add(
           d.entrance.x + side * 0.95,

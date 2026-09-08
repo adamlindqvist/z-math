@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { box, ball, material, mesh } from "../models";
-import type { SymbolKind } from "./definitions";
+import type { DungeonTheme, SymbolKind } from "./definitions";
 // Raised geometric symbols work without fonts, textures or colour recognition.
 export function symbol(
   kind: SymbolKind,
@@ -61,65 +61,123 @@ export function symbol(
   }
   return g;
 }
+// Palette shared by the entrance and every room. No textures or extra lights.
+export const THEMES = {
+  water: {
+    stone: "#91adbe",
+    floor: "#aed9dd",
+    tiles: ["#d0f0ed", "#bde5e7"],
+    band: "#299da9",
+    water: "#48b7d5",
+    foam: "#dbfbff",
+    gate: "#397caa",
+    track: "#6f9cae",
+    block: "#789daf",
+    accent: "#94ddff",
+    opening: "#2267a5",
+  },
+} satisfies Record<DungeonTheme, Record<string, string | string[]>>;
+
+// A flat ribbon with two rounded crests, distinct from the puzzle symbols.
+export function wave(
+  parent: THREE.Group,
+  mat: THREE.Material,
+  x: number,
+  y: number,
+  z: number,
+  scale = 1,
+) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.6, 0);
+  shape.bezierCurveTo(-0.4, 0.3, -0.2, -0.2, 0, 0.06);
+  shape.bezierCurveTo(0.2, 0.3, 0.4, -0.2, 0.6, 0.06);
+  shape.lineTo(0.6, -0.06);
+  shape.bezierCurveTo(0.4, -0.32, 0.2, 0.18, 0, -0.06);
+  shape.bezierCurveTo(-0.2, -0.32, -0.4, 0.18, -0.6, -0.12);
+  shape.closePath();
+  const ribbon = mesh(new THREE.ShapeGeometry(shape, 8), mat, parent, x, y, z);
+  ribbon.scale.setScalar(scale);
+  ribbon.castShadow = false;
+  return ribbon;
+}
+export function waterDecoration(parent: THREE.Group, theme: DungeonTheme) {
+  const palette = THEMES[theme];
+  const water = material(palette.water, 0.35),
+    foam = material(palette.foam);
+  const decoration = new THREE.Group();
+  decoration.name = "water-decoration";
+  parent.add(decoration);
+  // Shallow, non-colliding strips outside the stone tracks; gaps at both doors.
+  for (const x of [-5.65, 5.65]) {
+    box(decoration, water, x, 0.035, 0, 0.3, 0.03, 10.8);
+    for (const z of [-3, 0, 3]) {
+      const ripple = wave(decoration, foam, x, 0.057, z, 0.55);
+      ripple.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+    }
+  }
+  for (const z of [-5.48, 5.48])
+    for (const x of [-3.6, 3.6]) {
+      box(decoration, water, x, 0.035, z, 4.4, 0.03, 0.25);
+      const ripple = wave(decoration, foam, x, 0.057, z, 0.8);
+      ripple.rotation.x = -Math.PI / 2;
+    }
+  for (const x of [-5.79, 5.79])
+    for (const z of [-2.6, 2.6]) {
+      const drop = new THREE.Group();
+      drop.position.set(x, 0.52, z);
+      decoration.add(drop);
+      ball(drop, foam, 0, 0, 0, 0.045, 0.14, 0.12);
+      mesh(new THREE.ConeGeometry(0.12, 0.23, 8), foam, drop, 0, 0.16).scale.x =
+        0.38;
+    }
+  return decoration;
+}
 export function portal(
   parent: THREE.Group,
   x: number,
   z: number,
+  theme: DungeonTheme,
   filled = false,
 ) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
   parent.add(g);
-  const stone = material("#b4b8a1"),
-    moss = material("#78965c");
+  const palette = THEMES[theme];
+  const stone = material(palette.stone),
+    band = material(palette.band),
+    foam = material(palette.foam);
   for (const side of [-1, 1]) {
     box(g, stone, side * 0.95, 0.85, 0, 0.5, 1.7, 0.55);
-    box(g, moss, side * 0.95, 1.7, 0, 0.56, 0.12, 0.62);
+    box(g, band, side * 0.95, 1.7, 0, 0.56, 0.12, 0.62);
+    box(g, band, side * 0.95, 0.35, 0.29, 0.5, 0.12, 0.035);
   }
   box(g, stone, 0, 1.93, 0, 2.45, 0.45, 0.65);
-  const seal = symbol("sun", g, 0, 1.95, 0.36, 0.65);
-  seal.rotation.x = Math.PI / 2;
-  box(g, material("#e2d5aa"), 0, 0.04, 0.3, 1.4, 0.08, 0.9);
+  wave(g, foam, 0, 1.96, 0.36, 0.8);
+  box(g, material(palette.tiles[0]), 0, 0.04, 0.3, 1.4, 0.08, 0.9);
   if (filled) {
-    // Opaque, self-lit surface: the landscape cannot be seen through the portal.
     const surface = new THREE.Mesh(
       new THREE.PlaneGeometry(1.42, 1.7),
-      new THREE.MeshBasicMaterial({ color: "#171a38", side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({
+        color: palette.opening,
+        side: THREE.DoubleSide,
+      }),
     );
     surface.position.set(0, 0.89, 0.03);
     g.add(surface);
-    const stars = [
-      [-0.46, 1.52, 0.065],
-      [0.15, 1.55, 0.04],
-      [0.48, 1.3, 0.055],
-      [-0.15, 1.19, 0.075],
-      [0.28, 0.97, 0.045],
-      [-0.5, 0.88, 0.035],
-      [0.5, 0.63, 0.065],
-      [-0.19, 0.64, 0.05],
-      [0.1, 0.36, 0.07],
-      [-0.48, 0.27, 0.045],
-      [0.43, 0.18, 0.03],
-    ];
-    for (const [sx, sy, radius] of stars) {
-      const shape = new THREE.Shape();
-      for (let i = 0; i < 10; i++) {
-        const angle = Math.PI / 2 + (i * Math.PI) / 5;
-        const r = i % 2 === 0 ? radius : radius * 0.42;
-        if (i === 0) shape.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-        else shape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-      }
-      shape.closePath();
-      const star = new THREE.Mesh(
-        new THREE.ShapeGeometry(shape),
-        new THREE.MeshBasicMaterial({
-          color: "#fff0b5",
-          side: THREE.DoubleSide,
-        }),
-      );
-      star.position.set(sx, sy, 0.07);
-      g.add(star);
+    const bubbleGeometry = new THREE.TorusGeometry(1, 0.16, 4, 12);
+    const bubbleMaterial = new THREE.MeshBasicMaterial({ color: palette.foam });
+    for (const [bx, by, radius] of [
+      [-0.43, 1.4, 0.1],
+      [0.3, 1.22, 0.14],
+      [-0.18, 0.9, 0.08],
+      [0.43, 0.53, 0.08],
+      [-0.4, 0.35, 0.12],
+    ]) {
+      const bubble = mesh(bubbleGeometry, bubbleMaterial, g, bx, by, 0.07);
+      bubble.scale.setScalar(radius);
+      bubble.castShadow = false;
     }
+    wave(g, foam, 0, 0.18, 0.08, 1);
   }
   return g;
 }

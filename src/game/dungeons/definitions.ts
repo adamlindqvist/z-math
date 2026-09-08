@@ -22,7 +22,9 @@ export interface RoomDefinition {
   challenge?: ChallengeDefinition;
   stones?: StoneDefinition[];
 }
+export type DungeonTheme = "water";
 export interface DungeonDefinition {
+  theme: DungeonTheme;
   id: string;
   name: string;
   entrance: { x: number; z: number };
@@ -32,7 +34,8 @@ export const TRACK_X = [-3.2, -1.6, 0, 1.6, 3.2];
 export const DUNGEONS: DungeonDefinition[] = [
   {
     id: "moss",
-    name: "Mosstemplet",
+    name: "Vattentemplet",
+    theme: "water",
     entrance: { x: 2, z: -3.4 },
     rooms: [
       {

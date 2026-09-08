@@ -2,7 +2,7 @@ import { World } from "../src/game/World";
 import { Player } from "../src/game/Player";
 import type { Input } from "../src/game/Input";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Scene, Vector3 } from "three";
+import { Box3, Mesh, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import {
   DUNGEONS,
@@ -61,7 +61,19 @@ function reachStones(s: Store) {
 }
 
 beforeEach(() => gameStore.reset());
-describe("Mosstemplet rules and persistence", () => {
+describe("Vattentemplet rules and persistence", () => {
+  it("keeps the saved dungeon identity with its public water theme", () => {
+    expect(DUNGEONS[0]).toMatchObject({
+      id: "moss",
+      name: "Vattentemplet",
+      theme: "water",
+    });
+    expect(DUNGEONS[0].rooms.map((room) => room.name)).toEqual([
+      "Ljusporten",
+      "Stensalen",
+      "Skattkammaren",
+    ]);
+  });
   it("generates visible counts, positive sums at most five, and three distinct answers", () => {
     for (const kind of ["counting", "addition"] as const)
       for (let i = 0; i < 500; i++) {
@@ -214,6 +226,29 @@ describe("Mosstemplet rules and persistence", () => {
 });
 
 describe("temple world integration", () => {
+  it("keeps water decorations outside the playable center in every room", () => {
+    for (const definition of DUNGEONS[0].rooms) {
+      const area = new DungeonArea(DUNGEONS[0], definition);
+      const decoration = area.root.getObjectByName("water-decoration")!;
+      expect(decoration).toBeDefined();
+      decoration.updateWorldMatrix(true, true);
+      decoration.traverse((object) => {
+        if (!(object instanceof Mesh)) return;
+        const bounds = new Box3().setFromObject(object);
+        expect(
+          bounds.max.x < -5.3 ||
+            bounds.min.x > 5.3 ||
+            bounds.max.z < -5.3 ||
+            bounds.min.z > 5.3,
+        ).toBe(true);
+      });
+      expect(area.collision.free(5.3, 0)).toBe(true);
+      expect(area.collision.free(-5.3, 0)).toBe(true);
+      expect(area.collision.free(0, 4.7)).toBe(true);
+      area.dispose();
+    }
+  });
+
   it("only targets a stone from its sides and keeps moving stones solid", () => {
     reachStones(gameStore);
     const room = new DungeonArea(DUNGEONS[0], DUNGEONS[0].rooms[1]);

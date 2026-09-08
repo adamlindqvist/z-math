@@ -11,7 +11,7 @@ import {
   type DungeonDefinition,
   type RoomDefinition,
 } from "./definitions";
-import { portal, symbol } from "./models";
+import { portal, symbol, THEMES, waterDecoration } from "./models";
 export class DungeonArea implements Area {
   root = new THREE.Group();
   collision = new CollisionSystem(6.2, 6);
@@ -29,15 +29,20 @@ export class DungeonArea implements Area {
     readonly dungeon: DungeonDefinition,
     readonly room: RoomDefinition,
   ) {
-    const stone = material("#b7bea5"),
-      floor = material("#d9d7bb"),
-      moss = material("#8ba875");
+    const palette = THEMES[dungeon.theme];
+    const stone = material(palette.stone),
+      floor = material(palette.floor),
+      band = material(palette.band);
+    const floorTiles = palette.tiles.map((color) => material(color));
+    const accent = material(palette.accent);
+    accent.emissive.set(palette.accent);
+    accent.emissiveIntensity = 0.25;
     box(this.root, floor, 0, -0.2, 0, 12.4, 0.4, 12);
     for (let x = -5; x <= 5; x += 2)
       for (let z = -5; z <= 5; z += 2)
         box(
           this.root,
-          material((x + z) % 4 === 0 ? "#e0ddc4" : "#d3d2b7"),
+          floorTiles[(x + z) % 4 === 0 ? 0 : 1],
           x,
           0.005,
           z,
@@ -47,21 +52,23 @@ export class DungeonArea implements Area {
         );
     for (const x of [-6, 6]) {
       box(this.root, stone, x, 0.45, 0, 0.35, 0.9, 12);
-      box(this.root, moss, x, 0.92, 0, 0.4, 0.08, 12);
+      box(this.root, band, x, 0.92, 0, 0.4, 0.08, 12);
       this.collision.add(x, 0, 0.18, 6);
     }
     for (const z of [-5.8, 5.8])
       for (const x of [-3.6, 3.6]) {
         box(this.root, stone, x, 0.35, z, 4.7, 0.7, 0.35);
+        box(this.root, band, x, 0.72, z, 4.7, 0.08, 0.4);
         this.collision.add(x, z, 2.35, 0.18);
       }
-    portal(this.root, 0, -5.35);
-    portal(this.root, 0, 5.35).scale.y = 0.22;
+    waterDecoration(this.root, dungeon.theme);
+    portal(this.root, 0, -5.35, dungeon.theme);
+    portal(this.root, 0, 5.35, dungeon.theme).scale.y = 0.22;
     for (const z of [-5.35, 5.35])
       for (const x of [-0.95, 0.95]) this.collision.add(x, z, 0.25, 0.28);
     this.gate = box(
       this.root,
-      material("#76917b"),
+      material(palette.gate),
       0,
       0.8,
       -5.35,
@@ -72,11 +79,12 @@ export class DungeonArea implements Area {
     for (const x of [-5.2, 5.2])
       for (const z of [-4.4, 4.4]) {
         box(this.root, stone, x, 0.5, z, 0.65, 1, 0.65);
-        ball(this.root, material("#ffe5a0"), x, 1.1, z, 0.2);
+        ball(this.root, accent, x, 1.1, z, 0.2);
         this.collision.add(x, z, 0.34);
       }
     if (room.challenge) {
       if (room.challenge.reward > 0) {
+        box(this.root, band, 0, 0.025, -2.5, 2.4, 0.04, 1.8);
         this.chest = new Chest(false);
         this.chest.root.position.set(0, 0, -2.5);
         this.root.add(this.chest.root);
@@ -99,7 +107,7 @@ export class DungeonArea implements Area {
         );
     }
     room.stones?.forEach((s, i) => {
-      box(this.root, material("#b9b59a"), 0, 0.04, s.z, 8.3, 0.06, 1.1);
+      box(this.root, material(palette.track), 0, 0.04, s.z, 8.3, 0.06, 1.1);
       TRACK_X.forEach((x, slot) => {
         const tile = box(
           this.root,
@@ -118,7 +126,7 @@ export class DungeonArea implements Area {
       for (const x of [-4.15, 4.15])
         box(this.root, stone, x, 0.16, s.z, 0.15, 0.25, 1.15);
       const g = new THREE.Group();
-      box(g, material("#a0ad9c"), 0, 0.42, 0, 0.92, 0.78, 0.92);
+      box(g, material(palette.block), 0, 0.42, 0, 0.92, 0.78, 0.92);
       box(g, material("#e7e1c5"), 0, 0.83, 0, 0.84, 0.06, 0.84);
       symbol(s.symbol, g, 0, 0.9, 0, 1.05);
       this.root.add(g);

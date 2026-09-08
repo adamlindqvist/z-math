@@ -27,12 +27,13 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - På touchskärm: dra joysticken och tryck på actionknappen.
 - Prata med Zelda, följ Rupees längs stigen och lös kistans tre additionsfrågor. Fel svar kostar inget.
 - Kistan ger fem Rupees en gång; fyra Rupees finns längs stigen.
-- Gå till stenporten norr om stigen för att besöka Mosstemplet. Ingången är öppen direkt. Gå in i den mörka stjärnportalen så teleporteras du automatiskt; ingen knapp behövs.
+- Gå till stenporten norr om stigen för att besöka Vattentemplet. Ingången är öppen direkt. Gå in i den blå vattenportalen så teleporteras du automatiskt; ingen knapp behövs.
+- Vattentemplet har aqua-färgade golv, blågrå sten, turkosa väggband, vågor, droppar och grunda vattenkanaler. Vattnet är ofarlig utsmyckning och påverkar inte rörelse eller pussel. Det interna ID:t `moss` och sparformatet är oförändrade.
 - I Ljusporten tänder fem räknefrågor varsin lampa. Räkna bilderna och välj bland tre svar med siffror och prickar.
 - I Stensalen: matcha sol, löv och måne. Gå mot stenen från vänster eller höger för att knuffa den längs spåret. Pilen visar riktningen. Ingen actionknapp behövs. Stenar på rätt symbol kan flyttas igen tills alla tre ligger rätt; då låses alla och porten öppnas. Knappen med återställningspilen börjar om med den olösta stengåtan.
 - I Skattkammaren öppnar fem bildadditioner (summa högst fem) kistan och ger fem Rupees en gång. Gå genom porten så teleporteras du tillbaka till gläntan. Den låga porten bakom dig leder alltid tillbaka.
 - Rätt mattesvar och stenknuffar i templet sparas direkt. Efter omladdning börjar du vid det sparade rummets säkra startpunkt. Lösta rum förblir lösta tills du börjar om med hela äventyret.
-- Följ stigen söderut till träbron. Bokoblin vaktar bron tills du har fått både svärd och sköld i Mosstemplet. Tryck på **Skräm iväg** så springer Bokoblin undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
+- Följ stigen söderut till träbron. Bokoblin vaktar bron tills du har fått både svärd och sköld i Vattentemplet. Tryck på **Skräm iväg** så springer Bokoblin undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
 - Gå över bron till södra gläntan. Den nya kistan har tre additionsfrågor och ger fem ädelstenar en gång, oberoende av den första kistan. Fel svar kostar inget; stänger du ett pågående kistquiz börjar dess tre frågor om nästa gång.
 - Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 5. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.
 - Framsteg sparas automatiskt i webbläsaren. Pausmenyn låter dig börja om. Lagring delas inte mellan enheter och kan rensas av webbläsaren.
@@ -53,7 +54,7 @@ Sparformatet är version 5 under nyckeln `glantans-skatt-v1`; äldre och ogiltig
 
 ## Verifiering
 
-Automatiska tester täcker frågegenerering, sparning efter enstaka svar och knuffar, engångsbelöningar, rumsordning, stenregler, kollisioner, tangentbordsrörelse, multitouch, fokusförlust och vägen till båda skatterna. Mosstemplet har granskats i Chrome med simulerade iPad-format 820 × 1180 och 1180 × 820. Automatisk passage genom portarna, stenknuffar genom fingerdrag och vägen till tempelskatten har också kontrollerats i samma webbläsare, inklusive omladdning efter belöningen. Fysisk iPad/Safari och faktisk bildfrekvens på enheten behöver fortfarande provas.
+Automatiska tester täcker frågegenerering, sparning efter enstaka svar och knuffar, engångsbelöningar, rumsordning, stenregler, kollisioner, tangentbordsrörelse, multitouch, fokusförlust och vägen till båda skatterna. Vattentemplets entré, alla tre rum, mattelås och belöningsdialog har bildgranskats manuellt i Chrome med simulerade iPad-format 820 × 1180 och 1180 × 820 (2026-09-08). En automatiserad genomspelning verifierade båda mattelåsen, fem stenknuffar, portpassager, omladdning efter lampor, stenar och belöning, återgång till gläntan samt återbesök utan dubbel belöning. Testet använde spelmotorns rörelseinmatning och tangentbord, pekningar på svarsknappar och testpositionering inför vissa knuffar och passager. Avbruten pekning, paus och dialogöppning med nedtryckt styrspak kontrollerades också; den samtidiga handlingsknappen aktiverades med ett automatiserat klick. Detta är en simulering, inte en fullständig manuell tvåfingerkontroll eller ett prestandatest på fysisk iPad/Safari. Dessa enhetskontroller återstår.
 
 ### Barnanpassat gränssnitt
 
@@ -63,7 +64,7 @@ Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 ×
 
 ### Väska och utrustning
 
-Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Mosstemplets sista mattelås ger fem ädelstenar, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg Bokoblin vid bron; de behöver inte vara påtagna. Strid ingår inte.
+Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Vattentemplets sista mattelås ger fem ädelstenar, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg Bokoblin vid bron; de behöver inte vara påtagna. Strid ingår inte.
 
 Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder behöver även kopplas till figurens utseende.
 
