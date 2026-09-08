@@ -3,7 +3,8 @@ export type SymbolKind = "sun" | "leaf" | "moon";
 export interface StoneDefinition {
   id: string;
   symbol: SymbolKind;
-  z: number;
+  points: { x: number; z: number }[];
+  start: number;
   goal: number;
   tiles: Partial<Record<number, SymbolKind>>;
 }
@@ -22,12 +23,13 @@ export interface RoomDefinition {
   challenge?: ChallengeDefinition;
   stones?: StoneDefinition[];
 }
-export type DungeonTheme = "water";
+export type DungeonTheme = "water" | "fire";
 export interface DungeonDefinition {
   theme: DungeonTheme;
   id: string;
   name: string;
-  entrance: { x: number; z: number };
+  entrance: { x: number; z: number; rotation?: number };
+  requiresBridge?: boolean;
   rooms: RoomDefinition[];
 }
 export const TRACK_X = [-3.2, -1.6, 0, 1.6, 3.2];
@@ -58,21 +60,24 @@ export const DUNGEONS: DungeonDefinition[] = [
           {
             id: "sun",
             symbol: "sun",
-            z: -2.6,
+            points: TRACK_X.map((x) => ({ x, z: -2.6 })),
+            start: 2,
             goal: 0,
             tiles: { 0: "sun", 1: "leaf", 4: "moon" },
           },
           {
             id: "leaf",
             symbol: "leaf",
-            z: 0,
+            points: TRACK_X.map((x) => ({ x, z: 0 })),
+            start: 2,
             goal: 4,
             tiles: { 0: "moon", 3: "sun", 4: "leaf" },
           },
           {
             id: "moon",
             symbol: "moon",
-            z: 2.6,
+            points: TRACK_X.map((x) => ({ x, z: 2.6 })),
+            start: 2,
             goal: 1,
             tiles: { 0: "leaf", 1: "moon", 4: "sun" },
           },
@@ -89,6 +94,84 @@ export const DUNGEONS: DungeonDefinition[] = [
           required: 5,
           reward: 5,
           items: ["temple-sword", "temple-shield"],
+        },
+      },
+    ],
+  },
+  {
+    id: "fire",
+    name: "Eldtemplet",
+    theme: "fire",
+    entrance: { x: -5, z: 18, rotation: Math.PI / 2 },
+    requiresBridge: true,
+    rooms: [
+      {
+        id: "light",
+        name: "Ljusporten",
+        hint: "Räkna och tänd fem lampor!",
+        challenge: {
+          id: "fire-light-lock",
+          title: "Tänd lamporna",
+          kind: "counting",
+          required: 5,
+          reward: 0,
+        },
+      },
+      {
+        id: "stones",
+        name: "Stensalen",
+        hint: "Följ spåret. Matcha bilderna!",
+        stones: [
+          {
+            id: "sun",
+            symbol: "sun",
+            start: 0,
+            goal: 2,
+            tiles: { 2: "sun" },
+            points: [
+              { x: -3.2, z: -3.2 },
+              { x: -1.6, z: -3.2 },
+              { x: -1.6, z: -1.6 },
+            ],
+          },
+          {
+            id: "leaf",
+            symbol: "leaf",
+            start: 0,
+            goal: 2,
+            tiles: { 2: "leaf" },
+            points: [
+              { x: 1.6, z: -1.6 },
+              { x: 3.2, z: -1.6 },
+              { x: 3.2, z: 0 },
+            ],
+          },
+          {
+            id: "moon",
+            symbol: "moon",
+            start: 0,
+            goal: 3,
+            tiles: { 3: "moon" },
+            points: [
+              { x: -3.2, z: 1.6 },
+              { x: -1.6, z: 1.6 },
+              { x: 0, z: 1.6 },
+              { x: 0, z: 3.2 },
+            ],
+          },
+        ],
+      },
+      {
+        id: "treasure",
+        name: "Skattkammaren",
+        hint: "Räkna ihop och öppna skatten!",
+        challenge: {
+          id: "fire-treasure-lock",
+          title: "Skattens mattelås",
+          kind: "addition",
+          required: 5,
+          reward: 5,
+          items: ["fire-sword", "fire-shield"],
         },
       },
     ],
@@ -110,7 +193,7 @@ export function freshDungeons(): Record<string, DungeonProgress> {
         ),
         stones: Object.fromEntries(
           d.rooms.flatMap((r) =>
-            r.stones ? [[r.id, r.stones.map(() => 2)]] : [],
+            r.stones ? [[r.id, r.stones.map((s) => s.start)]] : [],
           ),
         ),
         rewards: [],
@@ -140,8 +223,12 @@ export function canVisit(
     .slice(0, dungeon.rooms.indexOf(room))
     .every((r) => roomSolved(r, progress[dungeon.id]));
 }
-export function pushedPosition(position: number, direction: number) {
+export function pushedPosition(
+  position: number,
+  direction: number,
+  length: number,
+) {
   if (direction !== -1 && direction !== 1) return null;
   const next = position + direction;
-  return next >= 0 && next < TRACK_X.length ? next : null;
+  return next >= 0 && next < length ? next : null;
 }

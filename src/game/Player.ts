@@ -12,8 +12,14 @@ export class Player {
     this.setEquipment(freshInventory().equipment);
   }
   setEquipment(equipment: Equipment) {
-    this.root.getObjectByName("sword")!.visible = equipment.sword !== null;
-    this.root.getObjectByName("shield")!.visible = equipment.shield !== null;
+    this.root.getObjectByName("sword")!.visible =
+      equipment.sword === "temple-sword";
+    this.root.getObjectByName("shield")!.visible =
+      equipment.shield === "temple-shield";
+    this.root.getObjectByName("fire-sword")!.visible =
+      equipment.sword === "fire-sword";
+    this.root.getObjectByName("fire-shield")!.visible =
+      equipment.shield === "fire-shield";
   }
   reset() {
     this.root.position.set(-6.2, 0, 2.9);

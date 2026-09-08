@@ -117,7 +117,10 @@ export class Game {
     )?.entrance;
     const spawn =
       this.world.cameraMode === "glade" && entrance
-        ? { x: entrance.x, z: entrance.z + 1.4 }
+        ? {
+            x: entrance.x + Math.sin(entrance.rotation ?? 0) * 1.4,
+            z: entrance.z + Math.cos(entrance.rotation ?? 0) * 1.4,
+          }
         : this.world.spawn;
     this.player.reset();
     this.player.position.set(spawn.x, 0, spawn.z);
@@ -126,7 +129,7 @@ export class Game {
     this.renderer.domElement.setAttribute(
       "aria-label",
       resolveRoom(gameStore.getState().location)?.room.name ??
-        "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan",
+        "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan med Eldtemplet",
     );
   }
   private resize() {

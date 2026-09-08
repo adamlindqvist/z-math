@@ -6,6 +6,8 @@ export type ItemDefinition = {
 };
 export const ITEMS = {
   "green-clothes": { name: "Gröna kläder", category: "clothes", icon: "shirt" },
+  "fire-sword": { name: "Eldsvärd", category: "sword", icon: "sword" },
+  "fire-shield": { name: "Eldsköld", category: "shield", icon: "shield" },
   "temple-sword": { name: "Svärd", category: "sword", icon: "sword" },
   "temple-shield": { name: "Sköld", category: "shield", icon: "shield" },
 } as const satisfies Record<string, ItemDefinition>;

@@ -31,7 +31,12 @@ const key = (code: string, down = true) =>
 const pointer = (el: Element, type: string, id: number, x: number, y: number) =>
   act(() => {
     const event = new Event(type, { bubbles: true });
-    Object.assign(event, { pointerId: id, clientX: x, clientY: y });
+    Object.assign(event, {
+      pointerId: id,
+      pointerType: "touch",
+      clientX: x,
+      clientY: y,
+    });
     el.dispatchEvent(event);
   });
 beforeEach(() => {
@@ -102,6 +107,29 @@ describe("playable controls and interface", () => {
     expect(gameStore.getState().overlay).toBe("npc");
     expect(input.direction()).toEqual({ x: 0, y: 0 });
     expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+  });
+  it("activates the action on a second touch without relying on a synthetic click", () => {
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 160,
+        height: 160,
+      }),
+    });
+    act(() => gameStore.setTarget("npc"));
+    pointer(joystick, "pointerdown", 1, 122, 80);
+    expect(input.direction().x).toBe(1);
+    const action = button("Prata");
+    pointer(action, "pointerdown", 2, 400, 80);
+    expect(input.direction().x).toBe(1);
+    pointer(action, "pointerup", 2, 400, 80);
+    expect(gameStore.getState().overlay).toBe("npc");
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    pointer(joystick, "pointerup", 1, 122, 80);
+    expect(gameStore.getState().overlay).toBe("npc");
   });
   it("scales joystick travel and clears input on lost capture or hidden page", () => {
     const joystick = host.querySelector('[data-testid="joystick"]')!;

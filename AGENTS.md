@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Gläntans skatt is a Swedish math adventure set in a three-dimensional game world. The game runs in the browser without a login or backend.
+Legend of Matte is a Swedish math adventure set in a three-dimensional game world. The game runs in the browser without a login or backend.
 
 ## Audience and platform
 
@@ -48,12 +48,9 @@ npm run build       # Type-check and build for production
 npm run preview     # Preview the production build
 ```
 
-To play on an iPad during development, connect the iPad and computer to the same network, then open the computer's network address in Safari using the port shown by Vite, normally `http://<computer-ip>:5173`.
-
 ## Verification
 
 - Run relevant tests and `npm run build` after gameplay code changes. Add or adjust tests when game rules or error-prone behavior changes.
-- For UI and input changes, check portrait and landscape iPad layouts, touch controls, dialogs, pausing, and the gameplay path through receiving the chest reward.
+- For UI and input changes, briefly check portrait and landscape iPad layouts, touch controls, dialogs, pausing, and the gameplay path through receiving the chest reward.
 - Check persistence after reloading when progress or rewards are affected.
-- Distinguish simulated iPad dimensions from testing in Safari on a physical iPad. State what was actually tested; device performance cannot be confirmed through desktop testing alone.
 - Documentation-only changes normally do not require running the game tests.

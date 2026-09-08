@@ -5,13 +5,12 @@ import { Chest } from "../entities/Chest";
 import { box, material, ball } from "../models";
 import { gameStore, type GameState } from "../../store/gameStore";
 import {
-  TRACK_X,
   roomSolved,
   pushedPosition,
   type DungeonDefinition,
   type RoomDefinition,
 } from "./definitions";
-import { portal, symbol, THEMES, waterDecoration } from "./models";
+import { portal, symbol, THEMES, roomDecoration } from "./models";
 export class DungeonArea implements Area {
   root = new THREE.Group();
   collision = new CollisionSystem(6.2, 6);
@@ -61,7 +60,7 @@ export class DungeonArea implements Area {
         box(this.root, band, x, 0.72, z, 4.7, 0.08, 0.4);
         this.collision.add(x, z, 2.35, 0.18);
       }
-    waterDecoration(this.root, dungeon.theme);
+    roomDecoration(this.root, dungeon.theme);
     portal(this.root, 0, -5.35, dungeon.theme);
     portal(this.root, 0, 5.35, dungeon.theme).scale.y = 0.22;
     for (const z of [-5.35, 5.35])
@@ -107,24 +106,33 @@ export class DungeonArea implements Area {
         );
     }
     room.stones?.forEach((s, i) => {
-      box(this.root, material(palette.track), 0, 0.04, s.z, 8.3, 0.06, 1.1);
-      TRACK_X.forEach((x, slot) => {
+      const track = material(palette.track);
+      s.points.forEach(({ x, z }, slot) => {
+        const next = s.points[slot + 1];
+        if (next)
+          box(
+            this.root,
+            track,
+            (x + next.x) / 2,
+            0.04,
+            (z + next.z) / 2,
+            Math.abs(next.x - x) + 1.1,
+            0.06,
+            Math.abs(next.z - z) + 1.1,
+          );
         const tile = box(
           this.root,
           material("#f1e9ce"),
           x,
           0.1,
-          s.z,
+          z,
           1.2,
           0.1,
           1.1,
         );
-        if (s.tiles[slot])
-          symbol(s.tiles[slot]!, this.root, x, 0.17, s.z, 1.15);
+        if (s.tiles[slot]) symbol(s.tiles[slot]!, this.root, x, 0.17, z, 1.15);
         if (slot === s.goal) this.tiles.push({ mesh: tile, stone: i });
       });
-      for (const x of [-4.15, 4.15])
-        box(this.root, stone, x, 0.16, s.z, 0.15, 0.25, 1.15);
       const g = new THREE.Group();
       box(g, material(palette.block), 0, 0.42, 0, 0.92, 0.78, 0.92);
       box(g, material("#e7e1c5"), 0, 0.83, 0, 0.84, 0.06, 0.84);
@@ -181,37 +189,43 @@ export class DungeonArea implements Area {
     const p = state.dungeons[this.dungeon.id];
     if (state.motion || state.overlay || roomSolved(this.room, p)) return null;
     for (const [i, stone] of (this.room.stones ?? []).entries()) {
-      const slot = p.stones[this.room.id][i],
-        x = TRACK_X[slot];
-      const dx = position.x - x;
-      if (
-        Math.abs(position.z - stone.z) > 0.55 ||
-        Math.abs(dx) < 0.75 ||
-        Math.abs(dx) > 1.75
-      )
-        continue;
-      const direction = dx < 0 ? 1 : -1;
-      const next = pushedPosition(slot, direction);
-      if (
-        next === null ||
-        !this.collision.free(TRACK_X[next], stone.z, 0.5) ||
-        Math.hypot(position.x - TRACK_X[next], position.z - stone.z) < 0.9
-      )
-        continue;
-      return { x, z: stone.z, index: i, direction: direction as -1 | 1 };
+      const slot = p.stones[this.room.id][i];
+      const { x, z } = stone.points[slot];
+      for (const direction of [-1, 1] as const) {
+        const next = pushedPosition(slot, direction, stone.points.length);
+        if (next === null) continue;
+        const destination = stone.points[next];
+        const dx = Math.sign(destination.x - x),
+          dz = Math.sign(destination.z - z);
+        const behind = (x - position.x) * dx + (z - position.z) * dz;
+        const sideways = Math.abs(
+          (position.x - x) * dz - (position.z - z) * dx,
+        );
+        if (
+          behind < 0.75 ||
+          behind > 1.75 ||
+          sideways > 0.55 ||
+          !this.collision.free(destination.x, destination.z, 0.5) ||
+          Math.hypot(position.x - destination.x, position.z - destination.z) <
+            0.9
+        )
+          continue;
+        return { x, z, index: i, direction, dx, dz };
+      }
     }
     return null;
   }
   tryPush(position: THREE.Vector3, dx: number, dz: number) {
     const hint = this.pushHint(gameStore.getState(), position);
-    if (
-      !hint ||
-      Math.sign(dx) !== hint.direction ||
-      Math.abs(dz) > Math.abs(dx) * 0.65
-    )
-      return false;
-    // Contact must happen on this movement step; merely standing nearby does nothing.
-    if (Math.abs(position.x + dx - hint.x) > 0.8) return false;
+    if (!hint) return false;
+    const forward = dx * hint.dx + dz * hint.dz;
+    const sideways = Math.abs(dx * hint.dz - dz * hint.dx);
+    if (forward <= 0 || sideways > forward * 0.65) return false;
+    // Require contact on this step, from the side opposite the next track point.
+    const distance =
+      (hint.x - position.x - dx) * hint.dx +
+      (hint.z - position.z - dz) * hint.dz;
+    if (distance > 0.8) return false;
     return gameStore.pushStone(hint.index, hint.direction);
   }
   update(dt: number, _time: number) {
@@ -234,31 +248,33 @@ export class DungeonArea implements Area {
     }
     if (!state.overlay) this.motionTime += dt;
     this.stones.forEach((g, i) => {
+      const points = this.room.stones![i].points;
       const slot = p.stones[this.room.id][i];
-      let x = TRACK_X[slot];
+      let { x, z } = points[slot];
       const motion = state.motion?.index === i ? state.motion : null;
       if (motion) {
         const t = Math.min(1, this.motionTime / 0.28);
+        const eased = t * t * (3 - 2 * t);
         x = THREE.MathUtils.lerp(
-          TRACK_X[motion.from],
-          TRACK_X[motion.to],
-          t * t * (3 - 2 * t),
+          points[motion.from].x,
+          points[motion.to].x,
+          eased,
+        );
+        z = THREE.MathUtils.lerp(
+          points[motion.from].z,
+          points[motion.to].z,
+          eased,
         );
       }
-      const z = this.room.stones![i].z;
       g.position.set(x, 0, z);
-      // Reserve the swept volume, including the destination, throughout a push.
-      const left = motion
-        ? Math.min(TRACK_X[motion.from], TRACK_X[motion.to])
-        : x;
-      const right = motion
-        ? Math.max(TRACK_X[motion.from], TRACK_X[motion.to])
-        : x;
+      // Reserve the complete swept volume on either axis during a push.
+      const from = motion ? points[motion.from] : { x, z };
+      const to = motion ? points[motion.to] : { x, z };
       this.collision.dynamic.push({
-        x: (left + right) / 2,
-        z,
-        halfX: (right - left) / 2 + 0.47,
-        halfZ: 0.47,
+        x: (from.x + to.x) / 2,
+        z: (from.z + to.z) / 2,
+        halfX: Math.abs(to.x - from.x) / 2 + 0.47,
+        halfZ: Math.abs(to.z - from.z) / 2 + 0.47,
       });
     });
     this.tiles.forEach(({ mesh: tile, stone }) =>

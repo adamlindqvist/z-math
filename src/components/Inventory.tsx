@@ -1,4 +1,5 @@
 import {
+  Flame,
   Backpack,
   Check,
   Package,
@@ -20,7 +21,15 @@ function ItemPicture({ id }: { id: ItemId }) {
     package: Package,
   };
   const Icon = icons[ITEMS[id].icon];
-  return <Icon className="mx-auto size-16 text-forest" aria-hidden="true" />;
+  const fire = id === "fire-sword" || id === "fire-shield";
+  return (
+    <span className="relative mx-auto block size-16" aria-hidden="true">
+      <Icon className={`size-16 ${fire ? "text-[#b64925]" : "text-forest"}`} />
+      {fire && (
+        <Flame className="absolute -right-2 -bottom-1 size-8 rounded-full bg-[#fff0b8] text-[#da5d1f]" />
+      )}
+    </span>
+  );
 }
 const action =
   "min-h-16 w-full cursor-pointer touch-manipulation rounded-2xl bg-[#e4eddd] p-3 text-xl font-extrabold focus-visible:outline-4 focus-visible:outline-teal";
@@ -29,7 +38,11 @@ export function InventoryDialog() {
   if (state.overlay === "itemReward")
     return (
       <Modal label="Din belöning">
-        <h2>Du fick svärd och sköld!</h2>
+        <h2>
+          {state.rewardItems.includes("fire-sword")
+            ? "Du fick eldsvärd och eldsköld!"
+            : "Du fick svärd och sköld!"}
+        </h2>
         <div className="my-6 flex flex-wrap justify-center gap-8">
           {state.rewardItems.map((id) => (
             <div key={id}>

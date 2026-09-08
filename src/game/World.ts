@@ -53,9 +53,12 @@ export class World implements Area {
     ];
   }
   passages() {
-    return DUNGEONS.map((d) => ({
+    return DUNGEONS.filter(
+      (d) => !d.requiresBridge || gameStore.getState().bridgeUnlocked,
+    ).map((d) => ({
       x: d.entrance.x,
       z: d.entrance.z,
+      rotation: d.entrance.rotation,
       destination: { dungeon: d.id, room: d.rooms[0].id },
     }));
   }
@@ -383,25 +386,39 @@ export class World implements Area {
       tip.rotation.z = r;
     }
     DUNGEONS.forEach((d) => {
-      portal(this.root, d.entrance.x, d.entrance.z, d.theme, true);
+      const rotation = d.entrance.rotation ?? 0;
+      const sin = Math.sin(rotation),
+        cos = Math.cos(rotation);
+      const entrance = portal(
+        this.root,
+        d.entrance.x,
+        d.entrance.z,
+        d.theme,
+        true,
+      );
+      entrance.name = `${d.id}-entrance`;
+      entrance.rotation.y = rotation;
       for (const side of [-1, 1])
         this.collision.add(
-          d.entrance.x + side * 0.95,
-          d.entrance.z,
-          0.25,
-          0.28,
+          d.entrance.x + side * 0.95 * cos,
+          d.entrance.z - side * 0.95 * sin,
+          Math.abs(cos) * 0.25 + Math.abs(sin) * 0.28,
+          Math.abs(sin) * 0.25 + Math.abs(cos) * 0.28,
         );
-      for (let i = 0; i < 4; i++)
-        box(
+      for (let i = 0; i < 4; i++) {
+        const distance = 0.9 + i * 0.72;
+        const step = box(
           this.root,
           path,
-          d.entrance.x,
+          d.entrance.x + sin * distance,
           0.05,
-          d.entrance.z + 0.9 + i * 0.72,
+          d.entrance.z + cos * distance,
           1.1,
           0.06,
           0.5,
         );
+        step.rotation.y = rotation;
+      }
     });
     gladeFlowers(this.root, this.collision, points, {
       seed: 19,

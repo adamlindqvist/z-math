@@ -30,7 +30,9 @@ export function HUD() {
       : current.room.hint
     : state.bridgeUnlocked
       ? state.chests.south
-        ? "Du hittade södra gläntans skatt!"
+        ? state.dungeons.fire.rewards.includes("fire-treasure-lock")
+          ? "Du hittade Eldtemplets skatt!"
+          : "Gå in i eldportalen!"
         : "Gå över bron till kistan!"
       : hasBridgeEquipment(state)
         ? "Gå till bron. Skräm iväg Bokoblin!"
@@ -41,7 +43,7 @@ export function HUD() {
             : "Prata med Zelda!";
   return (
     <div className="pointer-events-none absolute top-[max(20px,env(safe-area-inset-top))] right-[max(20px,env(safe-area-inset-right))] left-[max(20px,env(safe-area-inset-left))] z-4 flex items-start justify-between gap-4 max-[600px]:right-3 max-[600px]:left-3 max-[600px]:gap-2">
-      <div className="min-w-0 max-w-[430px]">
+      <div className="min-w-0 max-w-[430px] [@media(max-height:850px)]:max-w-[320px]">
         <section className="flex items-center gap-3.5 rounded-[26px] border-[3px] border-white bg-cream p-4 text-ink shadow-[0_5px_0_#344e3020] [&_h2]:text-[23px] [&_h2]:leading-tight [&_h2]:font-black max-[600px]:gap-2 max-[600px]:p-2.5 max-[600px]:[&_h2]:text-lg">
           <div
             className="grid size-16 shrink-0 place-items-center rounded-[20px] bg-[#ffedab] text-forest [&_svg]:size-11! max-[600px]:hidden"
@@ -71,7 +73,9 @@ export function HUD() {
           </div>
           <div>
             <p className="text-base font-bold text-[#536d5e] max-[600px]:text-sm">
-              {current ? current.room.name : "Legend of Matte"}
+              {current
+                ? `${current.dungeon.name} · ${current.room.name}`
+                : "Legend of Matte"}
             </p>
             <h2>{hint}</h2>
           </div>

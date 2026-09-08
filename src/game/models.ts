@@ -274,6 +274,95 @@ export function character(role: "hero" | "princess") {
     blade.position.z = -0.02;
     box(sword, cream, 0, 0.41, 0.026, 0.012, 0.49, 0.008);
     ball(sword, gold, 0, -0.115, 0, 0.055);
+    // Separate variants keep the original equipment's shared materials untouched.
+    const fireShield = new THREE.Group();
+    fireShield.name = "fire-shield";
+    fireShield.position.copy(shield.position);
+    fireShield.rotation.copy(shield.rotation);
+    root.add(fireShield);
+    silhouette(fireShield, material("#b4492e"), outline, 0.065);
+    const fireInset = silhouette(
+      fireShield,
+      material("#493637"),
+      outline.map(([x, y]) => [x * 0.8, y * 0.8]),
+    );
+    fireInset.position.z = 0.068;
+    flame(fireShield, 0, -0.26, 0.1, 0.55);
+    const fireSword = new THREE.Group();
+    fireSword.name = "fire-sword";
+    fireSword.position.copy(sword.position);
+    fireSword.rotation.copy(sword.rotation);
+    root.add(fireSword);
+    mesh(
+      new THREE.CylinderGeometry(0.037, 0.037, 0.2, 8),
+      material("#743b30"),
+      fireSword,
+    );
+    box(fireSword, material("#dc682e"), 0, 0.13, 0, 0.3, 0.06, 0.09);
+    const fireBlade = silhouette(
+      fireSword,
+      material("#ffc277", 0.3),
+      [
+        [-0.065, 0.16],
+        [-0.085, 0.6],
+        [0, 0.81],
+        [0.085, 0.6],
+        [0.065, 0.16],
+      ],
+      0.04,
+    );
+    fireBlade.position.z = -0.02;
+    flame(fireSword, 0, 0.21, 0.025, 0.28);
+    ball(fireSword, material("#ed722c"), 0, -0.115, 0, 0.055);
   }
   return { root, body, left, right };
+}
+
+// A small geometric flame shared by the temple and its equipment.
+export function flame(
+  parent: THREE.Group,
+  x: number,
+  y: number,
+  z: number,
+  scale = 1,
+) {
+  const group = new THREE.Group();
+  group.position.set(x, y, z);
+  group.scale.setScalar(scale);
+  parent.add(group);
+  const outer = material("#ff762c"),
+    inner = material("#ffe09a");
+  outer.emissive.set("#f85216");
+  outer.emissiveIntensity = 0.45;
+  inner.emissive.set("#ffb735");
+  inner.emissiveIntensity = 0.4;
+  silhouette(
+    group,
+    outer,
+    [
+      [0, 0],
+      [-0.3, 0.18],
+      [-0.32, 0.42],
+      [-0.16, 0.72],
+      [-0.09, 0.45],
+      [0.07, 1],
+      [0.32, 0.48],
+      [0.3, 0.19],
+    ],
+    0.04,
+  );
+  const core = silhouette(
+    group,
+    inner,
+    [
+      [0, 0.08],
+      [-0.14, 0.22],
+      [-0.1, 0.4],
+      [0.02, 0.61],
+      [0.15, 0.26],
+    ],
+    0.02,
+  );
+  core.position.z = 0.045;
+  return group;
 }

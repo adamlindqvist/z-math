@@ -117,12 +117,12 @@ describe("Vattentemplet rules and persistence", () => {
     expect(restored.getState().location?.room).toBe("stones");
   });
   it("validates both directions and end stops", () => {
-    expect(pushedPosition(2, -1)).toBe(1);
-    expect(pushedPosition(2, 1)).toBe(3);
-    expect(pushedPosition(0, -1)).toBeNull();
-    expect(pushedPosition(4, 1)).toBeNull();
-    expect(pushedPosition(4, -1)).toBe(3);
-    expect(pushedPosition(2, 0)).toBeNull();
+    expect(pushedPosition(2, -1, 5)).toBe(1);
+    expect(pushedPosition(2, 1, 5)).toBe(3);
+    expect(pushedPosition(0, -1, 5)).toBeNull();
+    expect(pushedPosition(4, 1, 5)).toBeNull();
+    expect(pushedPosition(4, -1, 5)).toBe(3);
+    expect(pushedPosition(2, 0, 5)).toBeNull();
   });
   it("saves pushes atomically, blocks overlapping pushes and resets only the unsolved puzzle", () => {
     const storage = memory(),

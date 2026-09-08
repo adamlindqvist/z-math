@@ -52,7 +52,7 @@ export class InteractionSystem {
     this.arrow.visible = !!push;
     if (push) {
       this.arrow.position.set(push.x, 0.25, push.z + 0.8);
-      this.arrow.rotation.y = push.direction === 1 ? 0 : Math.PI;
+      this.arrow.rotation.y = Math.atan2(-push.dz, push.dx);
     }
     if (nearest) {
       this.ring.position.x = nearest.x;
@@ -60,13 +60,14 @@ export class InteractionSystem {
       this.ring.scale.setScalar(1 + Math.sin(time * 3) * 0.05);
     }
     if (!state.overlay && !state.motion) {
-      const passage = world
-        .passages(state)
-        .find(
-          (p) =>
-            Math.abs(position.x - p.x) < 0.55 &&
-            Math.abs(position.z - p.z) < 0.28,
-        );
+      const passage = world.passages(state).find((p) => {
+        const rotation = p.rotation ?? 0;
+        const dx = position.x - p.x,
+          dz = position.z - p.z;
+        const across = dx * Math.cos(rotation) - dz * Math.sin(rotation);
+        const depth = dx * Math.sin(rotation) + dz * Math.cos(rotation);
+        return Math.abs(across) < 0.55 && Math.abs(depth) < 0.28;
+      });
       if (passage) {
         gameStore.travelTo(passage.destination);
         this.ring.visible = false;

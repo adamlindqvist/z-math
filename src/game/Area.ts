@@ -9,6 +9,7 @@ export interface Interaction {
   z: number;
 }
 export interface Passage {
+  rotation?: number;
   x: number;
   z: number;
   destination: Location;
@@ -18,6 +19,8 @@ export interface PushHint {
   z: number;
   index: number;
   direction: -1 | 1;
+  dx: number;
+  dz: number;
 }
 export interface Area {
   root: THREE.Group;

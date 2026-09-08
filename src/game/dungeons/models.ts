@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { box, ball, material, mesh } from "../models";
+import { box, ball, material, mesh, flame } from "../models";
 import type { DungeonTheme, SymbolKind } from "./definitions";
 // Raised geometric symbols work without fonts, textures or colour recognition.
 export function symbol(
@@ -63,6 +63,19 @@ export function symbol(
 }
 // Palette shared by the entrance and every room. No textures or extra lights.
 export const THEMES = {
+  fire: {
+    stone: "#635052",
+    floor: "#ba8063",
+    tiles: ["#daa77d", "#cf966e"],
+    band: "#e67c37",
+    water: "#f36b25",
+    foam: "#ffe3a0",
+    gate: "#a54830",
+    track: "#805547",
+    block: "#69545b",
+    accent: "#ffbc57",
+    opening: "#9d3629",
+  },
   water: {
     stone: "#91adbe",
     floor: "#aed9dd",
@@ -132,6 +145,37 @@ export function waterDecoration(parent: THREE.Group, theme: DungeonTheme) {
     }
   return decoration;
 }
+export function roomDecoration(parent: THREE.Group, theme: DungeonTheme) {
+  if (theme === "water") return waterDecoration(parent, theme);
+  const group = new THREE.Group();
+  group.name = "fire-decoration";
+  parent.add(group);
+  const lava = material("#f96b22");
+  lava.emissive.set("#f95113");
+  lava.emissiveIntensity = 0.55;
+  const rim = material("#664c47");
+  for (const x of [-5.65, 5.65]) {
+    box(group, rim, x, 0.015, 0, 0.48, 0.04, 10.8);
+    box(group, lava, x, 0.045, 0, 0.3, 0.03, 10.8);
+    for (const z of [-2.6, 2.6]) {
+      mesh(
+        new THREE.CylinderGeometry(0.17, 0.1, 0.18, 8),
+        rim,
+        group,
+        x,
+        0.22,
+        z,
+      );
+      flame(group, x, 0.32, z, 0.48);
+    }
+  }
+  for (const z of [-5.48, 5.48])
+    for (const x of [-3.6, 3.6]) {
+      box(group, rim, x, 0.015, z, 4.4, 0.04, 0.32);
+      box(group, lava, x, 0.045, z, 4.4, 0.03, 0.25);
+    }
+  return group;
+}
 export function portal(
   parent: THREE.Group,
   x: number,
@@ -152,7 +196,8 @@ export function portal(
     box(g, band, side * 0.95, 0.35, 0.29, 0.5, 0.12, 0.035);
   }
   box(g, stone, 0, 1.93, 0, 2.45, 0.45, 0.65);
-  wave(g, foam, 0, 1.96, 0.36, 0.8);
+  if (theme === "water") wave(g, foam, 0, 1.96, 0.36, 0.8);
+  else flame(g, 0, 1.73, 0.36, 0.42);
   box(g, material(palette.tiles[0]), 0, 0.04, 0.3, 1.4, 0.08, 0.9);
   if (filled) {
     const surface = new THREE.Mesh(
@@ -164,6 +209,11 @@ export function portal(
     );
     surface.position.set(0, 0.89, 0.03);
     g.add(surface);
+    if (theme === "fire") {
+      flame(g, 0, 0.2, 0.08, 1.3);
+      for (const side of [-1, 1]) flame(g, side * 0.95, 1.76, 0, 0.42);
+      return g;
+    }
     const bubbleGeometry = new THREE.TorusGeometry(1, 0.16, 4, 12);
     const bubbleMaterial = new THREE.MeshBasicMaterial({ color: palette.foam });
     for (const [bx, by, radius] of [

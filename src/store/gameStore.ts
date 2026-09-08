@@ -84,10 +84,24 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 5 ||
+      p?.version !== 6 ||
       !validInventory(p) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
+      (!p.bridgeUnlocked &&
+        DUNGEONS.some(
+          (d) =>
+            d.requiresBridge &&
+            (p.location?.dungeon === d.id ||
+              d.rooms.some((r) =>
+                r.challenge
+                  ? p.dungeons[d.id].answers[r.challenge.id] !== 0
+                  : r.stones?.some(
+                      (stone, i) =>
+                        p.dungeons[d.id].stones[r.id][i] !== stone.start,
+                    ),
+              )),
+        )) ||
       !Number.isInteger(p.rupees) ||
       p.rupees < 0 ||
       !p.chests ||
@@ -157,7 +171,7 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 5,
+            version: 6,
             items: state.items,
             equipment: state.equipment,
             location: state.location,
@@ -213,6 +227,7 @@ export function createGameStore(
       const found = resolveRoom(state.location);
       const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
       const next = resolveRoom(destination);
+      if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
       const adjacent = !state.location
         ? !!next && next.dungeon.rooms[0] === next.room
         : (!destination &&
@@ -237,7 +252,11 @@ export function createGameStore(
       const progress = state.dungeons[found.dungeon.id];
       if (!stone || roomSolved(found.room, progress)) return false;
       const positions = progress.stones[found.room.id];
-      const to = pushedPosition(positions[index], direction);
+      const to = pushedPosition(
+        positions[index],
+        direction,
+        stone.points.length,
+      );
       if (to === null) return false;
       const updated = positions.map((p, i) => (i === index ? to : p));
       set(
@@ -459,7 +478,7 @@ export function createGameStore(
               ...progress,
               stones: {
                 ...progress.stones,
-                [found.room.id]: found.room.stones.map(() => 2),
+                [found.room.id]: found.room.stones.map((stone) => stone.start),
               },
             },
           },
@@ -586,10 +605,14 @@ function validDungeons(
         if (
           !Array.isArray(positions) ||
           positions.length !== r.stones.length ||
-          !positions.every((n) => Number.isInteger(n) && n >= 0 && n < 5)
+          !positions.every(
+            (n, i) =>
+              Number.isInteger(n) && n >= 0 && n < r.stones![i].points.length,
+          )
         )
           return false;
-        if (!reachable && positions.some((n) => n !== 2)) return false;
+        if (!reachable && positions.some((n, i) => n !== r.stones![i].start))
+          return false;
       }
       if (!reachable && r.challenge && p.answers[r.challenge.id] !== 0)
         return false;
