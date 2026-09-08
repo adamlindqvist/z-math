@@ -1,7 +1,15 @@
 import { Fragment, useState } from "react";
 import { resolveRoom } from "../game/dungeons/definitions";
 import { useEffect } from "react";
-import { LockKeyhole, Sparkles, Star, X, Check, RotateCcw } from "lucide-react";
+import {
+  Apple,
+  LockKeyhole,
+  Sparkles,
+  Star,
+  X,
+  Check,
+  RotateCcw,
+} from "lucide-react";
 import {
   gameStore,
   REQUIRED_CORRECT_ANSWERS,
@@ -95,12 +103,12 @@ export function MathQuiz() {
               )}
               <div className="flex max-w-60 flex-wrap justify-center gap-2 rounded-[22px] bg-[#fff0be] p-3 max-[600px]:gap-1 max-[600px]:p-2 max-[600px]:[&_svg]:size-8">
                 {Array.from({ length: count }, (_, i) => (
-                  <Star
+                  <Apple
                     key={i}
                     size={40}
-                    fill="#ebbf57"
-                    className="text-[#ac7e27]"
-                    aria-label="Stjärna"
+                    fill="#e77b62"
+                    className="text-[#9f3f2d]"
+                    aria-label="Äpple"
                   />
                 ))}
               </div>

@@ -330,9 +330,10 @@ describe("temple interface and input", () => {
     );
     click("Tänd lamporna");
     expect(host.querySelectorAll('[data-testid="answer"]')).toHaveLength(3);
-    expect(host.querySelectorAll('[aria-label="Stjärna"]')).toHaveLength(
+    expect(host.querySelectorAll('[aria-label="Äpple"]')).toHaveLength(
       gameStore.getState().question!.correctAnswer,
     );
+    expect(host.querySelector('[aria-label="Stjärna"]')).toBeNull();
     act(() => gameStore.answer(99));
     expect(host.textContent).toContain("Prova igen");
     act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));

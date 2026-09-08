@@ -51,6 +51,6 @@ npm run preview     # Preview the production build
 ## Verification
 
 - Run relevant tests and `npm run build` after gameplay code changes. Add or adjust tests when game rules or error-prone behavior changes.
-- For UI and input changes, briefly check portrait and landscape iPad layouts, touch controls, dialogs, pausing, and the gameplay path through receiving the chest reward.
+- For UI and input changes, briefly check landscape iPad layout, touch controls, dialogs, pausing, and the gameplay path through receiving the chest reward. Keep it quick and simple.
 - Check persistence after reloading when progress or rewards are affected.
 - Documentation-only changes normally do not require running the game tests.
