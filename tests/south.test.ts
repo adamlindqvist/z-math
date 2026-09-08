@@ -170,4 +170,31 @@ describe("southern glade", () => {
       w.dispose();
     }
   });
+  it("places collectible Rupees along the path to the southern chest", () => {
+    const w = new World();
+    try {
+      const southernRupees = w.rupees.filter(({ id }) =>
+        id.startsWith("south-path-"),
+      );
+      expect(southernRupees.map(({ root }) => [root.position.x, root.position.z]))
+        .toEqual([
+          [0, 14.6],
+          [-0.8, 17],
+          [-0.6, 19.8],
+          [0.8, 22],
+        ]);
+      for (const rupee of southernRupees) gameStore.collect(rupee.id);
+      expect(gameStore.getState()).toMatchObject({
+        rupees: 4,
+        collected: [
+          "south-path-1",
+          "south-path-2",
+          "south-path-3",
+          "south-path-4",
+        ],
+      });
+    } finally {
+      w.dispose();
+    }
+  });
 });

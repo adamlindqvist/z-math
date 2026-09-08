@@ -38,7 +38,16 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const RUPEE_IDS = ["path-1", "path-2", "path-3", "path-4"];
+export const RUPEE_IDS = [
+  "path-1",
+  "path-2",
+  "path-3",
+  "path-4",
+  "south-path-1",
+  "south-path-2",
+  "south-path-3",
+  "south-path-4",
+];
 export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");

@@ -116,6 +116,10 @@ export class World implements Area {
     new Collectible("path-2", -1.3, 2.6),
     new Collectible("path-3", 1.8, 0.6),
     new Collectible("path-4", 4.1, -1.8),
+    new Collectible("south-path-1", 0, 14.6),
+    new Collectible("south-path-2", -0.8, 17),
+    new Collectible("south-path-3", -0.6, 19.8),
+    new Collectible("south-path-4", 0.8, 22),
   ];
   water: THREE.Mesh;
   private sparkles: {
