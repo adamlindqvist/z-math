@@ -189,7 +189,13 @@ describe("playable controls and interface", () => {
         .find((b) => b.textContent === String(wrong))!
         .click(),
     );
-    expect(host.textContent).toContain("Prova igen!");
+    expect(host.querySelector('[role="status"]')?.textContent).toContain(
+      "Inte rätt än. Prova igen!",
+    );
+    expect(
+      host.querySelector(`[aria-label="${wrong}, inte rätt, prova igen"]`),
+    ).not.toBeNull();
+    expect(gameStore.getState().question).toBe(q);
     expect(gameStore.getState().rupees).toBe(0);
     for (let index = 0; index < 3; index++) {
       const correct = gameStore.getState().question!.correctAnswer;
@@ -205,7 +211,16 @@ describe("playable controls and interface", () => {
       expect(host.textContent).toContain(
         index === 2 ? "Tre rätt!" : "Bra jobbat!",
       );
-      act(() => vi.advanceTimersByTime(1100));
+      expect(
+        host.querySelector(`[aria-label="${correct}, rätt svar"]`),
+      ).not.toBeNull();
+      expect(host.querySelector('[aria-label*="inte rätt"]')).toBeNull();
+      act(() => vi.advanceTimersByTime(1500));
+      expect(gameStore.getState().feedback).toBe(
+        index === 2 ? "complete" : "correct",
+      );
+      act(() => vi.advanceTimersByTime(600));
+      expect(host.querySelector('[aria-label*="rätt svar"]')).toBeNull();
     }
     expect(host.querySelector('[aria-label="Kistans mattelås"]')).toBeNull();
     expect(gameStore.getState().rupees).toBe(5);
@@ -321,16 +336,16 @@ describe("temple interface and input", () => {
     act(() => gameStore.answer(99));
     expect(host.textContent).toContain("Prova igen");
     act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
-    act(() => vi.advanceTimersByTime(1100));
+    act(() => vi.advanceTimersByTime(2100));
     act(() => gameStore.close());
     click("Tänd lamporna");
     expect(gameStore.getState().quizCorrectAnswers).toBe(1);
     for (let i = 0; i < 4; i++) {
       act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
-      if (i < 3) act(() => vi.advanceTimersByTime(1100));
+      if (i < 3) act(() => vi.advanceTimersByTime(2100));
     }
     expect(host.textContent).toContain("Porten är öppen");
-    act(() => vi.advanceTimersByTime(1100));
+    act(() => vi.advanceTimersByTime(2100));
     expect(host.querySelector('[role="dialog"]')).toBeNull();
     expect(host.textContent).toContain("öppna porten");
   });

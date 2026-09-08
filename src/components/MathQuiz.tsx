@@ -1,7 +1,7 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { resolveRoom } from "../game/dungeons/definitions";
 import { useEffect } from "react";
-import { LockKeyhole, Sparkles, Star, X, Check, Heart } from "lucide-react";
+import { LockKeyhole, Sparkles, Star, X, Check, RotateCcw } from "lucide-react";
 import {
   gameStore,
   REQUIRED_CORRECT_ANSWERS,
@@ -17,6 +17,15 @@ export function MathQuiz() {
     location,
     dungeonQuiz,
   } = useGameState();
+  const [selection, setSelection] = useState<{
+    question: typeof question;
+    answer: number;
+  } | null>(null);
+  const isCorrect = feedback === "correct" || feedback === "complete";
+  const retryAnswer =
+    feedback === "retry" && selection?.question === question
+      ? selection.answer
+      : null;
   const challenge = dungeonQuiz
     ? resolveRoom(location)?.room.challenge
     : undefined;
@@ -107,10 +116,25 @@ export function MathQuiz() {
           <button
             key={answer}
             data-testid="answer"
-            className={`cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none min-h-24 rounded-3xl border-[3px] border-[#56a7a2] bg-[#e6f6ef] p-2.5 text-[40px] text-ink shadow-[0_5px_0_#b0d8c7] max-[600px]:text-[34px] ${(feedback === "correct" || feedback === "complete") && answer === question.correctAnswer ? "border-[#448036]! bg-[#d5ef9e]!" : ""}`}
+            className={`cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none relative min-h-24 rounded-3xl border-[3px] border-[#56a7a2] bg-[#e6f6ef] p-2.5 text-[40px] text-ink shadow-[0_5px_0_#b0d8c7] max-[600px]:text-[34px] ${(feedback === "correct" || feedback === "complete") && answer === question.correctAnswer ? "border-[#286b3d]! bg-[#d5ef9e]! text-[#20552f]!" : answer === retryAnswer ? "border-[#b65a24]! bg-[#fff0d6]! text-[#873e18]!" : ""}`}
             disabled={feedback === "correct" || feedback === "complete"}
-            onClick={() => gameStore.answer(answer)}
+            aria-label={`${answer}${isCorrect && answer === question.correctAnswer ? ", rätt svar" : answer === retryAnswer ? ", inte rätt, prova igen" : ""}`}
+            onClick={() => {
+              setSelection({ question, answer });
+              gameStore.answer(answer);
+            }}
           >
+            {isCorrect && answer === question.correctAnswer ? (
+              <Check
+                aria-hidden="true"
+                className="absolute top-1.5 right-1.5 size-7 rounded-full bg-[#286b3d] p-1 text-white motion-safe:animate-star-pop"
+              />
+            ) : answer === retryAnswer ? (
+              <X
+                aria-hidden="true"
+                className="absolute top-1.5 right-1.5 size-7 rounded-full bg-[#b65a24] p-1 text-white"
+              />
+            ) : null}
             {answer}
             {question.answerDots && (
               <span
@@ -126,25 +150,41 @@ export function MathQuiz() {
         ))}
       </div>
       <div
-        className={`mt-[18px] flex min-h-12 items-center justify-center gap-2.5 text-[22px] font-bold [&_svg]:size-[30px] [&_svg]:shrink-0 ${feedback === "correct" || feedback === "complete" ? "text-[#286b3d] motion-safe:animate-star-pop" : ""}`}
+        className={`mt-4 flex min-h-20 items-center justify-center gap-3 rounded-3xl border-2 px-3 py-2 text-xl font-bold ${isCorrect ? "border-[#448036] bg-[#e0f3bd] text-[#20552f]" : feedback === "retry" ? "border-[#b65a24] bg-[#fff0d6] text-[#873e18]" : "border-transparent text-ink"}`}
+        role="status"
         aria-live="polite"
+        aria-atomic="true"
       >
-        {feedback === "retry" ? (
-          <Heart aria-hidden="true" />
-        ) : feedback ? (
-          <Check aria-hidden="true" />
-        ) : null}
-        {feedback === "complete"
-          ? challenge
-            ? challenge.reward
-              ? "Rätt! Skatten är din!"
-              : "Rätt! Porten är öppen!"
-            : "Tre rätt! Skatten är din!"
-          : feedback === "correct"
-            ? "Bra jobbat!"
-            : feedback === "retry"
-              ? "Prova igen!"
-              : "Räkna gärna på fingrarna."}
+        {feedback && (
+          <span
+            key={`${feedback}-${selection?.answer}`}
+            className={`grid size-12 shrink-0 place-items-center rounded-full ${isCorrect ? "bg-[#286b3d] text-white motion-safe:animate-star-pop" : "bg-[#b65a24] text-white"}`}
+          >
+            {isCorrect ? (
+              <Check size={34} aria-hidden="true" />
+            ) : (
+              <RotateCcw size={30} aria-hidden="true" />
+            )}
+          </span>
+        )}
+        <div>
+          <div className={feedback ? "text-2xl font-extrabold" : ""}>
+            {isCorrect
+              ? "Rätt! Bra jobbat!"
+              : feedback === "retry"
+                ? "Inte rätt än. Prova igen!"
+                : "Räkna gärna på fingrarna."}
+          </div>
+          {feedback === "complete" && (
+            <div className="mt-0.5 text-lg">
+              {challenge
+                ? challenge.reward
+                  ? "Skatten är din!"
+                  : "Porten är öppen!"
+                : "Tre rätt! Skatten är din!"}
+            </div>
+          )}
+        </div>
       </div>
     </Modal>
   );
