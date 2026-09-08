@@ -144,10 +144,10 @@ describe("Eldtemplet", () => {
     const interactions = new InteractionSystem(new Scene());
     interactions.update(player.position, world, 0);
     expect(gameStore.getState().location).toBeNull();
-    walk(player, world.collision, -2.6, 18);
+    walk(player, world.collision, -4.6, 18);
     interactions.update(player.position, world, 0);
     expect(gameStore.getState().location).toBeNull();
-    walk(player, world.collision, -2.8, 18);
+    walk(player, world.collision, -4.8, 18);
     interactions.update(player.position, world, 0);
     expect(gameStore.getState().location).toEqual({
       dungeon: "fire",
