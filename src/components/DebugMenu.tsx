@@ -66,7 +66,7 @@ export default function DebugMenu() {
         <X aria-hidden="true" />
       </button>
 
-      <div className="mb-5 flex items-center gap-3 pr-14">
+      <div className="mb-5 flex items-center gap-3 px-14">
         <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-[#2d3748] text-white">
           <Bug aria-hidden="true" />
         </span>

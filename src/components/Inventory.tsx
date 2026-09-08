@@ -37,7 +37,7 @@ export function InventoryDialog() {
   const state = useGameState();
   if (state.overlay === "itemReward")
     return (
-      <Modal label="Din belöning">
+      <Modal label="Din belöning" className="pt-20!">
         <h2>
           {state.rewardItems.includes("fire-sword")
             ? "Du fick eldsvärd och eldsköld!"

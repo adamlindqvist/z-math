@@ -36,6 +36,7 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 ## Spela
 
 - WASD eller piltangenter: gå. E eller Space: prata/öppna. Escape: pausa.
+- Tryck på prat-ikonen uppe till vänster i en dialog eller quizet för svensk uppläsning. Tryck igen för att läsa från början. Uppläsningen stannar när texten ändras eller rutan stängs. Rösten beror på enhetens tillgängliga röster.
 - På touchskärm: dra joysticken och tryck på actionknappen.
 - Prata med Zelda, följ Rupees längs stigen och lös kistans tre additionsfrågor. Fel svar kostar inget.
 - Kistan ger fem Rupees en gång; fyra Rupees finns längs stigen.

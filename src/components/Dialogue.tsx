@@ -2,6 +2,7 @@ import { Sword, Shield } from "lucide-react";
 import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { ReadAloudButton } from "./ReadAloudButton";
 import { StoryPicture } from "./StoryPicture";
 import { gameStore, useGameState } from "../store/gameStore";
 
@@ -25,7 +26,9 @@ export function Modal({
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    ref.current
+      ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
+      ?.focus();
     return () => {
       previous?.blur();
     };
@@ -58,6 +61,7 @@ export function Modal({
           }
         }}
       >
+        <ReadAloudButton dialog={ref} />
         {children}
       </div>
     </div>
