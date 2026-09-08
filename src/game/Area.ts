@@ -32,7 +32,7 @@ export interface Area {
   pushHint?(state: GameState, position: THREE.Vector3): PushHint | null;
   tryPush?(position: THREE.Vector3, dx: number, dz: number): boolean;
   interactions(state: GameState, position: THREE.Vector3): Interaction[];
-  update(dt: number, time: number): void;
+  update(dt: number, time: number, playerPosition?: THREE.Vector3): void;
   dispose(): void;
 }
 export function disposeTree(root: THREE.Object3D) {

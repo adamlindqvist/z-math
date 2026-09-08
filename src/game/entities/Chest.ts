@@ -4,10 +4,13 @@ export class Chest {
   root = new THREE.Group();
   lid = new THREE.Group();
   openAmount = 0;
-  constructor(open: boolean) {
+  revealAmount = 1;
+  private materials: THREE.MeshStandardMaterial[];
+  constructor(open: boolean, revealed = true) {
     const wood = material("#b86537"),
       gold = material("#efc562", 0.38),
       dark = material("#694730");
+    this.materials = [wood, gold, dark];
     box(this.root, dark, 0, 0.3, 0, 1.05, 0.55, 0.72);
     box(this.root, wood, 0, 0.35, 0, 1, 0.48, 0.7);
     this.lid.position.set(0, 0.6, -0.35);
@@ -30,8 +33,34 @@ export class Chest {
     box(this.root, dark, 0, 0.48, 0.452, 0.045, 0.08, 0.015);
     this.root.position.set(5.6, 0, -3.7);
     this.openAmount = open ? 1 : 0;
+    this.resetReveal(revealed);
   }
-  update(dt: number, opened: boolean) {
+  resetReveal(revealed: boolean) {
+    this.revealAmount = revealed ? 1 : 0;
+    this.applyReveal();
+  }
+  private applyReveal() {
+    this.root.visible = this.revealAmount > 0;
+    for (const mat of this.materials) {
+      const transparent = this.revealAmount < 1;
+      if (mat.transparent !== transparent) {
+        mat.transparent = transparent;
+        mat.needsUpdate = true;
+      }
+      mat.opacity = this.revealAmount;
+      mat.depthWrite = !transparent;
+    }
+    this.root.traverse((object) => {
+      if (object instanceof THREE.Mesh)
+        object.castShadow = this.revealAmount === 1;
+    });
+  }
+  update(dt: number, opened: boolean, revealed = true) {
+    const nextReveal = revealed ? Math.min(1, this.revealAmount + dt / 1.5) : 0;
+    if (nextReveal !== this.revealAmount) {
+      this.revealAmount = nextReveal;
+      this.applyReveal();
+    }
     this.openAmount +=
       ((opened ? 1 : 0) - this.openAmount) * Math.min(1, dt * 5);
     this.lid.rotation.x = -this.openAmount * 1.8;

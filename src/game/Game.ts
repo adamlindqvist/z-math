@@ -156,7 +156,7 @@ export class Game {
       this.previousDungeon = null;
       this.mountArea();
     }
-    this.world.update(dt, this.time);
+    this.world.update(dt, this.time, this.player.position);
     if (!state.overlay && !state.motion)
       this.player.update(
         dt,

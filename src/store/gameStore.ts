@@ -1,4 +1,17 @@
 import {
+  CHESTS,
+  CHEST_IDS,
+  type ChestId,
+} from "../game/entities/chestDefinitions";
+import {
+  WORLD_SECRETS,
+  freshSecrets,
+  validSecrets,
+  type SecretId,
+  type SecretsProgress,
+} from "../game/secrets/definitions";
+export type { ChestId } from "../game/entities/chestDefinitions";
+import {
   freshInventory,
   validInventory,
   receiveItems,
@@ -27,7 +40,6 @@ import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const RUPEE_IDS = ["path-1", "path-2", "path-3", "path-4"];
 export const REQUIRED_CORRECT_ANSWERS = 3;
-export type ChestId = "glade" | "south";
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
@@ -53,6 +65,7 @@ export interface Progress extends Inventory {
   dungeons: Record<string, DungeonProgress>;
   rupees: number;
   chests: Record<ChestId, boolean>;
+  secrets: SecretsProgress;
   bridgeUnlocked: boolean;
   collected: string[];
   talkedToNpc: boolean;
@@ -78,7 +91,11 @@ const fresh = (): Progress => ({
   location: null,
   dungeons: freshDungeons(),
   rupees: 0,
-  chests: { glade: false, south: false },
+  chests: Object.fromEntries(CHEST_IDS.map((id) => [id, false])) as Record<
+    ChestId,
+    boolean
+  >,
+  secrets: freshSecrets(),
   bridgeUnlocked: false,
   collected: [],
   talkedToNpc: false,
@@ -87,7 +104,7 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 6 ||
+      p?.version !== 7 ||
       !validInventory(p) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
@@ -108,9 +125,9 @@ export function parseSave(raw: string | null): Progress {
       !Number.isInteger(p.rupees) ||
       p.rupees < 0 ||
       !p.chests ||
-      Object.keys(p.chests).length !== 2 ||
-      typeof p.chests.glade !== "boolean" ||
-      typeof p.chests.south !== "boolean" ||
+      Object.keys(p.chests).length !== CHEST_IDS.length ||
+      !CHEST_IDS.every((id) => typeof p.chests[id] === "boolean") ||
+      !validSecrets(p.secrets, p.chests, p.bridgeUnlocked) ||
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
@@ -122,7 +139,10 @@ export function parseSave(raw: string | null): Progress {
       new Set(p.collected).size !== p.collected.length ||
       p.rupees !==
         p.collected.length +
-          (Number(p.chests.glade) + Number(p.chests.south)) * 5 +
+          CHEST_IDS.reduce(
+            (sum, id) => sum + (p.chests[id] ? CHESTS[id].reward : 0),
+            0,
+          ) +
           dungeonRewardTotal(p.dungeons)
     )
       return fresh();
@@ -133,6 +153,7 @@ export function parseSave(raw: string | null): Progress {
       dungeons: p.dungeons,
       rupees: p.rupees,
       chests: p.chests,
+      secrets: p.secrets,
       bridgeUnlocked: p.bridgeUnlocked,
       collected: p.collected,
       talkedToNpc: p.talkedToNpc,
@@ -177,13 +198,14 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 6,
+            version: 7,
             items: state.items,
             equipment: state.equipment,
             location: state.location,
             dungeons: state.dungeons,
             rupees: state.rupees,
             chests: state.chests,
+            secrets: state.secrets,
             bridgeUnlocked: state.bridgeUnlocked,
             collected: state.collected,
             talkedToNpc: state.talkedToNpc,
@@ -194,6 +216,27 @@ export function createGameStore(
       }
     }
     listeners.forEach((fn) => fn());
+  };
+  // The chest flag, currency and associated discovery are committed together.
+  const chestAward = (id: ChestId): Partial<GameState> => {
+    if (state.chests[id]) return {};
+    const secret = WORLD_SECRETS.find((s) => s.chestId === id);
+    return {
+      rupees: state.rupees + CHESTS[id].reward,
+      chests: { ...state.chests, [id]: true },
+      ...(secret
+        ? {
+            secrets: {
+              ...state.secrets,
+              [secret.id]: {
+                discovered: true,
+                revealed: true,
+                completed: true,
+              },
+            },
+          }
+        : {}),
+    };
   };
   const beginDebugSession = () => {
     if (state.debugActive) return;
@@ -240,6 +283,48 @@ export function createGameStore(
   };
   return {
     getState: () => state,
+    discoverSecret: (id: SecretId) => {
+      const definition = WORLD_SECRETS.find((s) => s.id === id);
+      if (
+        !definition ||
+        (definition.requiresBridge && !state.bridgeUnlocked) ||
+        state.location ||
+        state.overlay ||
+        state.motion ||
+        !state.secrets[id] ||
+        state.secrets[id].discovered
+      )
+        return;
+      set(
+        {
+          secrets: {
+            ...state.secrets,
+            [id]: { ...state.secrets[id], discovered: true },
+          },
+        },
+        true,
+      );
+    },
+    revealSecret: (id: SecretId) => {
+      const progress = state.secrets[id];
+      const definition = WORLD_SECRETS.find((s) => s.id === id);
+      if (
+        !definition ||
+        (definition.requiresBridge && !state.bridgeUnlocked) ||
+        state.location ||
+        state.overlay ||
+        state.motion ||
+        !progress?.discovered ||
+        progress.revealed
+      )
+        return;
+      set(
+        {
+          secrets: { ...state.secrets, [id]: { ...progress, revealed: true } },
+        },
+        true,
+      );
+    },
     grantItems: (ids: readonly ItemId[], equip = false) => {
       set(receiveItems(state, ids, equip), true);
     },
@@ -442,6 +527,27 @@ export function createGameStore(
             (target.id === "south" && !state.bridgeUnlocked)
           )
             return;
+          const secret = WORLD_SECRETS.find((s) => s.chestId === target.id);
+          if (
+            secret &&
+            (!state.secrets[secret.id].revealed ||
+              (secret.requiresBridge && !state.bridgeUnlocked))
+          )
+            return;
+          if (
+            CHESTS[target.id].opening === "direct" &&
+            !state.chests[target.id]
+          ) {
+            set(
+              {
+                ...chestAward(target.id),
+                reward: CHESTS[target.id].reward,
+                activeChest: null,
+              },
+              true,
+            );
+            return;
+          }
           set({
             activeChest: target.id,
             overlay: state.chests[target.id] ? "empty" : "locked",
@@ -488,7 +594,8 @@ export function createGameStore(
       if (
         state.overlay === "locked" &&
         state.activeChest &&
-        !state.chests[state.activeChest]
+        !state.chests[state.activeChest] &&
+        CHESTS[state.activeChest].opening === "quiz"
       )
         set({
           overlay: "quiz",
@@ -567,8 +674,7 @@ export function createGameStore(
       }
       set(
         {
-          rupees: state.rupees + 5,
-          chests: { ...state.chests, [state.activeChest]: true },
+          ...chestAward(state.activeChest),
           feedback: "complete",
           quizCorrectAnswers,
         },
@@ -601,7 +707,7 @@ export function createGameStore(
           question: null,
           feedback: null,
           quizCorrectAnswers: 0,
-          reward: 5,
+          reward: state.activeChest ? CHESTS[state.activeChest].reward : 0,
           activeChest: null,
         });
     },
@@ -702,6 +808,12 @@ function copyProgress(state: Progress): Progress {
     ),
     rupees: state.rupees,
     chests: { ...state.chests },
+    secrets: Object.fromEntries(
+      Object.entries(state.secrets).map(([id, progress]) => [
+        id,
+        { ...progress },
+      ]),
+    ) as SecretsProgress,
     bridgeUnlocked: state.bridgeUnlocked,
     collected: [...state.collected],
     talkedToNpc: state.talkedToNpc,

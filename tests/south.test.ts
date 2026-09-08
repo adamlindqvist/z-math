@@ -71,7 +71,12 @@ describe("southern glade", () => {
       s.finishQuiz();
       s.finishQuiz();
     }
-    expect(s.getState().chests).toEqual({ glade: false, south: true });
+    expect(s.getState().chests).toEqual({
+      glade: false,
+      south: true,
+      "butterfly-01": false,
+      "butterfly-02": false,
+    });
     expect(s.getState().rupees).toBe(5);
     solve(s, "glade");
     expect(s.getState().rupees).toBe(10);

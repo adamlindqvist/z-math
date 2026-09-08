@@ -52,12 +52,26 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - Eldtemplet har vulkansten, varma golv, flammotiv, eldfat och glödande lavakanaler. Elden och lavan är ofarliga. Ljusporten och Skattkammaren har samma fem bildfrågor vardera som Vattentemplet.
 - Eldtemplets Stensal har tre separata L-formade spår. Följ spåret och matcha sol, löv och måne. Gå runt stenen vid böjen och knuffa från nästa sida. Pusslet kräver minst sju knuffar, både i sidled och djupled. Du kan knuffa tillbaka eller börja om utan straff.
 - Eldtemplets skatt ger fem ädelstenar, ett eldsvärd och en eldsköld en gång. Eldutrustningen tas på direkt och syns med egna flammotiv. Den vanliga utrustningen finns kvar i väskan, där du kan byta mellan dem.
-- Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 6. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.
+- Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 7. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.
+- Två turkosa fjärilar gömmer små hemligheter: en vid dammens nordvästra strand och en längre ner längs huvudstigen i södra gläntan. När du kommer nära flyger fjärilen till nästa av fem stopp och väntar. Inga uppdrag eller extra instruktioner visas. Vid sista stoppet tonar en gömd kista fram under 1,5 sekunder. Den öppnas med vanliga handlingsknappen och ger tio ädelstenar en gång, utan mattefrågor. Fjärilen flyger sedan upp och försvinner med glitter.
+- Fjärilarnas framsteg sparas separat. Före avslöjandet börjar en ofärdig fjäril om vid sitt första stopp efter omladdning. När kistan väl har avslöjats finns den kvar och fjärilen väntar vid den. Öppnade kistor förblir öppnade och deras fjärilar kommer inte tillbaka.
 - Framsteg sparas automatiskt i webbläsaren. Pausmenyn låter dig börja om. Lagring delas inte mellan enheter och kan rensas av webbläsaren.
 
 ## Struktur
 
 `src/game/` äger värld, kamera, input, kollisionssystem, modeller och renderloop. `src/components/` äger UI och touchkontroller. `src/store/gameStore.ts` är den typade bryggan mellan dem och sparar framsteg. React uppdateras bara när spelstatus ändras, aldrig varje bildruta. `src/math/` innehåller frågekontrakt samt generatorer för addition och bildfrågor.
+
+## Små hemligheter
+
+`src/game/secrets/definitions.ts` innehåller hemligheternas ID, typ, fem väntpositioner, kistposition och eventuell brospärr. `butterfly-01` börjar vid dammen på `(4.8, 1.2)` och leder via södra och västra delen av den ursprungliga gläntan till kistan på `(-3.4, -5.2)`. `butterfly-02` börjar längre ner längs södra gläntans huvudstig på `(0, 21)` och leder till en undangömd plats på `(-4.5, 24.4)`. Koordinaterna är världens `x/z`.
+
+`Butterfly` bygger modellen och hanterar hovring, närhetsreaktion, bågformad flygning mellan stopp och avslutningen. Närhetsradien är 2,2 enheter. Fjärilen väntar minst 0,8 sekunder vid ett stopp, reagerar i 0,4 sekunder och flyger i 2,5 sekunder. Animationerna pausas med spelets dialoger. Glitter använder en fast pool av enkla geometriska former. `World` skapar en separat fjäril och befintlig `Chest` per definition, utan en generell hemlighetsmotor.
+
+`src/game/entities/chestDefinitions.ts` anger utomhuskistornas öppningssätt och belöning. Fjärilskistorna ger tio ädelstenar direkt; de vanliga kistorna behåller sina mattefrågor och fem ädelstenar. En dold kista har inget interaktionsmål eller kollisionshinder. När fjärilen når sista stoppet avslöjas kistan och tonar fram under 1,5 sekunder; öppna-knappen blir tillgänglig när framtoningen är klar.
+
+Progressionen ligger i det befintliga sparsystemets `secrets`, indexerat med hemlighetens ID: `discovered` sätts vid första närhetsaktiveringen, `revealed` när fjärilen når sista stoppet och `completed` när kistan öppnas. Kistans öppnade tillstånd, tio ädelstenar och completion sparas i samma uppdatering. Brospärren gäller även den södra hemligheten. Omladdning efter avslöjandet visar kistan direkt; exakt waypoint eller pågående framtoning sparas inte. Återställning och tillfälliga debugsessioner hanterar båda hemligheterna.
+
+För ytterligare en fjäril: lägg till dess kista i kistregistret och en definition med unikt ID och en framkomlig rutt. För nästa typ av hemlighet: utöka definitionstypen och lägg till dess separata beteende i världen; återanvänd progressionen och kistbelöningar där de passar. Ingen implementation för framtida stenar, djur eller miljöpussel ingår ännu. Ändras det sparade innehållet behöver sparversionen ändras enligt projektets policy.
 
 ## Fler tempel
 
@@ -67,7 +81,7 @@ Lägg till ett objekt i `DUNGEONS` i `src/game/dungeons/definitions.ts` för ett
 
 `DungeonArea` bygger rum, portar, lampor, stenar och kistor från definitionerna. Varje sten har en ordnad lista av `points: { x, z }[]`, ett `start`-index, ett `goal`-index och golvsymboler per punkt. Intilliggande punkter ska ligga 1,6 enheter isär längs en enda axel. Knuffar flyttar stenen ett index framåt eller bakåt från rätt fysisk sida. Animation, riktningspil och kollisionsvolym följer x/z-riktningen. Vattentemplets fempunktsbanor är raka; Eldtemplets separata banor böjer av. Lämna plats att gå runt alla stenar och nå båda knuffsidorna, även vid böjar och ändlägen. Målet ska ha samma symbol som stenen och ligga utanför startläget. Testa framkomlighet och båda skärmorienteringarna för nya layouter. Ingen baneditor ingår.
 
-Sparformatet är version 6 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
+Sparformatet är version 7 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
 
 ## Verifiering
 

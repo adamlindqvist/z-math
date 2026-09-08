@@ -1,3 +1,5 @@
+import { Butterfly } from "./entities/Butterfly";
+import { WORLD_SECRETS } from "./secrets/definitions";
 import {
   gladePath,
   gladeTrees,
@@ -23,6 +25,23 @@ export class World implements Area {
   interactions() {
     const state = gameStore.getState();
     return [
+      ...this.secrets
+        .filter(
+          ({ definition, chest }) =>
+            state.secrets[definition.id].revealed &&
+            chest.revealAmount === 1 &&
+            (!definition.requiresBridge || state.bridgeUnlocked),
+        )
+        .map(({ definition }) => ({
+          target: {
+            kind: "chest" as const,
+            id: definition.chestId,
+            label: state.chests[definition.chestId]
+              ? "Titta i kistan"
+              : "Öppna",
+          },
+          ...definition.chestPosition,
+        })),
       ...(!state.bridgeUnlocked
         ? [{ target: "bokoblin" as const, x: 0, z: 7.9 }]
         : [
@@ -70,6 +89,27 @@ export class World implements Area {
   bokoblin = new Bokoblin(gameStore.getState().bridgeUnlocked);
   southChest = new Chest(gameStore.getState().chests.south);
   chest = new Chest(gameStore.getState().chests.glade);
+  secrets = WORLD_SECRETS.map((definition) => ({
+    definition,
+    chest: new Chest(
+      gameStore.getState().chests[definition.chestId],
+      gameStore.getState().secrets[definition.id].revealed,
+    ),
+    butterfly: new Butterfly(
+      definition,
+      gameStore.getState().secrets[definition.id].completed,
+      gameStore.getState().secrets[definition.id].revealed,
+    ),
+  }));
+  private secretResetId = gameStore.getState().resetId;
+  private chests = [
+    { id: "glade" as const, chest: this.chest },
+    { id: "south" as const, chest: this.southChest },
+    ...this.secrets.map(({ definition, chest }) => ({
+      id: definition.chestId,
+      chest,
+    })),
+  ];
   npc = new NPC();
   rupees = [
     new Collectible("path-1", -4.6, 3),
@@ -86,11 +126,28 @@ export class World implements Area {
   private burstShown = { ...gameStore.getState().chests };
   constructor() {
     buildSouthGlade(this.root, this.collision);
+    for (const { definition, chest, butterfly } of this.secrets) {
+      chest.root.position.set(
+        definition.chestPosition.x,
+        0,
+        definition.chestPosition.z,
+      );
+      this.root.add(chest.root, butterfly.root);
+    }
     this.southChest.root.position.set(3.5, 0, 23);
     this.root.add(this.southChest.root, this.bokoblin.root);
-    this.collision.dynamic = gameStore.getState().bridgeUnlocked
-      ? []
-      : [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }];
+    this.collision.dynamic = [
+      ...(!gameStore.getState().bridgeUnlocked
+        ? [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }]
+        : []),
+      ...this.secrets
+        .filter(({ chest }) => chest.root.visible)
+        .map(({ definition }) => ({
+          ...definition.chestPosition,
+          halfX: 0.56,
+          halfZ: 0.41,
+        })),
+    ];
     const grass = material("#94bd64"),
       earth = material("#b28c5b"),
       soil = material("#8b7050"),
@@ -446,11 +503,60 @@ export class World implements Area {
     this.collision.add(5.6, -3.7, 0.56, 0.41);
     this.collision.add(-3.5, 1.3, 0.3);
   }
-  update(dt: number, time: number) {
+  update(dt: number, time: number, playerPosition?: THREE.Vector3) {
     const state = gameStore.getState();
-    this.collision.dynamic = state.bridgeUnlocked
-      ? []
-      : [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }];
+    if (this.secretResetId !== state.resetId) {
+      this.secretResetId = state.resetId;
+      for (const { definition, butterfly, chest } of this.secrets) {
+        const progress = state.secrets[definition.id];
+        butterfly.reset(progress.completed, progress.revealed);
+        chest.resetReveal(progress.revealed);
+      }
+      this.burstShown = { ...state.chests };
+      this.sparkles.forEach((p) => disposeTree(p.object));
+      this.sparkles = [];
+    }
+    for (const { definition, butterfly, chest } of this.secrets) {
+      const progress = state.secrets[definition.id];
+      const paused =
+        !!state.overlay ||
+        !!state.motion ||
+        (definition.requiresBridge && !state.bridgeUnlocked);
+      if (
+        butterfly.update(
+          dt,
+          playerPosition ?? { x: Infinity, z: Infinity },
+          progress.completed,
+          paused,
+        )
+      )
+        gameStore.discoverSecret(definition.id);
+      if (
+        butterfly.phase === "waiting" &&
+        butterfly.waypoint === definition.waypoints.length - 1
+      )
+        gameStore.revealSecret(definition.id);
+      chest.update(
+        paused ? 0 : dt,
+        state.chests[definition.chestId],
+        gameStore.getState().secrets[definition.id].revealed,
+      );
+    }
+    this.collision.dynamic = [
+      ...(!state.bridgeUnlocked
+        ? [{ x: 0, z: 7.9, halfX: 1.5, halfZ: 0.35 }]
+        : []),
+      ...this.secrets
+        .filter(
+          ({ definition }) =>
+            gameStore.getState().secrets[definition.id].revealed,
+        )
+        .map(({ definition }) => ({
+          ...definition.chestPosition,
+          halfX: 0.56,
+          halfZ: 0.41,
+        })),
+    ];
     this.bokoblin.update(dt, state.bridgeUnlocked, !!state.overlay);
     this.southChest.update(
       dt,
@@ -462,12 +568,11 @@ export class World implements Area {
     this.rupees.forEach((rupee) =>
       rupee.update(time, state.collected.includes(rupee.id)),
     );
-    for (const id of ["glade", "south"] as const) {
+    for (const { id, chest } of this.chests) {
       if (!state.chests[id]) this.burstShown[id] = false;
       if (!state.chests[id] || state.overlay || this.burstShown[id]) continue;
       this.burstShown[id] = true;
-      const position = (id === "glade" ? this.chest : this.southChest).root
-        .position;
+      const position = chest.root.position;
       for (let i = 0; i < 9; i++) {
         const c = new Collectible("reward", position.x, position.z);
         c.root.position.y = 0.8;
