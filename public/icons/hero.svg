@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <title>Legend of Matte – hjälten med svärd och sköld</title>
+  <rect width="512" height="512" fill="#f8f4e7"/>
+  <circle cx="256" cy="257" r="202" fill="#e3edd5"/>
+  <ellipse cx="260" cy="447" rx="151" ry="18" fill="#c5d7b4"/>
+  <g stroke="#263c39" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <!-- En mjuk, böjd grön luva bakom håret. -->
+    <path d="M168 185 Q150 93 241 76 Q294 65 338 106 Q367 128 394 111 Q384 168 336 181Z" fill="#36964a"/>
+    <path d="M204 110 Q244 88 288 111" fill="none" stroke="#78c75a" stroke-width="14"/>
+    <!-- Tunika, ärmar och bälte. -->
+    <path d="M203 317 Q168 325 140 370 L167 397 L173 445 L337 445 L347 389 L369 365 Q343 326 307 317Z" fill="#36964a"/>
+    <path d="M205 329 L256 370 L305 329" fill="#fff1d4"/>
+    <path d="M205 329 L222 373 L256 352 L289 373 L306 329" fill="#77bc55" stroke-width="7"/>
+    <path d="M174 420 H337 V444 H174Z" fill="#805033"/>
+    <rect x="240" y="418" width="37" height="28" rx="5" fill="#efbd45" stroke-width="6"/>
+    <path d="M256 426 V437" fill="none" stroke-width="5"/>
+    <!-- Öron och den stora vänliga ansiktsformen. -->
+    <path d="M177 218 L128 197 Q128 258 180 268 M335 218 L383 197 Q383 258 332 268" fill="#ffd0a0"/>
+    <path d="M150 222 L173 242 M360 222 L337 242" fill="none" stroke="#d98e68" stroke-width="6"/>
+    <path d="M172 203 Q171 159 253 155 Q337 156 340 206 L334 269 Q328 328 257 340 Q184 330 177 272Z" fill="#ffd0a0"/>
+    <path d="M191 291 Q215 320 255 323 Q295 319 317 292" fill="none" stroke="#f0ae7e" stroke-width="8"/>
+    <!-- Gyllene lugg i stora former, läsbar även i liten storlek. -->
+    <path d="M171 260 Q154 220 169 185 Q180 149 236 146 Q299 133 331 178 Q351 199 338 257 L316 226 L311 188 Q276 220 247 217 L263 188 Q226 226 189 224 L187 262Z" fill="#f5cc49"/>
+    <path d="M190 186 Q210 165 243 165" fill="none" stroke="#fff09a" stroke-width="11"/>
+    <path d="M205 236 Q216 230 226 235 M281 235 Q292 230 302 236" fill="none" stroke="#966330" stroke-width="6"/>
+    <ellipse cx="218" cy="259" rx="11" ry="17" fill="#263c39" stroke="none"/>
+    <ellipse cx="291" cy="259" rx="11" ry="17" fill="#263c39" stroke="none"/>
+    <circle cx="215" cy="253" r="4" fill="#fff" stroke="none"/>
+    <circle cx="288" cy="253" r="4" fill="#fff" stroke="none"/>
+    <ellipse cx="198" cy="284" rx="15" ry="9" fill="#ef9e89" stroke="none"/>
+    <ellipse cx="310" cy="284" rx="15" ry="9" fill="#ef9e89" stroke="none"/>
+    <path d="M250 277 Q255 283 261 277" fill="none" stroke="#d98e68" stroke-width="5"/>
+    <path d="M233 296 Q255 321 278 296Z" fill="#a95146" stroke-width="6"/>
+    <path d="M240 299 H270" fill="none" stroke="#fff1d4" stroke-width="5"/>
+    <!-- Kort silversvärd med gyllene parerstång och rund knopp. -->
+    <g transform="rotate(-12 118 347)">
+      <path d="M101 309 V170 L118 141 L135 170 V309Z" fill="#e5ebe4"/>
+      <path d="M118 162 V297" stroke="#fff" stroke-width="6"/>
+      <rect x="107" y="326" width="22" height="63" rx="8" fill="#805033" stroke-width="7"/>
+      <path d="M85 312 Q118 321 151 312 L151 330 Q118 341 85 330Z" fill="#efbd45" stroke-width="7"/>
+      <circle cx="118" cy="391" r="13" fill="#efbd45" stroke-width="7"/>
+      <path d="M130 354 Q151 340 155 357 Q157 376 137 381 L116 378 Q104 375 106 363 Q108 352 120 355Z" fill="#ffd0a0" stroke-width="7"/>
+    </g>
+    <!-- Blå sköld med silverkant och spelets gyllene och röda emblem. -->
+    <g transform="rotate(9 356 370)">
+      <path d="M356 299 L416 323 L409 391 Q398 419 356 445 Q314 419 303 391 L296 323Z" fill="#dce2df" stroke-width="8"/>
+      <path d="M356 314 L402 332 L396 385 Q386 407 356 428 Q326 407 316 385 L310 332Z" fill="#3c589d" stroke-width="5"/>
+      <path d="M356 330 L346 347 H366Z M345 350 L335 367 H355Z M367 350 L357 367 H377Z" fill="#efbd45" stroke="none"/>
+      <path d="M329 379 L347 384 L356 375 L365 384 L383 379 L374 399 L356 412 L338 399Z" fill="#ef7869" stroke="none"/>
+    </g>
+  </g>
+</svg>

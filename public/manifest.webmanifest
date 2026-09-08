@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Legend of Matte",
+  "short_name": "Legend of Matte",
+  "description": "Ett litet äventyr med stora upptäckter. Utforska Gläntan och lås upp skatten med matte.",
+  "lang": "sv",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f4e7",
+  "theme_color": "#f8f4e7",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

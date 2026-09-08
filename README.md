@@ -23,6 +23,12 @@ När spelet körs med `npm run dev` finns en liten debugknapp vid skärmens hög
 
 Den första debugändringen startar en tillfällig testsession. Inga framsteg skrivs då till den vanliga sparfilen, inte heller om spelet fortsätter normalt efteråt. **Avsluta testsession** eller ladda om sidan för att återgå till den riktiga sparningen. Debugknappen och menyn inkluderas inte i produktionsbygget.
 
+### Lägg till på iPads hemskärm
+
+Öppna spelets publicerade adress i Safari, tryck på **Dela → Lägg till på hemskärmen → Lägg till**. Spelet får en tecknad ikon av hjälten med svärd och sköld och öppnas i ett eget fönster. Både stående och liggande läge stöds. Spelet behöver nätanslutning för att laddas; hemskärmsikonen gör det inte tillgängligt offline. Om en äldre genväg visar fel ikon, ta bort genvägen och lägg till den igen.
+
+Ikonerna ligger i `public/icons/`, med det redigerbara SVG-originalet i `hero.svg` och PNG-originalet i `icon-1024.png`. `public/apple-touch-icon.png` används av iPad och `public/manifest.webmanifest` anger appnamn, ikoner och startadress. Sökvägarna fungerar även under GitHub Pages undermapp `/z-math/`. Inställningarna följer [Apples dokumentation för hemskärmsappar](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html).
+
 ## Publicering
 
 Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera först **Settings → Pages → Build and deployment → Source: GitHub Actions** i GitHub-repot. Spelet blir sedan tillgängligt på `https://adamlindqvist.github.io/z-math/`.
