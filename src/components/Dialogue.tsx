@@ -84,7 +84,7 @@ export function Dialogue() {
           <Sword size={64} />
           <Shield size={64} />
         </div>
-        <h2>Bokoblin vaktar bron</h2>
+        <h2>Bokoblinen vaktar bron</h2>
         <p>Hitta svärdet och skölden i Vattentemplet!</p>
         <button
           className="min-h-16 rounded-2xl bg-sunshine px-8 text-2xl font-bold"
