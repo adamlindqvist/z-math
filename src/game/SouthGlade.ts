@@ -1,5 +1,12 @@
+import {
+  gladePath,
+  gladeTrees,
+  gladeRocks,
+  gladeBushes,
+  gladeFlowers,
+} from "./gladeScenery";
 import * as THREE from "three";
-import { ball, box, material, mesh } from "./models";
+import { box, material, mesh } from "./models";
 import type { CollisionSystem } from "./CollisionSystem";
 
 export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
@@ -31,11 +38,30 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
     geometry.rotateX(-Math.PI / 2);
     mesh(geometry, surface, root, 0, y, 20);
   }
-  box(root, path, 0, 0.025, 18, 1.8, 0.05, 10);
-  box(root, path, 1.5, 0.03, 23, 4.8, 0.05, 1.6);
-  // Open route from the existing path to the bridge.
-  box(root, path, -1.4, 0.035, 5.3, 1.6, 0.06, 4.7);
-  box(root, path, -0.6, 0.04, 7.2, 2.9, 0.06, 1.3);
+  // A continuous, softly bending trail meets the bridge squarely at both ends.
+  const points = gladePath(
+    root,
+    new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.08, 13.25),
+      new THREE.Vector3(0, 0.08, 14.6),
+      new THREE.Vector3(-0.8, 0.08, 17),
+      new THREE.Vector3(-0.6, 0.08, 19.8),
+      new THREE.Vector3(0.8, 0.08, 22),
+      new THREE.Vector3(3.5, 0.08, 23),
+    ]),
+    path,
+  );
+  gladePath(
+    root,
+    new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.5, 0.08, 2.85),
+      new THREE.Vector3(-1.35, 0.08, 4.3),
+      new THREE.Vector3(-0.5, 0.08, 6.2),
+      new THREE.Vector3(0, 0.08, 7.15),
+      new THREE.Vector3(0, 0.08, 7.65),
+    ]),
+    path,
+  );
   const wood = material("#b68b59"),
     rail = material("#ead5a6");
   for (let i = 0; i < 15; i++)
@@ -49,42 +75,28 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
     collision.add(side * 6.4, 10.5, 4.9, 2.5);
     collision.add(side * 10.15, 20, 1.15, 7);
   }
-  const trunk = material("#8e7250"),
-    leaf = material("#6fa45e"),
-    petal = material("#fff4d1");
-  for (const [x, z] of [
-    [-6, 15],
-    [6, 15],
-    [-7, 19],
-    [7, 20],
-    [-6, 25],
-    [0, 25.5],
-    [6, 25.5],
-  ]) {
-    mesh(
-      new THREE.CylinderGeometry(0.18, 0.27, 1.6, 7),
-      trunk,
-      root,
-      x,
-      0.8,
-      z,
-    );
-    ball(root, leaf, x, 2, z, 1, 1.1, 0.95);
-    ball(root, leaf, x + 0.4, 2.3, z, 0.65);
-    collision.add(x, z, 0.3);
-  }
-  for (let i = 0; i < 42; i++) {
-    const x = ((i * 37) % 150) / 10 - 7.5,
-      z = 14 + ((i * 23) % 110) / 10;
-    if (
-      Math.abs(x) < 1.4 ||
-      (z > 21.5 && z < 24.5) ||
-      !collision.free(x, z, 0.6)
-    )
-      continue;
-    ball(root, leaf, x, 0.13, z, 0.16, 0.18, 0.16);
-    ball(root, petal, x, 0.3, z, 0.09);
-  }
+  gladeTrees(root, collision, [
+    [-6, 15, 1.1],
+    [6, 15, 1.2],
+    [-7, 19, 1],
+    [7, 20, 1.1],
+    [-6, 25, 1.1],
+    [0, 25.5, 0.9],
+    [6, 25.5, 1.15],
+  ]);
+  gladeRocks(root, collision, [
+    [-7.3, 16.7, 0.45],
+    [5.2, 17.4, 0.5],
+    [-5.5, 22.8, 0.4],
+    [7.4, 23.6, 0.45],
+  ]);
+  gladeBushes(root, collision, [
+    [-4.2, 15.4],
+    [7, 17.3],
+    [-5.4, 19.7],
+    [4.7, 20.3],
+    [-3.2, 25.3],
+  ]);
   const clearing = mesh(
     new THREE.CylinderGeometry(1.35, 1.4, 0.06, 16),
     material("#c5c493"),
@@ -95,4 +107,12 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
   );
   clearing.castShadow = false;
   collision.add(3.5, 23, 0.56, 0.41);
+  gladeFlowers(root, collision, points, {
+    seed: 37,
+    count: 110,
+    minX: -8,
+    minZ: 14,
+    width: 16,
+    depth: 12,
+  });
 }

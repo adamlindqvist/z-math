@@ -1,3 +1,10 @@
+import {
+  gladePath,
+  gladeTrees,
+  gladeRocks,
+  gladeBushes,
+  gladeFlowers,
+} from "./gladeScenery";
 import { Bokoblin } from "./entities/Bokoblin";
 import { buildSouthGlade } from "./SouthGlade";
 import { type Area, disposeTree } from "./Area";
@@ -126,29 +133,7 @@ export class World implements Area {
       new THREE.Vector3(4, 0.08, -1.6),
       new THREE.Vector3(5.6, 0.08, -3.8),
     ]);
-    const points = curve.getPoints(80);
-    const positions: number[] = [];
-    const indices: number[] = [];
-    points.forEach((p, i) => {
-      const tangent = curve.getTangent(i / 80);
-      const n = new THREE.Vector3(-tangent.z, 0, tangent.x).multiplyScalar(
-        0.77 + Math.sin(i * 0.4) * 0.045,
-      );
-      positions.push(p.x + n.x, p.y, p.z + n.z, p.x - n.x, p.y, p.z - n.z);
-      if (i < 80) {
-        const a = i * 2;
-        indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
-      }
-    });
-    const pathGeometry = new THREE.BufferGeometry();
-    pathGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(positions, 3),
-    );
-    pathGeometry.setIndex(indices);
-    pathGeometry.computeVertexNormals();
-    const pathMesh = mesh(pathGeometry, path, this.root);
-    pathMesh.castShadow = false;
+    const points = gladePath(this.root, curve, path);
     // A compact castle stays inside the original building's collision footprint.
     const castle = new THREE.Group();
     castle.name = "castle";
@@ -290,7 +275,6 @@ export class World implements Area {
     flag.position.set(0, 4.91, -0.34);
     this.collision.add(-7, -2, 1.6, 1.4);
     const trunk = material("#8e7250");
-    const greens = ["#5c9460", "#6fa45e", "#80ab60"];
     const treePositions = [
       [-9, -5, 1.1],
       [-5.3, -5.5, 1.2],
@@ -307,19 +291,7 @@ export class World implements Area {
       [9, 5.8, 1.1],
       [10, 0, 0.8],
     ];
-    treePositions.forEach(([x, z, s], i) => {
-      const t = new THREE.Group();
-      t.position.set(x, 0, z);
-      t.scale.setScalar(s);
-      this.root.add(t);
-      mesh(new THREE.CylinderGeometry(0.17, 0.27, 1.65, 7), trunk, t, 0, 0.8);
-      const leaf = material(greens[i % 3]);
-      ball(t, leaf, 0, 2, 0, 0.99, 1.03, 0.95);
-      ball(t, leaf, -0.5, 1.85, 0.08, 0.58, 0.7, 0.65);
-      ball(t, leaf, 0.5, 2, 0.02, 0.6, 0.75, 0.65);
-      ball(t, leaf, 0.1, 2.6, 0, 0.66, 0.65, 0.65);
-      this.collision.add(x, z, 0.26 * s);
-    });
+    gladeTrees(this.root, this.collision, treePositions);
     const rocks = [
       [-10, 3.5, 0.5],
       [-1.1, -4.4, 0.65],
@@ -328,41 +300,15 @@ export class World implements Area {
       [8, 6.7, 0.5],
       [-4.3, -5.6, 0.4],
     ];
-    rocks.forEach(([x, z, s]) => {
-      const rock = mesh(
-        new THREE.DodecahedronGeometry(s, 0),
-        material("#a5aea2"),
-        this.root,
-        x,
-        s * 0.6,
-        z,
-      );
-      rock.scale.set(1.25, 0.8, 0.9);
-      rock.rotation.set(0.2, x, 0.1);
-      this.collision.add(x, z, s * 0.85);
-    });
-    [
+    gladeRocks(this.root, this.collision, rocks);
+    gladeBushes(this.root, this.collision, [
       [-4, -1.4],
       [1, -4.9],
       [7.5, -4.5],
       [-8, 4.7],
       [2.5, 4.8],
       [9, 3.8],
-    ].forEach(([x, z], i) => {
-      const bush = material("#71994f");
-      ball(this.root, bush, x, 0.38, z, 0.62, 0.5, 0.6);
-      ball(this.root, bush, x + 0.38, 0.28, z + 0.1, 0.37);
-      this.collision.add(x, z, 0.55, 0.45);
-      for (let j = 0; j < 3; j++)
-        ball(
-          this.root,
-          material(i % 2 ? "#d88973" : "#eebd78"),
-          x - 0.25 + j * 0.22,
-          0.73,
-          z + 0.1,
-          0.065,
-        );
-    });
+    ]);
     // Pond with a sandy rim, shallow turquoise water and lily pads.
     const shore = mesh(
       new THREE.CylinderGeometry(1, 1, 0.12, 32),
@@ -457,56 +403,14 @@ export class World implements Area {
           0.5,
         );
     });
-    // Deterministic scattered flowers and grass, never on the main path.
-    let seed = 19;
-    const random = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    };
-    const stem = material("#6c984f"),
-      petals = [material("#fff4d1"), material("#e8aaa1"), material("#d8c4e5")];
-    for (let i = 0; i < 145; i++) {
-      const x = random() * 21 - 10.5,
-        z = random() * 14.7 - 7.35;
-      if (
-        !this.collision.free(x, z, 0.3) ||
-        points.some((p) => Math.hypot(p.x - x, p.z - z) < 1.1)
-      )
-        continue;
-      if (i % 3 === 0) {
-        mesh(
-          new THREE.CylinderGeometry(0.018, 0.022, 0.2, 4),
-          stem,
-          this.root,
-          x,
-          0.1,
-          z,
-        );
-        const petal = petals[i % petals.length];
-        for (let j = 0; j < 4; j++)
-          ball(
-            this.root,
-            petal,
-            x + Math.cos((j * Math.PI) / 2) * 0.055,
-            0.22,
-            z + Math.sin((j * Math.PI) / 2) * 0.055,
-            0.055,
-            0.08,
-            0.055,
-          );
-        ball(this.root, material("#e8bf5e"), x, 0.24, z, 0.03);
-      } else {
-        const tuft = mesh(
-          new THREE.ConeGeometry(0.06, 0.19, 3),
-          stem,
-          this.root,
-          x,
-          0.075,
-          z,
-        );
-        tuft.rotation.z = 0.2;
-      }
-    }
+    gladeFlowers(this.root, this.collision, points, {
+      seed: 19,
+      count: 145,
+      minX: -10.5,
+      minZ: -7.35,
+      width: 21,
+      depth: 14.7,
+    });
     // The treasure has its own little stone clearing.
     const clearing = mesh(
       new THREE.CylinderGeometry(1.35, 1.4, 0.06, 16),

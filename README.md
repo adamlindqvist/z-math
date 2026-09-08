@@ -70,4 +70,4 @@ Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler o
 
 ### Södra gläntan
 
-`World` håller ihop båda landytorna och bron i samma scen. `SouthGlade` bygger den södra miljön och brons gränser; `Bokoblin` äger vaktens modell och flykt. Utomhuskistor identifieras med `glade` och `south`, och den aktiva kistan behålls under hela frågeomgången.
+`World` håller ihop båda landytorna och bron i samma scen. `SouthGlade` bygger den södra miljön och brons gränser. `gladeScenery` ger båda gläntorna samma mjukt slingrande stigar, rundade träd, blommande buskar, stenar, blommor och grästuvor; `Bokoblin` äger vaktens modell och flykt. Utomhuskistor identifieras med `glade` och `south`, och den aktiva kistan behålls under hela frågeomgången.
