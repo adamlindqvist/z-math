@@ -44,6 +44,7 @@ export type Overlay =
   | "empty"
   | "quiz"
   | "pause"
+  | "debug"
   | "reset"
   | "inventory"
   | "itemReward";
@@ -69,6 +70,8 @@ export interface GameState extends Progress {
   rewardItems: ItemId[];
   savingAvailable: boolean;
   resetId: number;
+  debugActive: boolean;
+  debugNoclip: boolean;
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
@@ -162,11 +165,14 @@ export function createGameStore(
     rewardItems: [],
     savingAvailable,
     resetId: 0,
+    debugActive: false,
+    debugNoclip: false,
   };
+  let debugBaseline: Progress | null = null;
   const listeners = new Set<() => void>();
   const set = (update: Partial<GameState>, persist = false) => {
     state = { ...state, ...update };
-    if (persist && storage) {
+    if (persist && storage && !state.debugActive) {
       try {
         storage.setItem(
           SAVE_KEY,
@@ -188,6 +194,49 @@ export function createGameStore(
       }
     }
     listeners.forEach((fn) => fn());
+  };
+  const beginDebugSession = () => {
+    if (state.debugActive) return;
+    debugBaseline = copyProgress(state);
+    set({ debugActive: true });
+  };
+  const solveThrough = (
+    dungeonId: string,
+    lastRoomIndex: number,
+  ): Partial<GameState> => {
+    const dungeon = DUNGEONS.find((candidate) => candidate.id === dungeonId);
+    const current = state.dungeons[dungeonId];
+    if (!dungeon || !current || lastRoomIndex < 0) return {};
+    const progress: DungeonProgress = {
+      answers: { ...current.answers },
+      stones: Object.fromEntries(
+        Object.entries(current.stones).map(([id, positions]) => [
+          id,
+          [...positions],
+        ]),
+      ),
+      rewards: [...current.rewards],
+    };
+    let inventory: Inventory = state;
+    let rupees = state.rupees;
+    for (const room of dungeon.rooms.slice(0, lastRoomIndex + 1)) {
+      if (room.challenge) {
+        const challenge = room.challenge;
+        progress.answers[challenge.id] = challenge.required;
+        if (challenge.reward > 0 && !progress.rewards.includes(challenge.id)) {
+          progress.rewards.push(challenge.id);
+          rupees += challenge.reward;
+        }
+        inventory = receiveItems(inventory, challenge.items ?? [], true);
+      }
+      if (room.stones)
+        progress.stones[room.id] = room.stones.map((stone) => stone.goal);
+    }
+    return {
+      ...inventory,
+      rupees,
+      dungeons: { ...state.dungeons, [dungeonId]: progress },
+    };
   };
   return {
     getState: () => state,
@@ -221,6 +270,114 @@ export function createGameStore(
     setTarget: (target: Target) => {
       if (JSON.stringify(target) !== JSON.stringify(state.target))
         set({ target });
+    },
+    openDebug: () => {
+      if (!state.overlay && !state.motion) set({ overlay: "debug" });
+    },
+    closeDebug: () => {
+      if (state.overlay === "debug") set({ overlay: null });
+    },
+    debugTravelTo: (destination: Location) => {
+      if (state.overlay !== "debug") return;
+      beginDebugSession();
+      const found = resolveRoom(destination);
+      let update: Partial<GameState> = {};
+      if (found) {
+        const roomIndex = found.dungeon.rooms.indexOf(found.room);
+        update = solveThrough(found.dungeon.id, roomIndex - 1);
+        if (found.dungeon.requiresBridge) {
+          const inventory = receiveItems(
+            {
+              items: update.items ?? state.items,
+              equipment: update.equipment ?? state.equipment,
+            },
+            ["temple-sword", "temple-shield"],
+          );
+          update = { ...update, ...inventory, bridgeUnlocked: true };
+        }
+      }
+      set({
+        ...update,
+        location: destination,
+        target: null,
+        motion: null,
+        question: null,
+        feedback: null,
+        dungeonQuiz: null,
+        activeChest: null,
+        reward: 0,
+        rewardItems: [],
+        quizCorrectAnswers: 0,
+      });
+    },
+    debugCompleteCurrentRoom: () => {
+      if (state.overlay !== "debug") return;
+      const found = resolveRoom(state.location);
+      if (!found) return;
+      beginDebugSession();
+      set(
+        solveThrough(found.dungeon.id, found.dungeon.rooms.indexOf(found.room)),
+      );
+    },
+    debugGrantAllItems: () => {
+      if (state.overlay !== "debug") return;
+      beginDebugSession();
+      set(receiveItems(state, Object.keys(ITEMS) as ItemId[]));
+    },
+    debugUnlockBridge: () => {
+      if (state.overlay !== "debug") return;
+      beginDebugSession();
+      set({
+        ...receiveItems(state, ["temple-sword", "temple-shield"]),
+        bridgeUnlocked: true,
+      });
+    },
+    debugSetNoclip: (enabled: boolean) => {
+      if (state.overlay !== "debug") return;
+      beginDebugSession();
+      set({ debugNoclip: enabled });
+    },
+    debugReset: () => {
+      if (state.overlay !== "debug") return;
+      beginDebugSession();
+      set({
+        ...fresh(),
+        overlay: "debug",
+        target: null,
+        question: null,
+        feedback: null,
+        quizCorrectAnswers: 0,
+        dungeonQuiz: null,
+        activeChest: null,
+        motion: null,
+        reward: 0,
+        rewardItems: [],
+        resetId: state.resetId + 1,
+      });
+    },
+    debugEndSession: () => {
+      if (!state.debugActive || !debugBaseline) {
+        set({ overlay: null, debugNoclip: false });
+        return;
+      }
+      const baseline = debugBaseline;
+      debugBaseline = null;
+      set({
+        ...baseline,
+        overlay: null,
+        target: null,
+        question: null,
+        feedback: null,
+        quizCorrectAnswers: 0,
+        dungeonQuiz: null,
+        activeChest: null,
+        motion: null,
+        reward: 0,
+        rewardItems: [],
+        resetId: state.resetId + 1,
+        debugActive: false,
+        debugNoclip: false,
+      });
     },
     travelTo: (destination: Location) => {
       if (state.overlay || state.motion) return;
@@ -522,6 +679,34 @@ try {
 export const gameStore = createGameStore(local);
 export const useGameState = () =>
   useSyncExternalStore(gameStore.subscribe, gameStore.getState);
+
+function copyProgress(state: Progress): Progress {
+  return {
+    items: [...state.items],
+    equipment: { ...state.equipment },
+    location: state.location ? { ...state.location } : null,
+    dungeons: Object.fromEntries(
+      Object.entries(state.dungeons).map(([id, progress]) => [
+        id,
+        {
+          answers: { ...progress.answers },
+          stones: Object.fromEntries(
+            Object.entries(progress.stones).map(([room, positions]) => [
+              room,
+              [...positions],
+            ]),
+          ),
+          rewards: [...progress.rewards],
+        },
+      ]),
+    ),
+    rupees: state.rupees,
+    chests: { ...state.chests },
+    bridgeUnlocked: state.bridgeUnlocked,
+    collected: [...state.collected],
+    talkedToNpc: state.talkedToNpc,
+  };
+}
 
 function validLocation(
   value: unknown,

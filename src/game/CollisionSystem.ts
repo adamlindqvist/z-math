@@ -70,4 +70,19 @@ export class CollisionSystem {
         position.z += dz / steps;
     }
   }
+  moveWithinBounds(
+    position: { x: number; z: number },
+    dx: number,
+    dz: number,
+    radius = 0.32,
+  ) {
+    position.x = Math.max(
+      -this.halfWidth + radius,
+      Math.min(this.halfWidth - radius, position.x + dx),
+    );
+    position.z = Math.max(
+      this.centerZ - this.halfDepth + radius,
+      Math.min(this.centerZ + this.halfDepth - radius, position.z + dz),
+    );
+  }
 }

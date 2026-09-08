@@ -31,12 +31,14 @@ export class Player {
     collision: CollisionSystem,
     room = false,
     tryPush?: (position: Vector3, dx: number, dz: number) => boolean,
+    noclip = false,
   ) {
     const { x, y } = input.direction();
     const dx = (room ? x : x * 0.864 + y * 0.504) * dt * 3.5;
     const dz = (room ? y : -x * 0.504 + y * 0.864) * dt * 3.5;
     const before = this.root.position.clone();
-    if (!tryPush?.(this.root.position, dx, dz))
+    if (noclip) collision.moveWithinBounds(this.root.position, dx, dz);
+    else if (!tryPush?.(this.root.position, dx, dz))
       collision.move(this.root.position, dx, dz);
     const moving = this.root.position.distanceToSquared(before) > 0.000001;
     if (moving) {

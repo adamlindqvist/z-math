@@ -69,7 +69,8 @@ export function Dialogue() {
     !overlay ||
     overlay === "quiz" ||
     overlay === "inventory" ||
-    overlay === "itemReward"
+    overlay === "itemReward" ||
+    overlay === "debug"
   )
     return null;
   if (overlay === "bokoblin")

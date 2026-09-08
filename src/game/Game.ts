@@ -164,6 +164,7 @@ export class Game {
         this.world.collision,
         this.world.cameraMode === "room",
         this.world.tryPush?.bind(this.world),
+        state.debugNoclip,
       );
     this.interactions.update(this.player.position, this.world, this.time);
     this.camera.update(this.player.position, dt);

@@ -1,11 +1,15 @@
 import { InventoryDialog } from "./components/Inventory";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Game } from "./game/Game";
 import { HUD } from "./components/HUD";
 import { TouchControls } from "./components/TouchControls";
 import { Dialogue } from "./components/Dialogue";
 import { MathQuiz } from "./components/MathQuiz";
 import { Reward } from "./components/Reward";
+
+const DebugMenu = import.meta.env.DEV
+  ? lazy(() => import("./components/DebugMenu"))
+  : null;
 export default function App() {
   const container = useRef<HTMLDivElement>(null);
   const game = useRef<Game | null>(null);
@@ -61,6 +65,11 @@ export default function App() {
           <InventoryDialog />
           <MathQuiz />
           <Reward />
+          {DebugMenu && (
+            <Suspense fallback={null}>
+              <DebugMenu />
+            </Suspense>
+          )}
         </>
       )}
     </main>

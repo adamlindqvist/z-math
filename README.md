@@ -17,6 +17,12 @@ npm run build
 npm run preview
 ```
 
+### Debugmeny
+
+När spelet körs med `npm run dev` finns en liten debugknapp vid skärmens högra kant. Menyn kan också öppnas och stängas med **F2**. Där går det att hoppa till tempelrum, klara rum, ge föremål, låsa upp bron, börja temporärt om och slå på noclip. Noclip passerar hinder men stannar vid kartans ytterkant.
+
+Den första debugändringen startar en tillfällig testsession. Inga framsteg skrivs då till den vanliga sparfilen, inte heller om spelet fortsätter normalt efteråt. **Avsluta testsession** eller ladda om sidan för att återgå till den riktiga sparningen. Debugknappen och menyn inkluderas inte i produktionsbygget.
+
 ## Publicering
 
 Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera först **Settings → Pages → Build and deployment → Source: GitHub Actions** i GitHub-repot. Spelet blir sedan tillgängligt på `https://adamlindqvist.github.io/z-math/`.
