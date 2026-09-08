@@ -215,7 +215,7 @@ describe("playable controls and interface", () => {
         host.querySelector(`[aria-label="${correct}, rätt svar"]`),
       ).not.toBeNull();
       expect(host.querySelector('[aria-label*="inte rätt"]')).toBeNull();
-      act(() => vi.advanceTimersByTime(1500));
+      act(() => vi.advanceTimersByTime(500));
       expect(gameStore.getState().feedback).toBe(
         index === 2 ? "complete" : "correct",
       );
