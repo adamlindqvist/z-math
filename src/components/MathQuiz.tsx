@@ -15,7 +15,7 @@ import {
   REQUIRED_CORRECT_ANSWERS,
   useGameState,
 } from "../store/gameStore";
-import { Modal, emblem, eyebrow } from "./Dialogue";
+import { Modal, emblem } from "./Dialogue";
 export function MathQuiz() {
   const {
     overlay,
@@ -68,7 +68,6 @@ export function MathQuiz() {
           <LockKeyhole size={32} />
         )}
       </div>
-      <p className={eyebrow}>{title}</p>
       <div
         className="my-3 flex justify-center gap-3 [&_svg]:size-[38px]"
         aria-label={`${quizCorrectAnswers} av ${required} rätt`}
