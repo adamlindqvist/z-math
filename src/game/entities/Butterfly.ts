@@ -70,9 +70,9 @@ export class Butterfly {
       this.root.add(sparkle);
       this.particles.push({ mesh: sparkle, life: 0, seed: i });
     }
-    this.root.traverse((object) => {
+    this.body.traverse((object) => {
       if (object instanceof THREE.Mesh) {
-        object.castShadow = false;
+        object.castShadow = true;
         object.receiveShadow = false;
       }
     });

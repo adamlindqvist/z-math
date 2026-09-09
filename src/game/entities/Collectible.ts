@@ -28,7 +28,7 @@ export class Collectible {
       0,
       -0.045,
     );
-    rupee.castShadow = false;
+    rupee.castShadow = true;
     this.root.position.set(x, 0.65, z);
   }
   update(time: number, collected: boolean) {
