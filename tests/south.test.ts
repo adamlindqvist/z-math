@@ -105,6 +105,7 @@ describe("southern glade", () => {
       s.finishQuiz();
     }
     expect(s.getState().chests).toEqual({
+      "royal-treasure": false,
       glade: false,
       south: true,
       "butterfly-01": false,

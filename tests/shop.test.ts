@@ -263,7 +263,7 @@ describe("castle shop", () => {
       for (const p of area.passages())
         expect(area.collision.free(p.x, p.z)).toBe(true);
     }
-    expect(hall.collision.free(0, -3.8)).toBe(false);
+    expect(hall.collision.free(0, -3.8)).toBe(true);
     expect(
       shop.interactions(createGameStore().getState(), new Vector3()),
     ).toHaveLength(5);

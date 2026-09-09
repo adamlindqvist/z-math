@@ -59,6 +59,14 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - Fjärilarnas framsteg sparas separat. Före avslöjandet börjar en ofärdig fjäril om vid sitt första stopp efter omladdning. När kistan väl har avslöjats finns den kvar och fjärilen väntar vid den. Öppnade kistor förblir öppnade och deras fjärilar kommer inte tillbaka.
 - Framsteg sparas automatiskt i webbläsaren. Pausmenyn låter dig börja om. Lagring delas inte mellan enheter och kan rensas av webbläsaren.
 
+### Kungasalen
+
+Gå genom entréhallens norra dörr till den tomma Kungasalen. Undersök skölden, den tomma rustningen och kungaporträttet med handlingsknappen eller genom att trycka på föremålet när du står nära. Märkena kan aktiveras i valfri ordning och sparas direkt. Boken visar en bildledtråd. Det finns inga personer, tidsgränser eller felval i rummet.
+
+När märkena lyser glider tronen åt sidan. Om spelaren står i vägen väntar tronen tills vägen är fri. Den högra sidogången är öppen; överflödig dekoration har tagits bort så att huvudföremålen syns tydligare. Kistan ger 20 rupees och en **kungakrona** en gång, utan mattefrågor. Kronan tas på direkt och kan bytas i väskan. En lös hjälm och en kruka gömmer dessutom varsin rupee.
+
+Kungasalen använder sparversion 10. Äldre eller ogiltiga sparningar börjar om. En omladdning efter löst pussel visar tronen i sitt öppna läge utan att spela om ljud eller dela ut belöningar igen.
+
 ## Struktur
 
 `src/game/` äger värld, kamera, input, kollisionssystem, modeller och renderloop. `src/components/` äger UI och touchkontroller. `src/store/gameStore.ts` är den typade bryggan mellan dem och sparar framsteg. React uppdateras bara när spelstatus ändras, aldrig varje bildruta. `src/math/` innehåller frågekontrakt samt generatorer för addition och bildfrågor.

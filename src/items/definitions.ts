@@ -9,6 +9,7 @@ export type ItemDefinition = {
   icon: "shirt" | "sword" | "shield" | "package" | "hat";
 };
 export const ITEMS = {
+  "royal-crown": { name: "Kungakrona", description: "En gyllene krona med kungens märke!", category: "cosmetic", equipSlot: "head", icon: "hat" },
   "green-hat": {
     name: "Grön äventyrsmössa",
     description: "En fin mössa med fjäder!",

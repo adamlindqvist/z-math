@@ -1,3 +1,4 @@
+import { PictureClue } from "./components/PictureClue";
 import { ShopDialog } from "./components/Shop";
 import { connectSound } from "./audio/connectSound";
 import { sound } from "./audio/sound";
@@ -70,6 +71,7 @@ export default function App() {
           <TouchControls game={game} />
           <Dialogue />
           <InventoryDialog />
+          <PictureClue />
           <ShopDialog />
           <MathQuiz />
           <Reward />

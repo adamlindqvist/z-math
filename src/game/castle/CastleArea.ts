@@ -50,18 +50,14 @@ export class CastleArea implements Area {
     if (room === "hall") {
       this.door(4.65, 0, "Butik", false, -Math.PI / 2, false, "\u{1F6D2}");
       this.door(-4.65, 0, "Bibliotek", true, Math.PI / 2, false, "\u{1F4DA}");
-      this.door(0, -4.2, "Kungssal", true, 0, false, "\u{1F451}");
+      this.door(0, -4.2, "Kungasalen", false, 0, false, "\u{1F451}");
       this.targets.push(
         {
           x: -4,
           z: 0,
           target: { kind: "castleDoor", id: "library", label: "Titta" },
         },
-        {
-          x: 0,
-          z: -3.5,
-          target: { kind: "castleDoor", id: "throne", label: "Titta" },
-        },
+
       );
       this.flames = furnishHall(this.root, this.collision);
       // A few rupees lie on the red runner so the hall rewards a look around.
@@ -226,6 +222,7 @@ export class CastleArea implements Area {
     return this.room === "hall"
       ? [
           { x: 0, z: 3.65, destination: null },
+          { x: 0, z: -3.65, destination: { castle: "throne" } },
           {
             x: 4.1,
             z: 0,

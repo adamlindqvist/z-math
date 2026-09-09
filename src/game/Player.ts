@@ -1,4 +1,4 @@
-import { shopModel } from "./castle/models";
+import { itemModel } from "../items/models";
 import { freshInventory, type Equipment } from "../items/definitions";
 import { Vector3 } from "three";
 import { character } from "./models";
@@ -9,17 +9,20 @@ export class Player {
   root = this.model.root;
   private phase = 0;
   constructor() {
-    const hat = shopModel("green-hat");
-    hat.position.set(0, 1.55, 0.1);
-    this.root.add(hat);
+    for (const id of ["green-hat", "royal-crown"] as const) {
+      const hat = itemModel(id);
+      hat.position.set(0, id === "royal-crown" ? 1.6 : 1.55, id === "royal-crown" ? 0 : 0.1);
+      this.root.add(hat);
+    }
     this.reset();
     this.setEquipment(freshInventory().equipment);
   }
   setEquipment(equipment: Equipment) {
     this.root.getObjectByName("base-hat")!.visible =
-      equipment.head !== "green-hat";
+      equipment.head !== "green-hat" && equipment.head !== "royal-crown";
     this.root.getObjectByName("green-hat")!.visible =
       equipment.head === "green-hat";
+    this.root.getObjectByName("royal-crown")!.visible = equipment.head === "royal-crown";
     this.root.getObjectByName("wood-sword")!.visible =
       equipment.weapon === "wooden-sword";
     this.root.getObjectByName("wood-shield")!.visible =

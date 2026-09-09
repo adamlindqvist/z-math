@@ -1,3 +1,4 @@
+import { ThroneRoomArea } from "./castle/ThroneRoomArea";
 import { CastleArea, ShopScene, CASTLE_ENTRANCE } from "./castle/CastleArea";
 import type { Location } from "./dungeons/definitions";
 import { type Area } from "./Area";
@@ -174,6 +175,7 @@ export class Game {
   private createArea(): Area {
     const location = gameStore.getState().location;
     this.areaKey = JSON.stringify(location);
+    if (location?.castle === "throne") return new ThroneRoomArea();
     if (location?.castle === "hall") return new CastleArea();
     if (location?.castle === "shop") return new ShopScene();
     const found = resolveRoom(location);
@@ -191,7 +193,8 @@ export class Game {
         : gameStore.getState().location?.castle === "hall" &&
             this.previousLocation?.castle === "shop"
           ? { x: 3, z: 0 }
-          : null;
+          : gameStore.getState().location?.castle === "hall" && this.previousLocation?.castle === "throne"
+            ? { x: 0, z: -2.5 } : null;
     const spawn =
       castleSpawn ??
       (this.world.cameraMode === "glade" && entrance
@@ -210,7 +213,7 @@ export class Game {
         ? "Slottets entréhall"
         : gameStore.getState().location?.castle === "shop"
           ? "Bosses butik"
-          : undefined) ??
+          : gameStore.getState().location?.castle === "throne" ? "Kungasalen" : undefined) ??
         resolveRoom(gameStore.getState().location)?.room.name ??
         "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan med Eldtemplet",
     );

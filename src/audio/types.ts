@@ -1,4 +1,5 @@
 export type SoundEvent =
+  | "click" | "metal" | "mechanism" | "plop" | "wind"
   | "rupee"
   | "correct"
   | "retry"

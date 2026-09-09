@@ -1,3 +1,7 @@
+import { freshPuzzles, validPuzzles, puzzleSolved, PUZZLES, type PuzzlesProgress } from "../game/puzzles/definitions";
+import { WORLD_OBJECTS, PICKUP_OBJECTS, sameLocation, validWorldObjects, type WorldObjectId } from "../game/interactables/definitions";
+import { canOpenChest } from "../game/entities/chestAccess";
+import type { ChestDefinition } from "../game/entities/chestDefinitions";
 import {
   SHOP,
   isShopItem,
@@ -49,6 +53,7 @@ import {
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const RUPEE_IDS = [
+  "royal-helmet-rupee", "royal-pot-rupee",
   ...ROCK_SECRETS.flatMap((s) => [...s.pickupIds]),
   "path-1",
   "path-2",
@@ -66,8 +71,9 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "worldObject"; id: WorldObjectId; label: string }
   | { kind: "shop"; itemId?: ShopItemId; label: string }
-  | { kind: "castleDoor"; id: "library" | "throne"; label: string }
+  | { kind: "castleDoor"; id: "library"; label: string }
   | "npc"
   | "bokoblin"
   | null
@@ -75,6 +81,7 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "pictureClue"
   | "shop"
   | "castleDoor"
   | null
@@ -89,6 +96,8 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  puzzles: PuzzlesProgress;
+  worldObjects: WorldObjectId[];
   purchases: ShopItemId[];
   location: Location;
   dungeons: Record<string, DungeonProgress>;
@@ -100,6 +109,8 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  objectEvent: { id: WorldObjectId; sequence: number } | null;
+  movingBarriers: string[];
   shopSelection: ShopItemId | null;
   shopPurchased: boolean;
   castleMessage: string;
@@ -124,6 +135,8 @@ export interface GameState extends Progress {
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
+  puzzles: freshPuzzles(),
+  worldObjects: [],
   purchases: [],
   location: null,
   dungeons: freshDungeons(),
@@ -141,8 +154,9 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 9 ||
+      p?.version !== 10 ||
       !validInventory(p) ||
+      !validPuzzles(p.puzzles) || !validWorldObjects(p.worldObjects) ||
       !validPurchases(p.purchases, p.items) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
@@ -167,6 +181,8 @@ export function parseSave(raw: string | null): Progress {
       !CHEST_IDS.every((id) => typeof p.chests[id] === "boolean") ||
       !Array.isArray(p.collected) ||
       !validSecrets(p.secrets, p.chests, p.bridgeUnlocked, p.collected) ||
+      (p.chests["royal-treasure"] && (!puzzleSolved(p.puzzles, "royal-symbols") || !p.items.includes("royal-crown"))) ||
+      PICKUP_OBJECTS.some(id => { const b = WORLD_OBJECTS[id].behavior; return b.kind === "pickup" && p.collected.includes(b.pickup) && !p.worldObjects.includes(id); }) ||
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
@@ -187,6 +203,8 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      puzzles: p.puzzles,
+      worldObjects: p.worldObjects,
       purchases: p.purchases,
       items: p.items,
       equipment: p.equipment,
@@ -229,6 +247,8 @@ export function createGameStore(
     activeChest: null,
     motion: null,
     activeSecret: null,
+        movingBarriers: [],
+        objectEvent: null,
     reward: 0,
     rewardItems: [],
     savingAvailable,
@@ -254,7 +274,9 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 9,
+            version: 10,
+            puzzles: state.puzzles,
+            worldObjects: state.worldObjects,
             purchases: state.purchases,
             items: state.items,
             equipment: state.equipment,
@@ -296,6 +318,7 @@ export function createGameStore(
     if (state.chests[id]) return {};
     const secret = BUTTERFLY_SECRETS.find((s) => s.chestId === id);
     return {
+      ...receiveItems(state, (CHESTS[id] as ChestDefinition).items ?? [], true),
       rupees: state.rupees + CHESTS[id].reward,
       chests: { ...state.chests, [id]: true },
       ...(secret
@@ -512,6 +535,8 @@ export function createGameStore(
         target: null,
         motion: null,
         activeSecret: null,
+        movingBarriers: [],
+        objectEvent: null,
         question: null,
         feedback: null,
         askedQuestions: [],
@@ -577,6 +602,8 @@ export function createGameStore(
         activeChest: null,
         motion: null,
         activeSecret: null,
+        movingBarriers: [],
+        objectEvent: null,
         reward: 0,
         rewardItems: [],
         shopGreeting: false,
@@ -604,6 +631,8 @@ export function createGameStore(
         activeChest: null,
         motion: null,
         activeSecret: null,
+        movingBarriers: [],
+        objectEvent: null,
         reward: 0,
         rewardItems: [],
         shopGreeting: false,
@@ -623,8 +652,8 @@ export function createGameStore(
       const castleAdjacent =
         (!state.location && destination?.castle === "hall") ||
         (state.location?.castle === "hall" &&
-          (destination === null || destination?.castle === "shop")) ||
-        (state.location?.castle === "shop" && destination?.castle === "hall");
+          (destination === null || destination?.castle === "shop" || destination?.castle === "throne")) ||
+        ((state.location?.castle === "shop" || state.location?.castle === "throne") && destination?.castle === "hall");
       const adjacent = !state.location
         ? !!next && next.dungeon.rooms[0] === next.room
         : (!destination &&
@@ -646,6 +675,8 @@ export function createGameStore(
             target: null,
             motion: null,
             activeSecret: null,
+        movingBarriers: [],
+        objectEvent: null,
             reward: 0,
           },
           true,
@@ -682,10 +713,37 @@ export function createGameStore(
       );
       return true;
     },
+    finishBarrier: (id: string) => {
+      if (state.movingBarriers.includes(id)) set({ movingBarriers: state.movingBarriers.filter(b => b !== id) });
+    },
     interact: () => {
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "worldObject") {
+          const definition = WORLD_OBJECTS[target.id];
+          if (!definition || !sameLocation(state.location, definition.location)) return;
+          const behavior = definition.behavior;
+          const update: Partial<GameState> = { objectEvent: { id: target.id, sequence: (state.objectEvent?.sequence ?? 0) + 1 } };
+          let persist = false;
+          let event: SoundEvent = definition.sound;
+          if (behavior.kind === "symbol") {
+            const progress = state.puzzles[behavior.puzzle];
+            if (!progress.activated.includes(target.id)) {
+              update.puzzles = { ...state.puzzles, [behavior.puzzle]: { activated: [...progress.activated, target.id] } };
+              persist = true;
+              if (puzzleSolved(update.puzzles, behavior.puzzle)) {
+                update.movingBarriers = [...state.movingBarriers, PUZZLES[behavior.puzzle].barrier];
+                event = "mechanism";
+              }
+            } else event = "interact";
+          } else if (behavior.kind === "pickup" && !state.worldObjects.includes(target.id)) {
+            update.worldObjects = [...state.worldObjects, target.id];
+            persist = true;
+          } else if (behavior.kind === "clue") update.overlay = "pictureClue";
+          set(update, persist, event);
+          return;
+        }
         if (target.kind === "shop") {
           if (state.location?.castle !== "shop") return;
           set(
@@ -703,10 +761,7 @@ export function createGameStore(
           if (state.location?.castle !== "hall") return;
           set({
             overlay: "castleDoor",
-            castleMessage:
-              target.id === "library"
-                ? "Biblioteket är stängt idag!"
-                : "Kungssalen är stängd idag!",
+            castleMessage: "Biblioteket är stängt idag!",
           });
           return;
         }
@@ -735,18 +790,7 @@ export function createGameStore(
           return;
         }
         if (target.kind === "chest") {
-          if (
-            state.location ||
-            (target.id === "south" && !state.bridgeUnlocked)
-          )
-            return;
-          const secret = BUTTERFLY_SECRETS.find((s) => s.chestId === target.id);
-          if (
-            secret &&
-            (!state.secrets[secret.id].revealed ||
-              (secret.requiresBridge && !state.bridgeUnlocked))
-          )
-            return;
+          if (!canOpenChest(state, target.id)) return;
           if (
             CHESTS[target.id].opening === "direct" &&
             !state.chests[target.id]
@@ -755,6 +799,8 @@ export function createGameStore(
               {
                 ...chestAward(target.id),
                 reward: CHESTS[target.id].reward,
+                rewardItems: [...((CHESTS[target.id] as ChestDefinition).items ?? [])],
+                overlay: (CHESTS[target.id] as ChestDefinition).items?.length ? "itemReward" : null,
                 activeChest: null,
               },
               true,
@@ -963,8 +1009,7 @@ export function createGameStore(
       );
       if (
         state.overlay ||
-        // The hall keeps its own rupees on the carpet; other rooms have none.
-        (state.location && state.location.castle !== "hall") ||
+        !pickupAllowed(state, id) ||
         !RUPEE_IDS.includes(id) ||
         state.collected.includes(id) ||
         (secret && !state.secrets[secret.id].revealed)
@@ -1042,6 +1087,8 @@ export function createGameStore(
           activeChest: null,
           motion: null,
           activeSecret: null,
+        movingBarriers: [],
+        objectEvent: null,
           overlay: null,
           target: null,
           question: null,
@@ -1071,6 +1118,8 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    puzzles: { "royal-symbols": { activated: [...state.puzzles["royal-symbols"].activated] } },
+    worldObjects: [...state.worldObjects],
     purchases: [...state.purchases],
     items: [...state.items],
     equipment: { ...state.equipment },
@@ -1112,7 +1161,7 @@ function validLocation(
   if (value && typeof value === "object" && "castle" in value)
     return (
       Object.keys(value).length === 1 &&
-      (value.castle === "hall" || value.castle === "shop")
+      (value.castle === "hall" || value.castle === "shop" || value.castle === "throne")
     );
   if (
     !value ||
@@ -1206,4 +1255,15 @@ function validDungeons(
     }
     return true;
   });
+}
+
+function pickupAllowed(state: GameState, id: string) {
+  for (const objectId of PICKUP_OBJECTS) {
+    const definition = WORLD_OBJECTS[objectId];
+    const b = definition.behavior;
+    if (b.kind === "pickup" && b.pickup === id)
+      return sameLocation(state.location, definition.location) && state.worldObjects.includes(objectId);
+  }
+  if (id.startsWith("castle-")) return state.location?.castle === "hall";
+  return state.location === null;
 }

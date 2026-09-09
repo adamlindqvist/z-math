@@ -92,13 +92,13 @@ export default function DebugMenu() {
           >
             <DoorOpen aria-hidden="true" /> Gläntan
           </button>
-          {(["hall", "shop"] as const).map((castle) => (
+          {(["hall", "shop", "throne"] as const).map((castle) => (
             <button
               key={castle}
               className={actionClass}
               onClick={() => gameStore.debugTravelTo({ castle })}
             >
-              {castle === "hall" ? "Entréhall" : "Bosses butik"}
+              {castle === "hall" ? "Entréhall" : castle === "throne" ? "Kungasalen" : "Bosses butik"}
             </button>
           ))}
           {DUNGEONS.flatMap((dungeon) =>

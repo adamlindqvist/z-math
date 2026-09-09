@@ -2,7 +2,10 @@ import type { SoundEvent } from "./types";
 
 export const SOUND_KEY = "legend-of-matte-sound";
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
-const melodies: Record<Exclude<SoundEvent, "stone">, number[]> = {
+const melodies: Record<Exclude<SoundEvent, "stone" | "mechanism" | "wind">, number[]> = {
+  click: [1200, 620],
+  metal: [370, 790, 410],
+  plop: [240, 120],
   rupee: [880, 1320],
   correct: [523, 659],
   retry: [392, 440],
@@ -123,10 +126,10 @@ export class SoundEngine {
       source.stop(start + duration);
     };
     try {
-      if (event === "stone") {
+      if (event === "stone" || event === "mechanism" || event === "wind") {
         const buffer = ctx.createBuffer(
           1,
-          Math.ceil(ctx.sampleRate * 0.32),
+          Math.ceil(ctx.sampleRate * (event === "mechanism" ? 1.5 : event === "wind" ? 1 : 0.32)),
           ctx.sampleRate,
         );
         const samples = buffer.getChannelData(0);
@@ -137,7 +140,7 @@ export class SoundEngine {
         }
         const scrape = ctx.createBufferSource();
         scrape.buffer = buffer;
-        voice(scrape, now, 0.32, 0.8);
+        voice(scrape, now, event === "mechanism" ? 1.5 : event === "wind" ? 1 : 0.32, event === "wind" ? 0.18 : 0.6);
         const landing = ctx.createOscillator();
         landing.frequency.value = 145;
         voice(landing, now + 0.25, 0.18, 0.3);

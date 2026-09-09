@@ -1,5 +1,6 @@
 import { resolveRoom, roomSolved } from "../game/dungeons/definitions";
 import {
+  Crown,
   Backpack,
   RotateCcw,
   Sun,
@@ -25,7 +26,9 @@ export function HUD() {
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
   const hint =
-    state.location?.castle === "hall"
+    state.location?.castle === "throne"
+      ? "Vad finns här?"
+      : state.location?.castle === "hall"
       ? "Butiken ligger till höger!"
       : state.location?.castle === "shop"
         ? "Gå fram till Bosse eller en vara!"
@@ -54,7 +57,7 @@ export function HUD() {
             className="grid size-16 shrink-0 place-items-center rounded-[20px] bg-[#ffedab] text-forest [&_svg]:size-11! max-[600px]:hidden"
             aria-hidden="true"
           >
-            {current ? (
+            {state.location?.castle === "throne" ? <Crown /> : current ? (
               solved ? (
                 <DoorOpen />
               ) : (
@@ -81,7 +84,7 @@ export function HUD() {
               {state.location?.castle
                 ? state.location.castle === "hall"
                   ? "Slottets entréhall"
-                  : "Bosses butik"
+                  : state.location.castle === "throne" ? "Kungasalen" : "Bosses butik"
                 : current
                   ? `${current.dungeon.name} · ${current.room.name}`
                   : "Legend of Matte"}

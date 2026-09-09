@@ -71,7 +71,7 @@ describe("secret rewards and saves", () => {
       },
     });
     const saved = JSON.parse(storage.getItem()!);
-    expect(saved.version).toBe(9);
+    expect(saved.version).toBe(10);
     for (const change of [
       { version: 6 },
       { secrets: {} },

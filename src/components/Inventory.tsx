@@ -1,4 +1,5 @@
 import {
+  Gem,
   Flame,
   Feather,
   Backpack,
@@ -23,6 +24,12 @@ export function ItemPicture({ id }: { id: ItemId }) {
     package: Package,
   };
   const Icon = icons[ITEMS[id].icon];
+  if (id === "royal-crown") return <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
+    <path d="M12 60L7 22L26 36L40 12L54 36L73 22L68 60Z" fill="#dca72e" stroke="#71323c" strokeWidth="3" />
+    <path d="M12 55H68V67H12Z" fill="#71323c" stroke="#71323c" strokeWidth="2" />
+    <circle cx="40" cy="49" r="8" fill="#b53951" />
+    <circle cx="21" cy="51" r="4" fill="#c32040" /><circle cx="59" cy="51" r="4" fill="#c32040" />
+  </svg>;
   if (id === "green-hat")
     return (
       <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
@@ -76,9 +83,7 @@ export function InventoryDialog() {
         }
       >
         <h2>
-          {state.rewardItems.includes("fire-sword")
-            ? "Du fick eldsvärd och eldsköld!"
-            : "Du fick svärd och sköld!"}
+          {state.rewardItems.length === 1 ? `Du fick ${ITEMS[state.rewardItems[0]].name.toLocaleLowerCase("sv")}!` : "Du fick ny utrustning!"}
         </h2>
         <div className="my-6 flex flex-wrap justify-center gap-8">
           {state.rewardItems.map((id) => (
@@ -88,7 +93,8 @@ export function InventoryDialog() {
             </div>
           ))}
         </div>
-        <p>Och {state.reward} rupees! Utrustningen är på.</p>
+        <p className="flex items-center justify-center gap-2"><Gem aria-hidden="true" /> +{state.reward} rupees</p>
+        <p>{state.rewardItems.includes("royal-crown") ? "Kronan är på!" : "Utrustningen är på."}</p>
       </Modal>
     );
   if (state.overlay !== "inventory") return null;
