@@ -66,6 +66,9 @@ export const RUPEE_IDS = [
   "castle-1",
   "castle-2",
   "castle-3",
+  "castle-4",
+  "castle-5",
+  "castle-6",
 ];
 export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>

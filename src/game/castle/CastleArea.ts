@@ -65,6 +65,9 @@ export class CastleArea implements Area {
         new Collectible("castle-1", 1.5, 0),
         new Collectible("castle-2", 2.5, 0),
         new Collectible("castle-3", 3.5, 0),
+        new Collectible("castle-4", 0, -1),
+        new Collectible("castle-5", 0, -2),
+        new Collectible("castle-6", 0, -3),
       ];
       this.root.add(...this.rupees.map((rupee) => rupee.root));
     } else {
