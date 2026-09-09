@@ -83,15 +83,15 @@ export class DungeonArea implements Area {
       }
     if (room.challenge) {
       if (room.challenge.reward > 0) {
-        box(this.root, band, 0, 0.025, -2.5, 2.4, 0.04, 1.8);
+        box(this.root, band, 0, 0.025, 0, 2.4, 0.04, 1.8);
         this.chest = new Chest(false);
-        this.chest.root.position.set(0, 0, -2.5);
+        this.chest.root.position.set(0, 0, 0);
         this.root.add(this.chest.root);
-        this.collision.add(0, -2.5, 0.56, 0.41);
+        this.collision.add(0, 0, 0.56, 0.41);
       } else {
-        box(this.root, stone, 0, 0.4, -3, 1.4, 0.8, 0.8);
-        symbol("sun", this.root, 0, 0.85, -3, 1.2);
-        this.collision.add(0, -3, 0.7, 0.4);
+        box(this.root, stone, 0, 0.4, 0, 1.4, 0.8, 0.8);
+        symbol("sun", this.root, 0, 0.85, 0, 1.2);
+        this.collision.add(0, 0, 0.7, 0.4);
       }
       for (let i = 0; i < room.challenge.required; i++)
         this.lamps.push(
@@ -175,7 +175,7 @@ export class DungeonArea implements Area {
       return [
         {
           x: 0,
-          z: this.chest ? -2.5 : -3,
+          z: 0,
           target: {
             kind: "challenge",
             id: this.room.challenge.id,
