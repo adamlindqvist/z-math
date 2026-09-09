@@ -42,14 +42,14 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - Kistan ger fem Rupees en gång; fyra Rupees finns längs stigen.
 - Gå till stenporten norr om stigen för att besöka Vattentemplet. Ingången är öppen direkt. Gå in i den blå vattenportalen så teleporteras du automatiskt; ingen knapp behövs.
 - Vattentemplet har aqua-färgade golv, blågrå sten, turkosa väggband, vågor, droppar och grunda vattenkanaler. Vattnet är ofarlig utsmyckning och påverkar inte rörelse eller pussel. Det interna ID:t är `moss`.
-- I Ljusporten tänder fem räknefrågor varsin lampa. Räkna bilderna och välj bland tre svar med siffror och prickar.
+- I Låsta porten öppnar fem räknefrågor porten; varje rätt svar tänder en lampa ovanför porten. Räkna bilderna och välj bland tre svar med siffror och prickar.
 - I Stensalen: matcha sol, löv och måne. Gå mot stenen från vänster eller höger för att knuffa den längs spåret. Pilen visar riktningen. Ingen actionknapp behövs. Stenar på rätt symbol kan flyttas igen tills alla tre ligger rätt; då låses alla och porten öppnas. Knappen med återställningspilen börjar om med den olösta stengåtan.
 - I Skattkammaren öppnar fem bildadditioner (summa högst fem) kistan och ger fem Rupees en gång. Gå genom porten så teleporteras du tillbaka till gläntan. Den låga porten bakom dig leder alltid tillbaka.
 - Rätt mattesvar och stenknuffar i templet sparas direkt. Efter omladdning börjar du vid det sparade rummets säkra startpunkt. Lösta rum förblir lösta tills du börjar om med hela äventyret.
 - Följ stigen söderut till träbron. Bokoblin vaktar bron tills du har fått både svärd och sköld i Vattentemplet. Tryck på **Skräm iväg** så springer Bokoblin undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
 - Gå över bron till södra gläntan. Den nya kistan har tre additionsfrågor och ger fem rupees en gång, oberoende av den första kistan. Fel svar kostar inget; stänger du ett pågående kistquiz börjar dess tre frågor om nästa gång.
 - Till vänster om stigen i södra gläntan ligger Eldtemplet. Eldportalen vetter mot stigen; gå in från höger. När du lämnar templet kommer du ut på samma sida, med fri väg tillbaka till stigen. Bron måste vara upplåst.
-- Eldtemplet har vulkansten, varma golv, flammotiv, eldfat och glödande lavakanaler. Elden och lavan är ofarliga. Ljusporten och Skattkammaren har samma fem bildfrågor vardera som Vattentemplet.
+- Eldtemplet har vulkansten, varma golv, flammotiv, eldfat och glödande lavakanaler. Elden och lavan är ofarliga. Låsta porten och Skattkammaren har samma fem bildfrågor vardera som Vattentemplet.
 - Eldtemplets Stensal har tre separata L-formade spår. Följ spåret och matcha sol, löv och måne. Gå runt stenen vid böjen och knuffa från nästa sida. Pusslet kräver minst sju knuffar, både i sidled och djupled. Du kan knuffa tillbaka eller börja om utan straff.
 - Eldtemplets skatt ger fem rupees, ett eldsvärd och en eldsköld en gång. Eldutrustningen tas på direkt och syns med egna flammotiv. Den vanliga utrustningen finns kvar i väskan, där du kan byta mellan dem.
 - Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 8. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.

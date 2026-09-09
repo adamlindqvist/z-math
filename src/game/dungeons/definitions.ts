@@ -43,11 +43,11 @@ export const DUNGEONS: DungeonDefinition[] = [
     rooms: [
       {
         id: "light",
-        name: "Ljusporten",
-        hint: "Räkna och tänd fem lampor!",
+        name: "Låsta porten",
+        hint: "Räkna rätt så öppnas porten!",
         challenge: {
           id: "light-lock",
-          title: "Tänd lamporna",
+          title: "Öppna porten",
           kind: "counting",
           required: 5,
           reward: 0,
@@ -108,11 +108,11 @@ export const DUNGEONS: DungeonDefinition[] = [
     rooms: [
       {
         id: "light",
-        name: "Ljusporten",
-        hint: "Räkna och tänd fem lampor!",
+        name: "Låsta porten",
+        hint: "Räkna rätt så öppnas porten!",
         challenge: {
           id: "fire-light-lock",
-          title: "Tänd lamporna",
+          title: "Öppna porten",
           kind: "counting",
           required: 5,
           reward: 0,

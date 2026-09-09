@@ -179,7 +179,7 @@ export class DungeonArea implements Area {
           target: {
             kind: "challenge",
             id: this.room.challenge.id,
-            label: this.chest ? "Öppna kistan" : "Tänd lamporna",
+            label: this.chest ? "Öppna kistan" : "Öppna porten",
           },
         },
       ];

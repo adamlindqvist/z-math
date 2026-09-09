@@ -355,10 +355,10 @@ describe("temple interface and input", () => {
       gameStore.setTarget({
         kind: "challenge",
         id: "light-lock",
-        label: "Tänd lamporna",
+        label: "Öppna porten",
       }),
     );
-    click("Tänd lamporna");
+    click("Öppna porten");
     expect(host.querySelectorAll('[data-testid="answer"]')).toHaveLength(3);
     expect(host.querySelectorAll('[aria-label="Äpple"]')).toHaveLength(
       gameStore.getState().question!.correctAnswer,
@@ -369,7 +369,7 @@ describe("temple interface and input", () => {
     act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
     act(() => vi.advanceTimersByTime(2100));
     act(() => gameStore.close());
-    click("Tänd lamporna");
+    click("Öppna porten");
     expect(gameStore.getState().quizCorrectAnswers).toBe(1);
     for (let i = 0; i < 4; i++) {
       act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));

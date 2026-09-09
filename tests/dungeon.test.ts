@@ -69,7 +69,7 @@ describe("Vattentemplet rules and persistence", () => {
       theme: "water",
     });
     expect(DUNGEONS[0].rooms.map((room) => room.name)).toEqual([
-      "Ljusporten",
+      "Låsta porten",
       "Stensalen",
       "Skattkammaren",
     ]);
