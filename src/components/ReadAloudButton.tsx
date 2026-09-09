@@ -73,6 +73,7 @@ export function ReadAloudButton({
         const speech = new SpeechSynthesisUtterance(dialogText(dialog.current));
         speech.lang = "sv-SE";
         speech.rate = 0.85;
+        speech.volume = 0.45;
         const voice = window.speechSynthesis
           .getVoices()
           .find((v) => /^sv(?:[-_]|$)/i.test(v.lang));
