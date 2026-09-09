@@ -1,3 +1,4 @@
+import type { SoundEvent } from "../audio/types";
 import {
   CHESTS,
   CHEST_IDS,
@@ -206,8 +207,17 @@ export function createGameStore(
     debugNoclip: false,
   };
   let debugBaseline: Progress | null = null;
+  const soundListeners = new Set<(event: SoundEvent) => void>();
+  const emitSound = (event: SoundEvent) => {
+    if (!state.debugActive)
+      soundListeners.forEach((listener) => listener(event));
+  };
   const listeners = new Set<() => void>();
-  const set = (update: Partial<GameState>, persist = false) => {
+  const set = (
+    update: Partial<GameState>,
+    persist = false,
+    sound?: SoundEvent,
+  ) => {
     state = { ...state, ...update };
     if (persist && storage && !state.debugActive) {
       try {
@@ -232,6 +242,7 @@ export function createGameStore(
       }
     }
     listeners.forEach((fn) => fn());
+    if (sound) emitSound(sound);
   };
   // The chest flag, currency and associated discovery are committed together.
   const chestAward = (id: ChestId): Partial<GameState> => {
@@ -340,10 +351,13 @@ export function createGameStore(
           ...(state.activeSecret === id ? { activeSecret: null } : {}),
         },
         true,
+        "discovery",
       );
     },
     grantItems: (ids: readonly ItemId[], equip = false) => {
-      set(receiveItems(state, ids, equip), true);
+      const update = receiveItems(state, ids, equip);
+      const hasNew = ids.some((id) => !state.items.includes(id));
+      set(update, true, hasNew ? "reward" : undefined);
     },
     equipItem: (id: ItemId, slot: EquipmentSlot) => {
       if (
@@ -362,6 +376,12 @@ export function createGameStore(
       if (state.motion || (state.overlay && state.overlay !== "itemReward"))
         return;
       set({ overlay: "inventory", reward: 0, rewardItems: [] });
+    },
+    subscribeSound: (fn: (event: SoundEvent) => void) => {
+      soundListeners.add(fn);
+      return () => {
+        soundListeners.delete(fn);
+      };
     },
     subscribe: (fn: () => void) => {
       listeners.add(fn);
@@ -540,6 +560,7 @@ export function createGameStore(
           target: null,
         },
         true,
+        "stone",
       );
       return true;
     },
@@ -567,6 +588,7 @@ export function createGameStore(
               },
             },
             true,
+            "interact",
           );
           return;
         }
@@ -594,13 +616,18 @@ export function createGameStore(
                 activeChest: null,
               },
               true,
+              "reward",
             );
             return;
           }
-          set({
-            activeChest: target.id,
-            overlay: state.chests[target.id] ? "empty" : "locked",
-          });
+          set(
+            {
+              activeChest: target.id,
+              overlay: state.chests[target.id] ? "empty" : "locked",
+            },
+            false,
+            "interact",
+          );
           return;
         }
         const found = resolveRoom(state.location);
@@ -608,23 +635,27 @@ export function createGameStore(
           const c = found.room.challenge;
           const answers = state.dungeons[found.dungeon.id].answers[c.id];
           if (answers < c.required)
-            set({
-              overlay: "quiz",
-              dungeonQuiz: c.id,
-              question: generateTempleQuestion(c.kind),
-              quizCorrectAnswers: answers,
-              feedback: null,
-            });
+            set(
+              {
+                overlay: "quiz",
+                dungeonQuiz: c.id,
+                question: generateTempleQuestion(c.kind),
+                quizCorrectAnswers: answers,
+                feedback: null,
+              },
+              false,
+              "interact",
+            );
         }
         return;
       }
       if (state.location) return;
       if (state.target === "npc")
-        set({ overlay: "npc", talkedToNpc: true }, true);
+        set({ overlay: "npc", talkedToNpc: true }, true, "interact");
       else if (state.target === "bokoblin" && !state.bridgeUnlocked) {
         if (hasBridgeEquipment(state))
-          set({ bridgeUnlocked: true, target: null }, true);
-        else set({ overlay: "bokoblin" });
+          set({ bridgeUnlocked: true, target: null }, true, "discovery");
+        else set({ overlay: "bokoblin" }, false, "interact");
       }
     },
     close: () =>
@@ -670,7 +701,7 @@ export function createGameStore(
         const progress = state.dungeons[found.dungeon.id];
         if (progress.answers[c.id] >= c.required) return;
         if (answer !== state.question.correctAnswer) {
-          set({ feedback: "retry" });
+          set({ feedback: "retry" }, false, "retry");
           return;
         }
         const count = progress.answers[c.id] + 1;
@@ -700,6 +731,7 @@ export function createGameStore(
             },
           },
           true,
+          complete ? "complete" : "correct",
         );
         return;
       }
@@ -713,12 +745,12 @@ export function createGameStore(
       )
         return;
       if (answer !== state.question.correctAnswer) {
-        set({ feedback: "retry" });
+        set({ feedback: "retry" }, false, "retry");
         return;
       }
       const quizCorrectAnswers = state.quizCorrectAnswers + 1;
       if (quizCorrectAnswers < REQUIRED_CORRECT_ANSWERS) {
-        set({ quizCorrectAnswers, feedback: "correct" });
+        set({ quizCorrectAnswers, feedback: "correct" }, false, "correct");
         return;
       }
       set(
@@ -728,6 +760,7 @@ export function createGameStore(
           quizCorrectAnswers,
         },
         true,
+        "complete",
       );
     },
     finishQuiz: () => {
@@ -792,10 +825,16 @@ export function createGameStore(
             : {}),
         },
         true,
+        "rupee",
       );
     },
     finishMotion: () => {
-      if (state.motion) set({ motion: null });
+      if (state.motion) {
+        const found = resolveRoom(state.location);
+        const solved =
+          found && roomSolved(found.room, state.dungeons[found.dungeon.id]);
+        set({ motion: null }, false, solved ? "solved" : undefined);
+      }
     },
     resetPuzzle: () => {
       const found = resolveRoom(state.location);

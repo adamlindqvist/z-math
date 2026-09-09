@@ -1,3 +1,4 @@
+import { sound } from "../src/audio/sound";
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -85,4 +86,18 @@ it("keeps the dialog usable without speech support", () => {
   expect(document.activeElement?.getAttribute("aria-label")).toBe(
     "Stäng dialog",
   );
+});
+
+it("mutes effects only for the active utterance and restores after errors", () => {
+  const block = vi.spyOn(sound, "block");
+  render();
+  read();
+  const first = synth.speak.mock.calls[0][0];
+  expect(block).toHaveBeenLastCalledWith("speech", true);
+  read();
+  first.onend();
+  expect(block).toHaveBeenLastCalledWith("speech", true);
+  synth.speak.mock.calls[1][0].onerror();
+  expect(block).toHaveBeenLastCalledWith("speech", false);
+  block.mockRestore();
 });

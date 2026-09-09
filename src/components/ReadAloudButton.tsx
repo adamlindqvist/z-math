@@ -1,3 +1,4 @@
+import { sound } from "../audio/sound";
 import { Speech } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
 
@@ -37,6 +38,7 @@ export function ReadAloudButton({
     if (utterance.current) {
       utterance.current = null;
       window.speechSynthesis.cancel();
+      sound.block("speech", false);
     }
   };
 
@@ -76,10 +78,18 @@ export function ReadAloudButton({
           .find((v) => /^sv(?:[-_]|$)/i.test(v.lang));
         if (voice) speech.voice = voice;
         speech.onend = speech.onerror = () => {
-          if (utterance.current === speech) utterance.current = null;
+          if (utterance.current === speech) {
+            utterance.current = null;
+            sound.block("speech", false);
+          }
         };
         utterance.current = speech;
-        window.speechSynthesis.speak(speech);
+        sound.block("speech", true);
+        try {
+          window.speechSynthesis.speak(speech);
+        } catch {
+          stop();
+        }
       }}
     >
       <Speech className="size-8" aria-hidden="true" />

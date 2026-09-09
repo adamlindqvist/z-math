@@ -110,3 +110,9 @@ Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler o
 Vid `gladePosition(5, 5.2)` strax söder om dammen finns en mossig sten med en svag spiral. En likadan sten finns vid `gladePosition(-6.8, 26)` i södra gläntans nedre vänstra del, strax nedanför träden och kan användas när bron är upplåst. De två hemligheterna sparas separat och ger fem ädelstenar vardera. Vanliga handlingsknappen visar **Flytta** inom 1,85 meter. Stenen skakar och glider 1,6 meter åt sidan under 1,2 sekunder, med en liten studs och två glitterpartiklar. Under den finns en grund grop med fem vanliga ädelstenar. Inget uppdrag eller någon pil visas.
 
 `StrangeRock` hanterar geometrin och animationen; `WorldSecret` skiljer mellan fjärilar och stenar. Första interaktionen sparar `discovered`, färdig animation sparar `revealed`, och sista upphämtningen sparar `completed` tillsammans med rupees och `collected`. Delvis hämtad belöning bevaras vid omladdning; ett avbrott mitt i flytten tillåter ett nytt försök. Avklarade stenar förblir flyttade utan ny belöning. Animationen pausas med dialoger, och slutkollisionen väntar tills spelaren lämnat landningsplatsen. Fjärilarnas ursprungliga rutter är oförändrade.
+
+### Ljudeffekter
+
+Mjuka, magiska ljudeffekter följer insamling, quiz, interaktioner, stenpussel och upptäckter. Slå på eller av dem med **Ljudeffekter på/av** i pausmenyn. Valet sparas separat och behålls när äventyret startas om. Uppläsning fungerar även med effekterna avstängda och tystar effekterna medan den talar.
+
+`src/audio/` innehåller Web Audio-syntes, typade ljudhändelser och kopplingen till appens livscykel. Inga ljudfiler eller extra paket behövs. Ljud aktiveras genom beröring eller tangenttryckning; om webbläsaren blockerar ljud går det fortfarande att spela.

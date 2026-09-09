@@ -1,3 +1,4 @@
+import { SoundButton } from "./SoundButton";
 import { Sword, Shield } from "lucide-react";
 import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -116,6 +117,7 @@ export function Dialogue() {
           {overlay === "pause" ? <Play size={20} /> : <RotateCcw size={20} />}{" "}
           {overlay === "pause" ? "Spela vidare" : "Ja, börja om"}
         </button>
+        {overlay === "pause" && <SoundButton />}
         <button
           className={`${buttonBase} mt-4 min-h-16 w-full rounded-[20px] bg-[#e8efdc] text-[21px] text-ink`}
           onClick={() =>

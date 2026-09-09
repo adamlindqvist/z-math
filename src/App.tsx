@@ -1,3 +1,5 @@
+import { connectSound } from "./audio/connectSound";
+import { sound } from "./audio/sound";
 import { InventoryDialog } from "./components/Inventory";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Game } from "./game/Game";
@@ -14,6 +16,10 @@ export default function App() {
   const container = useRef<HTMLDivElement>(null);
   const game = useRef<Game | null>(null);
   const [error, setError] = useState("");
+  useEffect(connectSound, []);
+  useEffect(() => {
+    sound.block("graphics", !!error);
+  }, [error]);
   useEffect(() => {
     if (!container.current) return;
     try {
