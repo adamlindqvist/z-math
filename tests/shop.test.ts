@@ -222,6 +222,36 @@ describe("castle shop", () => {
     hall.dispose();
     disposeTree(scene);
   });
+  it("puts the shop exit on the left wall, mirroring the way in", () => {
+    const shop = new ShopScene();
+    const exit = shop.root.getObjectByName("castle-door-Utgång")!;
+    expect(exit.position.x).toBe(-4.2);
+    expect(exit.rotation.y).toBe(Math.PI / 2);
+    // The front wall is closed now, so no passage leads south.
+    expect(shop.passages()).toEqual([
+      {
+        x: -3.65,
+        z: 0,
+        rotation: Math.PI / 2,
+        destination: { castle: "hall" },
+      },
+    ]);
+    expect(shop.collision.free(0, 3.9)).toBe(false);
+    const scene = new Scene(),
+      interactions = new InteractionSystem(scene);
+    gameStore.reset();
+    gameStore.travelTo({ castle: "hall" });
+    gameStore.travelTo({ castle: "shop" });
+    const player = new Vector3(shop.spawn.x, 0, shop.spawn.z);
+    interactions.update(player, shop, 0);
+    expect(gameStore.getState().location).toEqual({ castle: "shop" });
+    shop.collision.move(player, -0.6, 0);
+    interactions.update(player, shop, 0);
+    expect(gameStore.getState().location).toEqual({ castle: "hall" });
+    gameStore.reset();
+    shop.dispose();
+    disposeTree(scene);
+  });
   it("leaves the exterior arch visibly hollow and the threshold walkable", () => {
     const world = new World(),
       castle = world.root.getObjectByName("castle")!;

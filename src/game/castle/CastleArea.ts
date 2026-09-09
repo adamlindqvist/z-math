@@ -31,34 +31,37 @@ export class CastleArea implements Area {
       trim = material("#a78d6a");
     box(this.root, material("#ead9b9"), 0, -0.15, 0, 9.6, 0.3, 8.8);
     // Wall segments leave real openings, aligned with the doorway frames.
+    // Cutaway front wall and low portals keep the player visible from above.
     if (room === "hall") {
       for (const x of [-2.9, 2.9])
         box(this.root, stone, x, 1.3, -4.35, 3.8, 2.6, 0.3);
       for (const x of [-4.75, 4.75])
         for (const z of [-2.7, 2.7])
           box(this.root, stone, x, 0.65, z, 0.3, 1.3, 3.4);
+      box(this.root, stone, -2.9, 0.2, 4.35, 3.8, 0.4, 0.3);
+      box(this.root, stone, 2.9, 0.2, 4.35, 3.8, 0.4, 0.3);
+      box(this.root, material("#a84d50"), 0, 0.015, 1.5, 2, 0.03, 4);
+      this.door(0, 4.2, "Utgång", false, 0, true);
     } else {
+      // The shop is entered by walking right out of the hall, so its way back
+      // sits on the left wall and the front wall stays closed.
       box(this.root, stone, 0, 1.3, -4.35, 9.6, 2.6, 0.3);
-      for (const x of [-4.75, 4.75])
-        box(this.root, stone, x, 0.65, 0, 0.3, 1.3, 8.8);
+      box(this.root, stone, 4.75, 0.65, 0, 0.3, 1.3, 8.8);
+      for (const z of [-2.7, 2.7])
+        box(this.root, stone, -4.75, 0.65, z, 0.3, 1.3, 3.4);
+      box(this.root, stone, 0, 0.2, 4.35, 9.6, 0.4, 0.3);
+      box(this.root, material("#a84d50"), -1.5, 0.015, 0, 4.5, 0.03, 2);
+      this.door(-4.2, 0, "Utgång", false, Math.PI / 2, true);
     }
-    // Cutaway front wall and low portal keep the player visible from above.
-    for (const x of [-2.9, 2.9])
-      box(this.root, stone, x, 0.2, 4.35, 3.8, 0.4, 0.3);
-    box(this.root, material("#a84d50"), 0, 0.015, 1.5, 2, 0.03, 4);
-    this.door(0, 4.2, "Utgång", false, 0, true);
     if (room === "hall") {
       this.door(4.65, 0, "Butik", false, -Math.PI / 2, false, "\u{1F6D2}");
       this.door(-4.65, 0, "Bibliotek", true, Math.PI / 2, false, "\u{1F4DA}");
       this.door(0, -4.2, "Kungasalen", false, 0, false, "\u{1F451}");
-      this.targets.push(
-        {
-          x: -4,
-          z: 0,
-          target: { kind: "castleDoor", id: "library", label: "Titta" },
-        },
-
-      );
+      this.targets.push({
+        x: -4,
+        z: 0,
+        target: { kind: "castleDoor", id: "library", label: "Titta" },
+      });
       this.flames = furnishHall(this.root, this.collision);
       // A few rupees lie on the red runner so the hall rewards a look around.
       this.rupees = [
@@ -88,9 +91,15 @@ export class CastleArea implements Area {
       this.targets.push({ x: 0, z: -1.15, target });
       box(this.root, trim, 0, 0.45, -1.95, 1.8, 0.9, 0.65);
       this.collision.add(0, -2.1, 1, 0.65);
+      // Shelves hug the back and right walls so the left doorway stays clear.
+      const shelves = [
+        [-2.8, -3.2],
+        [-1.6, 2.9],
+        [2.9, -2.3],
+        [2.9, 0.2],
+      ];
       SHOP_IDS.forEach((id, i) => {
-        const x = i < 2 ? -2.9 : 2.9,
-          z = i % 2 === 0 ? -2.3 : 0.2;
+        const [x, z] = shelves[i];
         box(this.root, trim, x, 0.35, z, 1.15, 0.7, 0.7);
         box(this.root, trim, x, 0.92, z - 0.32, 1.15, 1.2, 0.1);
         box(this.root, trim, x, 0.72, z, 1.25, 0.08, 0.75);
@@ -109,8 +118,8 @@ export class CastleArea implements Area {
         box(this.root, trim, x, 1.15, -4, 0.08, 2.3, 0.08);
         ball(this.root, material("#ffdb83"), x, 2.1, -3.9, 0.22, 0.3, 0.2);
       }
-      box(this.root, trim, -4, 0.25, 2, 0.6, 0.5, 0.6);
-      this.collision.add(-4, 2, 0.3);
+      box(this.root, trim, 3.9, 0.25, 2.6, 0.6, 0.5, 0.6);
+      this.collision.add(3.9, 2.6, 0.3);
     }
   }
   private sign(
@@ -233,7 +242,14 @@ export class CastleArea implements Area {
             destination: { castle: "shop" },
           },
         ]
-      : [{ x: 0, z: 3.65, destination: { castle: "hall" } }];
+      : [
+          {
+            x: -3.65,
+            z: 0,
+            rotation: Math.PI / 2,
+            destination: { castle: "hall" },
+          },
+        ];
   }
   interactions(_state: GameState, _position: THREE.Vector3) {
     return this.targets;
@@ -264,6 +280,8 @@ export class CastleArea implements Area {
   }
 }
 export class ShopScene extends CastleArea {
+  // Entering from the hall means stepping in through the left doorway.
+  spawn = { x: -3, z: 0 };
   constructor() {
     super("shop");
   }
