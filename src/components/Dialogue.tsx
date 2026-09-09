@@ -2,12 +2,12 @@ import { SoundButton } from "./SoundButton";
 import { Sword, Shield } from "lucide-react";
 import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { ReadAloudButton } from "./ReadAloudButton";
 import { StoryPicture } from "./StoryPicture";
 import { gameStore, useGameState } from "../store/gameStore";
 
-const buttonBase =
+export const buttonBase =
   "cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none";
 export const primaryButton =
   "cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none flex min-h-[76px] w-full items-center justify-center gap-3.5 rounded-3xl bg-forest p-4 text-2xl text-white shadow-[0_5px_0_#22603b] [&_svg]:size-[30px]";
@@ -15,13 +15,54 @@ export const eyebrow =
   "mx-[58px]! mt-1! mb-2.5! text-xl! font-extrabold text-teal [@media(max-height:850px)]:grid [@media(max-height:850px)]:min-h-12 [@media(max-height:850px)]:place-items-center";
 export const emblem =
   "mx-auto mb-3 grid h-[108px] w-[120px] place-items-center rounded-[32px] bg-[#fff0b8] text-forest [&>svg]:size-14";
+// Same insets, corner and lift as the action button in TouchControls, so a dialog
+// button lands on the pixels the thumb already rests on: centered with a mouse,
+// bottom right on touch. Keep the two in sync.
+export const cornerActionBar =
+  "pointer-events-none absolute right-[max(24px,env(safe-area-inset-right))] bottom-[max(20px,env(safe-area-inset-bottom))] left-[max(24px,env(safe-area-inset-left))] flex flex-col-reverse items-center gap-3 [@media(pointer:coarse)]:mb-7 [@media(pointer:coarse)]:items-end max-[600px]:right-4 max-[600px]:left-4";
+export const cornerAction = `${buttonBase} pointer-events-auto flex min-h-[88px] min-w-[220px] max-w-[310px] items-center justify-center gap-3.5 rounded-[28px] border-[3px] border-white bg-forest p-4 text-2xl text-white shadow-[0_6px_0_#22603b] [&_svg]:size-9 max-[600px]:min-w-0 max-[600px]:max-w-[240px] max-[600px]:gap-2 max-[600px]:p-3 max-[600px]:text-xl`;
+export const cornerSecondary = `${buttonBase} pointer-events-auto flex min-h-16 max-w-[310px] items-center justify-center gap-3 rounded-[22px] border-[3px] border-white bg-[#e8efdc] px-5 py-3 text-[21px] text-ink shadow-[0_5px_0_#c3cdb4] [&_svg]:size-7`;
+// A touch that lifts produces a compatibility click on whatever now sits under
+// the finger, and the corner action shares its spot with the in-world action
+// button. So only honour a click this button itself saw the pointer go down on
+// (a keyboard press reports detail 0 and has no pointer at all).
+export function CornerAction({
+  onActivate,
+  className = cornerAction,
+  children,
+}: {
+  onActivate: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  const primed = useRef(false);
+  return (
+    <button
+      className={className}
+      onPointerDown={() => {
+        primed.current = true;
+      }}
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        const own = event.detail === 0 || primed.current;
+        primed.current = false;
+        if (own) onActivate();
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 export function Modal({
   children,
   label,
+  action,
+  actionRows = 1,
   className = "",
 }: {
   children: ReactNode;
   label: string;
+  action?: ReactNode;
+  actionRows?: 1 | 2;
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -35,36 +76,56 @@ export function Modal({
     };
   }, []);
   return (
-    <div className="absolute inset-0 z-10 grid place-items-center overflow-auto bg-[#223c4666] pt-[max(18px,env(safe-area-inset-top))] pr-[max(18px,env(safe-area-inset-right))] pb-[max(18px,env(safe-area-inset-bottom))] pl-[max(18px,env(safe-area-inset-left))] backdrop-blur-sm">
+    <div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      className="absolute inset-0 z-10 bg-[#223c4666] backdrop-blur-sm"
+      onKeyDown={(e) => {
+        if (e.key !== "Tab") return;
+        const buttons = Array.from(
+          ref.current?.querySelectorAll<HTMLButtonElement>(
+            "button:not(:disabled)",
+          ) ?? [],
+        );
+        if (!buttons.length) return;
+        if (e.shiftKey && document.activeElement === buttons[0]) {
+          e.preventDefault();
+          buttons[buttons.length - 1].focus();
+        } else if (
+          !e.shiftKey &&
+          document.activeElement === buttons[buttons.length - 1]
+        ) {
+          e.preventDefault();
+          buttons[0].focus();
+        }
+      }}
+    >
+      {/* The corner button lives outside this scrolling layer, which also
+          reserves room so a tall dialog never hides behind the button. */}
       <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-label={label}
-        className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${className}`}
-        onKeyDown={(e) => {
-          if (e.key !== "Tab") return;
-          const buttons = Array.from(
-            ref.current?.querySelectorAll<HTMLButtonElement>(
-              "button:not(:disabled)",
-            ) ?? [],
-          );
-          if (!buttons.length) return;
-          if (e.shiftKey && document.activeElement === buttons[0]) {
-            e.preventDefault();
-            buttons[buttons.length - 1].focus();
-          } else if (
-            !e.shiftKey &&
-            document.activeElement === buttons[buttons.length - 1]
-          ) {
-            e.preventDefault();
-            buttons[0].focus();
-          }
-        }}
+        className={`absolute inset-0 grid place-items-center overflow-auto pt-[max(18px,env(safe-area-inset-top))] pr-[max(18px,env(safe-area-inset-right))] pl-[max(18px,env(safe-area-inset-left))] ${
+          action
+            ? actionRows === 2
+              ? "pb-[calc(208px+max(20px,env(safe-area-inset-bottom)))]"
+              : "pb-[calc(132px+max(20px,env(safe-area-inset-bottom)))]"
+            : "pb-[max(18px,env(safe-area-inset-bottom))]"
+        }`}
       >
-        <ReadAloudButton dialog={ref} />
-        {children}
+        <div
+          data-testid="dialog-panel"
+          className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${className}`}
+        >
+          <ReadAloudButton dialog={ref} />
+          {children}
+        </div>
       </div>
+      {action && (
+        <div data-testid="dialog-action" className={cornerActionBar}>
+          {action}
+        </div>
+      )}
     </div>
   );
 }
@@ -80,19 +141,21 @@ export function Dialogue() {
     return null;
   if (overlay === "bokoblin")
     return (
-      <Modal label="Bokoblin">
+      <Modal
+        label="Bokoblin"
+        action={
+          <CornerAction onActivate={() => gameStore.close()}>
+            Okej!
+            <ArrowRight />
+          </CornerAction>
+        }
+      >
         <div className="flex justify-center gap-6 text-forest">
           <Sword size={64} />
           <Shield size={64} />
         </div>
         <h2>Bokoblinen vaktar bron</h2>
         <p>Hitta svärdet och skölden i Vattentemplet!</p>
-        <button
-          className="min-h-16 rounded-2xl bg-sunshine px-8 text-2xl font-bold"
-          onClick={() => gameStore.close()}
-        >
-          Okej!
-        </button>
       </Modal>
     );
   if (overlay === "pause" || overlay === "reset")
@@ -133,7 +196,20 @@ export function Dialogue() {
   return (
     <Modal
       label={overlay === "npc" ? "Prata med Zelda" : "Skattkistan"}
-      className=""
+      action={
+        <CornerAction
+          onActivate={() =>
+            overlay === "locked" ? gameStore.beginQuiz() : gameStore.close()
+          }
+        >
+          {overlay === "locked"
+            ? "Räkna!"
+            : overlay === "npc"
+              ? "Leta efter kistan"
+              : "Spela vidare"}
+          <ArrowRight />
+        </CornerAction>
+      }
     >
       <button
         className={`${buttonBase} absolute top-3 right-3 grid size-16 place-items-center rounded-[22px] bg-[#e4eddd] text-ink [&_svg]:size-8`}
@@ -153,7 +229,7 @@ export function Dialogue() {
       </div>
       <h2>
         {overlay === "npc"
-          ? "Hej, lilla äventyrare!"
+          ? "Hej, Link!"
           : overlay === "locked"
             ? "Skattkistan är låst!"
             : "Du hittade skatten!"}
@@ -165,19 +241,6 @@ export function Dialogue() {
             ? "Räkna och samla tre stjärnor!"
             : "Kistan är tom nu. Leta efter stenporten!"}
       </p>
-      <button
-        className={primaryButton}
-        onClick={() =>
-          overlay === "locked" ? gameStore.beginQuiz() : gameStore.close()
-        }
-      >
-        {overlay === "locked"
-          ? "Räkna!"
-          : overlay === "npc"
-            ? "Leta efter kistan"
-            : "Spela vidare"}
-        <ArrowRight size={20} />
-      </button>
     </Modal>
   );
 }

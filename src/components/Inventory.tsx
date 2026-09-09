@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { ITEMS, type ItemDefinition, type ItemId } from "../items/definitions";
 import { gameStore, useGameState } from "../store/gameStore";
-import { Modal, primaryButton } from "./Dialogue";
+import { CornerAction, Modal, cornerSecondary } from "./Dialogue";
 
 function ItemPicture({ id }: { id: ItemId }) {
   const icons = {
@@ -31,13 +31,32 @@ function ItemPicture({ id }: { id: ItemId }) {
     </span>
   );
 }
-const action =
+const slotButton =
   "min-h-16 w-full cursor-pointer touch-manipulation rounded-2xl bg-[#e4eddd] p-3 text-xl font-extrabold focus-visible:outline-4 focus-visible:outline-teal";
 export function InventoryDialog() {
   const state = useGameState();
   if (state.overlay === "itemReward")
     return (
-      <Modal label="Din belöning" className="pt-20!">
+      <Modal
+        label="Din belöning"
+        className="pt-20!"
+        actionRows={2}
+        action={
+          <>
+            <CornerAction onActivate={() => gameStore.openInventory()}>
+              <Backpack />
+              Visa väskan
+            </CornerAction>
+            <CornerAction
+              className={cornerSecondary}
+              onActivate={() => gameStore.close()}
+            >
+              <Play />
+              Spela vidare
+            </CornerAction>
+          </>
+        }
+      >
         <h2>
           {state.rewardItems.includes("fire-sword")
             ? "Du fick eldsvärd och eldsköld!"
@@ -52,25 +71,19 @@ export function InventoryDialog() {
           ))}
         </div>
         <p>Och {state.reward} rupees! Utrustningen är på.</p>
-        <button
-          className={primaryButton}
-          onClick={() => gameStore.openInventory()}
-        >
-          <Backpack />
-          Visa väskan
-        </button>
-        <button
-          className={`${action} mt-4 flex items-center justify-center gap-3`}
-          onClick={() => gameStore.close()}
-        >
-          <Play />
-          Spela vidare
-        </button>
       </Modal>
     );
   if (state.overlay !== "inventory") return null;
   return (
-    <Modal label="Väska">
+    <Modal
+      label="Väska"
+      action={
+        <CornerAction onActivate={() => gameStore.close()}>
+          <Play />
+          Spela vidare
+        </CornerAction>
+      }
+    >
       <button
         className="absolute top-3 right-3 grid size-16 cursor-pointer touch-manipulation place-items-center rounded-2xl bg-[#e4eddd] focus-visible:outline-4 focus-visible:outline-teal"
         aria-label="Stäng väskan"
@@ -103,7 +116,7 @@ export function InventoryDialog() {
               </span>
               {slot !== "other" && !(slot === "clothes" && equipped) && (
                 <button
-                  className={`${action} mt-auto`}
+                  className={`${slotButton} mt-auto`}
                   aria-label={`${equipped ? "Ta av" : "Ta på"} ${item.name.toLowerCase()}`}
                   onClick={() =>
                     equipped
@@ -118,10 +131,6 @@ export function InventoryDialog() {
           );
         })}
       </div>
-      <button className={primaryButton} onClick={() => gameStore.close()}>
-        <Play />
-        Spela vidare
-      </button>
     </Modal>
   );
 }

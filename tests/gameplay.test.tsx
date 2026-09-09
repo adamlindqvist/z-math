@@ -197,7 +197,7 @@ describe("playable controls and interface", () => {
     key("KeyD", false);
     expect(gameStore.getState().target).toBe("npc");
     key("KeyE");
-    expect(host.textContent).toContain("Hej, lilla äventyrare!");
+    expect(host.textContent).toContain("Hej, Link!");
     click("Leta efter kistan");
     expect(gameStore.getState().talkedToNpc).toBe(true);
   });
@@ -444,5 +444,116 @@ describe("inventory interface", () => {
     key("Escape");
     expect(gameStore.getState().overlay).toBeNull();
     expect(input.direction()).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe("dialog action placement", () => {
+  const panel = () => host.querySelector('[data-testid="dialog-panel"]')!;
+  const bar = () => host.querySelector('[data-testid="dialog-action"]');
+  const tab = (el: Element, shiftKey = false) =>
+    act(() =>
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true }),
+      ),
+    );
+  it("puts the story action in the thumb corner outside the card and still advances", () => {
+    act(() => gameStore.setTarget("npc"));
+    click("Prata");
+    const action = button("Leta efter kistan");
+    expect(bar()!.contains(action)).toBe(true);
+    expect(panel().contains(action)).toBe(false);
+    expect(host.querySelector('[role="dialog"]')!.contains(action)).toBe(true);
+    click("Leta efter kistan");
+    expect(gameStore.getState().talkedToNpc).toBe(true);
+    expect(gameStore.getState().overlay).toBeNull();
+  });
+  it("keeps the focus trap looping across the card and the corner", () => {
+    act(() => gameStore.setTarget("npc"));
+    click("Prata");
+    const action = button("Leta efter kistan");
+    const close = host.querySelector<HTMLButtonElement>(
+      '[aria-label="Stäng dialog"]',
+    )!;
+    act(() => action.focus());
+    tab(action);
+    expect(document.activeElement).toBe(close);
+    tab(close, true);
+    expect(document.activeElement).toBe(action);
+  });
+  it("stacks both reward actions in the corner and keeps the bag actions in the card", () => {
+    act(() => {
+      const solve = (id: string) => {
+        gameStore.setTarget({ kind: "challenge", id, label: "Räkna" });
+        gameStore.interact();
+        for (let i = 0; i < 12; i++) {
+          const question = gameStore.getState().question;
+          if (!question) break;
+          gameStore.answer(question.correctAnswer);
+          gameStore.finishQuiz();
+        }
+      };
+      const push = (index: number, direction: -1 | 1, times: number) => {
+        for (let n = 0; n < times; n++) {
+          gameStore.pushStone(index, direction);
+          gameStore.finishMotion();
+        }
+      };
+      gameStore.travelTo({ dungeon: "moss", room: "light" });
+      solve("light-lock");
+      gameStore.travelTo({ dungeon: "moss", room: "stones" });
+      push(0, -1, 2);
+      push(1, 1, 2);
+      push(2, -1, 1);
+      gameStore.travelTo({ dungeon: "moss", room: "treasure" });
+      solve("treasure-lock");
+    });
+    expect(gameStore.getState().overlay).toBe("itemReward");
+    expect(bar()!.contains(button("Visa väskan"))).toBe(true);
+    expect(bar()!.contains(button("Spela vidare"))).toBe(true);
+    click("Visa väskan");
+    expect(bar()!.contains(button("Spela vidare"))).toBe(true);
+    expect(panel().querySelector('[aria-label="Ta av svärd"]')).not.toBeNull();
+  });
+  it("ignores the compatibility click from the tap that opened the dialog", () => {
+    const mouseClick = (el: Element) =>
+      act(() =>
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })),
+      );
+    const down = (el: Element) =>
+      act(() => {
+        const event = new Event("pointerdown", { bubbles: true });
+        Object.assign(event, { pointerId: 9, pointerType: "touch" });
+        el.dispatchEvent(event);
+      });
+    act(() => gameStore.setTarget("npc"));
+    click("Prata");
+    // The finger lifted over the interaction button, so the dialog action gets
+    // a click it never saw a pointer go down on.
+    mouseClick(button("Leta efter kistan"));
+    expect(gameStore.getState().overlay).toBe("npc");
+    const action = button("Leta efter kistan");
+    down(action);
+    mouseClick(action);
+    expect(gameStore.getState().overlay).toBeNull();
+    // The reverse: the interaction button reappears under the same finger.
+    mouseClick(button("Prata"));
+    expect(gameStore.getState().overlay).toBeNull();
+  });
+  it("leaves the quiz and the reset choice untouched", () => {
+    act(() =>
+      gameStore.setTarget({ kind: "chest", id: "glade", label: "Öppna" }),
+    );
+    click("Öppna");
+    click("Räkna!");
+    expect(bar()).toBeNull();
+    expect(panel().querySelectorAll('[data-testid="answer"]')).toHaveLength(4);
+    act(() => {
+      gameStore.close();
+      gameStore.pause();
+      gameStore.confirmReset();
+    });
+    expect(bar()).toBeNull();
+    expect(panel().contains(button("Ja, börja om"))).toBe(true);
+    expect(panel().contains(button("Nej, spela vidare"))).toBe(true);
   });
 });

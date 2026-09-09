@@ -57,6 +57,19 @@ it("reads visible text in Swedish on demand, without icon labels or a hidden ans
     voice: { lang: "sv-SE" },
   });
 });
+it("also reads the action button outside the dialog card", () => {
+  act(() =>
+    root.render(
+      <Modal label="Kistan" action={<button>Spela vidare</button>}>
+        <h2>Du hittade skatten!</h2>
+      </Modal>,
+    ),
+  );
+  read();
+  expect(synth.speak.mock.calls[0][0].text).toBe(
+    "Du hittade skatten!. Spela vidare",
+  );
+});
 it("restarts instead of queueing, stops on new text and on closing", () => {
   render();
   read();

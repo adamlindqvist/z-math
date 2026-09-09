@@ -11,6 +11,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
   const state = useGameState();
   const active = useRef<number | null>(null);
   const lastTouchAction = useRef(-Infinity);
+  const primed = useRef(false);
   const activate = () => {
     gameStore.interact();
     if (document.activeElement instanceof HTMLElement)
@@ -92,6 +93,9 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
       {(!state.location || state.target) && (
         <button
           className="cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none pointer-events-auto flex min-h-[88px] max-w-[310px] items-center gap-3.5 rounded-[28px] border-[3px] border-white bg-sunshine p-4 text-2xl text-ink shadow-[0_6px_0_#a8782c] disabled:bg-[#fffbeed9] disabled:text-[#546a5c] disabled:shadow-none [&_svg]:size-9 [&_kbd]:rounded-lg [&_kbd]:border-2 [&_kbd]:border-[#a8782c] [&_kbd]:px-2 [&_kbd]:py-1 [&_kbd]:text-base [@media(pointer:coarse)]:mb-7 [@media(pointer:coarse)]:[&_kbd]:hidden max-[600px]:max-w-[180px] max-[600px]:gap-1.5 max-[600px]:p-2.5 max-[600px]:text-xl"
+          onPointerDown={() => {
+            primed.current = true;
+          }}
           onPointerUp={(event) => {
             // A second touch need not produce a click while the joystick is held.
             if (event.pointerType !== "touch") return;
@@ -100,10 +104,14 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             activate();
           }}
           onClick={(event) => {
-            // Keep keyboard activation; ignore a compatibility click after touch.
+            // Keep keyboard activation; ignore a compatibility click after touch
+            // and one aimed at the dialog button that just stood here.
+            const own = primed.current || event.detail === 0;
+            primed.current = false;
             if (
-              event.detail === 0 ||
-              performance.now() - lastTouchAction.current > 700
+              own &&
+              (event.detail === 0 ||
+                performance.now() - lastTouchAction.current > 700)
             )
               activate();
           }}

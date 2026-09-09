@@ -32,12 +32,12 @@ export function HUD() {
       ? state.chests.south
         ? state.dungeons.fire.rewards.includes("fire-treasure-lock")
           ? "Du hittade Eldtemplets skatt!"
-          : "Gå in i eldportalen!"
+          : "Gå in i Eldtemplet!"
         : "Gå över bron till kistan!"
       : hasBridgeEquipment(state)
         ? "Gå till bron. Skräm iväg Bokoblin!"
         : state.chests.glade
-          ? "Hitta svärd och sköld i stenporten!"
+          ? "Hitta svärd och sköld i Vattentemplet!"
           : state.talkedToNpc
             ? "Leta efter kistan!"
             : "Prata med Zelda!";
