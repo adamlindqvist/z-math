@@ -1,6 +1,7 @@
+import { StrangeRock } from "./entities/StrangeRock";
 import { GLADE_SCALE, gladeDistance, gladePosition } from "./gladeLayout";
 import { Butterfly } from "./entities/Butterfly";
-import { WORLD_SECRETS } from "./secrets/definitions";
+import { BUTTERFLY_SECRETS, ROCK_SECRETS } from "./secrets/definitions";
 import {
   gladePath,
   gladeTrees,
@@ -26,6 +27,22 @@ export class World implements Area {
   interactions() {
     const state = gameStore.getState();
     return [
+      ...this.rocks
+        .filter(
+          (rock) =>
+            rock.phase === "waiting" &&
+            (!rock.definition.requiresBridge || state.bridgeUnlocked) &&
+            !state.activeSecret &&
+            !state.secrets[rock.definition.id].revealed,
+        )
+        .map((rock) => ({
+          target: {
+            kind: "secret" as const,
+            id: rock.definition.id,
+            label: "Flytta",
+          },
+          ...rock.definition.position,
+        })),
       ...this.secrets
         .filter(
           ({ definition, chest }) =>
@@ -93,7 +110,7 @@ export class World implements Area {
   bokoblin = new Bokoblin(gameStore.getState().bridgeUnlocked);
   southChest = new Chest(gameStore.getState().chests.south);
   chest = new Chest(gameStore.getState().chests.glade);
-  secrets = WORLD_SECRETS.map((definition) => ({
+  secrets = BUTTERFLY_SECRETS.map((definition) => ({
     definition,
     chest: new Chest(
       gameStore.getState().chests[definition.chestId],
@@ -105,6 +122,13 @@ export class World implements Area {
       gameStore.getState().secrets[definition.id].revealed,
     ),
   }));
+  rocks = ROCK_SECRETS.map(
+    (definition) =>
+      new StrangeRock(
+        definition,
+        gameStore.getState().secrets[definition.id].revealed,
+      ),
+  );
   private secretResetId = gameStore.getState().resetId;
   private chests = [
     { id: "glade" as const, chest: this.chest },
@@ -116,6 +140,20 @@ export class World implements Area {
   ];
   npc = new NPC();
   rupees = [
+    ...ROCK_SECRETS.flatMap((definition) =>
+      definition.pickupIds.map((id, i) => {
+        const angle = (i * Math.PI * 2) / definition.pickupIds.length;
+        const pickup = new Collectible(
+          id,
+          definition.position.x + Math.cos(angle) * 0.28,
+          definition.position.z + Math.sin(angle) * 0.28,
+        );
+        pickup.root.visible =
+          gameStore.getState().secrets[definition.id].revealed &&
+          !gameStore.getState().collected.includes(id);
+        return pickup;
+      }),
+    ),
     new Collectible("path-1", gladeDistance(-4.6), gladeDistance(3)),
     new Collectible("path-2", gladeDistance(-1.3), gladeDistance(2.6)),
     new Collectible("path-3", gladeDistance(1.8), gladeDistance(0.6)),
@@ -134,6 +172,7 @@ export class World implements Area {
   private burstShown = { ...gameStore.getState().chests };
   constructor() {
     buildSouthGlade(this.root, this.collision);
+    this.root.add(...this.rocks.map((rock) => rock.root));
     for (const { definition, chest, butterfly } of this.secrets) {
       chest.root.position.set(
         definition.chestPosition.x,
@@ -147,6 +186,7 @@ export class World implements Area {
     this.npc.root.position.set(gladeDistance(-3.5), 0, gladeDistance(1.3));
     this.root.add(this.southChest.root, this.bokoblin.root);
     this.collision.dynamic = [
+      ...this.rocks.flatMap((rock) => rock.obstacle()),
       ...(!gameStore.getState().bridgeUnlocked
         ? [{ ...gladePosition(0, 7.9), halfX: gladeDistance(1.5), halfZ: 0.35 }]
         : []),
@@ -558,6 +598,9 @@ export class World implements Area {
         butterfly.reset(progress.completed, progress.revealed);
         chest.resetReveal(progress.revealed);
       }
+      this.rocks.forEach((rock) =>
+        rock.reset(state.secrets[rock.definition.id].revealed),
+      );
       this.burstShown = { ...state.chests };
       this.sparkles.forEach((p) => disposeTree(p.object));
       this.sparkles = [];
@@ -588,7 +631,21 @@ export class World implements Area {
         gameStore.getState().secrets[definition.id].revealed,
       );
     }
+    for (const rock of this.rocks) {
+      const id = rock.definition.id;
+      if (state.activeSecret === id) rock.start();
+      if (
+        rock.update(
+          dt,
+          !!state.overlay ||
+            !!state.motion ||
+            (rock.definition.requiresBridge && !state.bridgeUnlocked),
+        )
+      )
+        gameStore.revealSecret(id);
+    }
     this.collision.dynamic = [
+      ...this.rocks.flatMap((rock) => rock.obstacle(playerPosition)),
       ...(!state.bridgeUnlocked
         ? [{ ...gladePosition(0, 7.9), halfX: gladeDistance(1.5), halfZ: 0.35 }]
         : []),
@@ -611,9 +668,16 @@ export class World implements Area {
     );
     this.chest.update(dt, state.chests.glade && state.feedback !== "correct");
     this.npc.update(time);
-    this.rupees.forEach((rupee) =>
-      rupee.update(time, state.collected.includes(rupee.id)),
-    );
+    this.rupees.forEach((rupee) => {
+      const secret = ROCK_SECRETS.find((s) =>
+        s.pickupIds.some((id) => id === rupee.id),
+      );
+      rupee.update(
+        time,
+        state.collected.includes(rupee.id) ||
+          (!!secret && !gameStore.getState().secrets[secret.id].revealed),
+      );
+    });
     for (const { id, chest } of this.chests) {
       if (!state.chests[id]) this.burstShown[id] = false;
       if (!state.chests[id] || state.overlay || this.burstShown[id]) continue;

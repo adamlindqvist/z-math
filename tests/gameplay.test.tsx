@@ -131,6 +131,35 @@ describe("playable controls and interface", () => {
     pointer(joystick, "pointerup", 1, 122, 80);
     expect(gameStore.getState().overlay).toBe("npc");
   });
+  it("moves the strange rock with a second touch while the joystick remains active", () => {
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 160,
+        height: 160,
+      }),
+    });
+    act(() =>
+      gameStore.setTarget({
+        kind: "secret",
+        id: "strange-rock-01",
+        label: "Flytta",
+      }),
+    );
+    pointer(joystick, "pointerdown", 1, 122, 80);
+    const action = button("Flytta");
+    expect(action.disabled).toBe(false);
+    pointer(action, "pointerdown", 2, 400, 80);
+    pointer(action, "pointerup", 2, 400, 80);
+    expect(gameStore.getState().activeSecret).toBe("strange-rock-01");
+    expect(gameStore.getState().overlay).toBeNull();
+    expect(input.direction().x).toBe(1);
+    pointer(joystick, "pointercancel", 1, 122, 80);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+  });
   it("scales joystick travel and clears input on lost capture or hidden page", () => {
     const joystick = host.querySelector('[data-testid="joystick"]')!;
     Object.assign(joystick, {

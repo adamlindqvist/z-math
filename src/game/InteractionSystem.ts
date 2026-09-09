@@ -78,6 +78,7 @@ export class InteractionSystem {
     if (!gameStore.getState().overlay)
       world.rupees.forEach((rupee) => {
         if (
+          rupee.root.visible &&
           Math.hypot(
             position.x - rupee.root.position.x,
             position.z - rupee.root.position.z,

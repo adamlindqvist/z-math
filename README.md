@@ -52,7 +52,7 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - Eldtemplet har vulkansten, varma golv, flammotiv, eldfat och glödande lavakanaler. Elden och lavan är ofarliga. Ljusporten och Skattkammaren har samma fem bildfrågor vardera som Vattentemplet.
 - Eldtemplets Stensal har tre separata L-formade spår. Följ spåret och matcha sol, löv och måne. Gå runt stenen vid böjen och knuffa från nästa sida. Pusslet kräver minst sju knuffar, både i sidled och djupled. Du kan knuffa tillbaka eller börja om utan straff.
 - Eldtemplets skatt ger fem ädelstenar, ett eldsvärd och en eldsköld en gång. Eldutrustningen tas på direkt och syns med egna flammotiv. Den vanliga utrustningen finns kvar i väskan, där du kan byta mellan dem.
-- Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 7. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.
+- Brons upplåsning och båda öppnade kistorna sparas. Äldre sparningar börjar om med sparversion 8. Efter omladdning i gläntan börjar spelaren vid den ursprungliga startpunkten.
 - Två turkosa fjärilar gömmer små hemligheter: en vid dammens nordvästra strand och en längre ner längs huvudstigen i södra gläntan. När du kommer nära flyger fjärilen till nästa av fem stopp och väntar. Inga uppdrag eller extra instruktioner visas. Vid sista stoppet tonar en gömd kista fram under 1,5 sekunder. Den öppnas med vanliga handlingsknappen och ger tio ädelstenar en gång, utan mattefrågor. Fjärilen flyger sedan upp och försvinner med glitter.
 - Fjärilarnas framsteg sparas separat. Före avslöjandet börjar en ofärdig fjäril om vid sitt första stopp efter omladdning. När kistan väl har avslöjats finns den kvar och fjärilen väntar vid den. Öppnade kistor förblir öppnade och deras fjärilar kommer inte tillbaka.
 - Framsteg sparas automatiskt i webbläsaren. Pausmenyn låter dig börja om. Lagring delas inte mellan enheter och kan rensas av webbläsaren.
@@ -71,7 +71,7 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 
 Progressionen ligger i det befintliga sparsystemets `secrets`, indexerat med hemlighetens ID: `discovered` sätts vid första närhetsaktiveringen, `revealed` när fjärilen når sista stoppet och `completed` när kistan öppnas. Kistans öppnade tillstånd, tio ädelstenar och completion sparas i samma uppdatering. Brospärren gäller även den södra hemligheten. Omladdning efter avslöjandet visar kistan direkt; exakt waypoint eller pågående framtoning sparas inte. Återställning och tillfälliga debugsessioner hanterar båda hemligheterna.
 
-För ytterligare en fjäril: lägg till dess kista i kistregistret och en definition med unikt ID och en framkomlig rutt. För nästa typ av hemlighet: utöka definitionstypen och lägg till dess separata beteende i världen; återanvänd progressionen och kistbelöningar där de passar. Ingen implementation för framtida stenar, djur eller miljöpussel ingår ännu. Ändras det sparade innehållet behöver sparversionen ändras enligt projektets policy.
+För ytterligare en fjäril: lägg till dess kista i kistregistret och en definition med unikt ID och en framkomlig rutt. För nästa typ av hemlighet: utöka definitionstypen och lägg till dess separata beteende i världen; återanvänd progressionen och kistbelöningar där de passar. Stenhemligheter använder samma progression och befintliga world pickups; ingen separat manager behövs. Ändras det sparade innehållet behöver sparversionen ändras enligt projektets policy.
 
 ## Fler tempel
 
@@ -81,7 +81,7 @@ Lägg till ett objekt i `DUNGEONS` i `src/game/dungeons/definitions.ts` för ett
 
 `DungeonArea` bygger rum, portar, lampor, stenar och kistor från definitionerna. Varje sten har en ordnad lista av `points: { x, z }[]`, ett `start`-index, ett `goal`-index och golvsymboler per punkt. Intilliggande punkter ska ligga 1,6 enheter isär längs en enda axel. Knuffar flyttar stenen ett index framåt eller bakåt från rätt fysisk sida. Animation, riktningspil och kollisionsvolym följer x/z-riktningen. Vattentemplets fempunktsbanor är raka; Eldtemplets separata banor böjer av. Lämna plats att gå runt alla stenar och nå båda knuffsidorna, även vid böjar och ändlägen. Målet ska ha samma symbol som stenen och ligga utanför startläget. Testa framkomlighet och båda skärmorienteringarna för nya layouter. Ingen baneditor ingår.
 
-Sparformatet är version 7 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
+Sparformatet är version 8 under nyckeln `glantans-skatt-v1`; äldre och ogiltiga sparningar börjar om. Ändras definitionernas sparade struktur behöver även sparversionen ändras. Spelet fungerar utan åtkomst till lagring. Kräver en webbläsare med WebGL; grafikfel visas med möjlighet att ladda om.
 
 ## Verifiering
 
@@ -104,3 +104,9 @@ Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler o
 ### Södra gläntan
 
 `World` håller ihop båda landytorna och bron i samma scen. `SouthGlade` bygger den södra miljön och brons gränser. `gladeScenery` ger båda gläntorna samma mjukt slingrande stigar, rundade träd, blommande buskar, stenar, blommor och grästuvor; `Bokoblin` äger vaktens modell och flykt. Utomhuskistor identifieras med `glade` och `south`, och den aktiva kistan behålls under hela frågeomgången.
+
+### Konstiga stenarna
+
+Vid `gladePosition(5, 5.2)` strax söder om dammen finns en mossig sten med en svag spiral. En likadan sten finns vid `gladePosition(-6.8, 26)` i södra gläntans nedre vänstra del, strax nedanför träden och kan användas när bron är upplåst. De två hemligheterna sparas separat och ger fem ädelstenar vardera. Vanliga handlingsknappen visar **Flytta** inom 1,85 meter. Stenen skakar och glider 1,6 meter åt sidan under 1,2 sekunder, med en liten studs och två glitterpartiklar. Under den finns en grund grop med fem vanliga ädelstenar. Inget uppdrag eller någon pil visas.
+
+`StrangeRock` hanterar geometrin och animationen; `WorldSecret` skiljer mellan fjärilar och stenar. Första interaktionen sparar `discovered`, färdig animation sparar `revealed`, och sista upphämtningen sparar `completed` tillsammans med rupees och `collected`. Delvis hämtad belöning bevaras vid omladdning; ett avbrott mitt i flytten tillåter ett nytt försök. Avklarade stenar förblir flyttade utan ny belöning. Animationen pausas med dialoger, och slutkollisionen väntar tills spelaren lämnat landningsplatsen. Fjärilarnas ursprungliga rutter är oförändrade.

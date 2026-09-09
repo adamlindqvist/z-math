@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { WorldSecret } from "../secrets/definitions";
+import type { ButterflySecret } from "../secrets/definitions";
 import { ball, material } from "../models";
 
 type Phase = "waiting" | "reacting" | "flying" | "finishing" | "hidden";
@@ -22,7 +22,7 @@ export class Butterfly {
   private particles: { mesh: THREE.Mesh; life: number; seed: number }[] = [];
 
   constructor(
-    private definition: WorldSecret,
+    private definition: ButterflySecret,
     completed: boolean,
     revealed = false,
   ) {

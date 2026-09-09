@@ -1,7 +1,7 @@
 import { gladePosition } from "../gladeLayout";
 import type { ChestId } from "../entities/chestDefinitions";
 
-export type WorldSecret = {
+export type ButterflySecret = {
   id: string;
   type: "butterfly";
   chestId: ChestId;
@@ -9,6 +9,15 @@ export type WorldSecret = {
   waypoints: readonly { x: number; z: number }[];
   chestPosition: { x: number; z: number };
 };
+export type StrangeRockSecret = {
+  id: string;
+  type: "strange-rock";
+  requiresBridge: boolean;
+  position: { x: number; z: number };
+  offset: { x: number; z: number };
+  pickupIds: readonly string[];
+};
+export type WorldSecret = ButterflySecret | StrangeRockSecret;
 export const WORLD_SECRETS = [
   {
     id: "butterfly-01",
@@ -38,7 +47,41 @@ export const WORLD_SECRETS = [
     ],
     chestPosition: gladePosition(-4.5, 24.4),
   },
+  {
+    id: "strange-rock-01",
+    type: "strange-rock",
+    requiresBridge: false,
+    position: gladePosition(5, 5.2),
+    offset: { x: 1.6, z: 0 },
+    pickupIds: [
+      "strange-rock-01-1",
+      "strange-rock-01-2",
+      "strange-rock-01-3",
+      "strange-rock-01-4",
+      "strange-rock-01-5",
+    ],
+  },
+  {
+    id: "strange-rock-02",
+    type: "strange-rock",
+    requiresBridge: true,
+    position: gladePosition(-6.8, 26),
+    offset: { x: 1.6, z: 0 },
+    pickupIds: [
+      "strange-rock-02-1",
+      "strange-rock-02-2",
+      "strange-rock-02-3",
+      "strange-rock-02-4",
+      "strange-rock-02-5",
+    ],
+  },
 ] as const satisfies readonly WorldSecret[];
+export const BUTTERFLY_SECRETS = WORLD_SECRETS.filter(
+  (s) => s.type === "butterfly",
+);
+export const ROCK_SECRETS = WORLD_SECRETS.filter(
+  (s) => s.type === "strange-rock",
+);
 export type SecretId = (typeof WORLD_SECRETS)[number]["id"];
 export type SecretProgress = {
   discovered: boolean;
@@ -58,6 +101,7 @@ export function validSecrets(
   value: unknown,
   chests: Record<ChestId, boolean>,
   bridgeUnlocked: boolean,
+  collected: readonly string[],
 ): value is SecretsProgress {
   if (
     !value ||
@@ -65,7 +109,8 @@ export function validSecrets(
     Object.keys(value).length !== WORLD_SECRETS.length
   )
     return false;
-  return WORLD_SECRETS.every(({ id, chestId, requiresBridge }) => {
+  return WORLD_SECRETS.every((definition) => {
+    const { id, requiresBridge } = definition;
     const p = (value as SecretsProgress)[id];
     return (
       p &&
@@ -75,7 +120,13 @@ export function validSecrets(
       (!p.revealed || p.discovered) &&
       (!p.completed || p.revealed) &&
       (!requiresBridge || bridgeUnlocked || !p.discovered) &&
-      p.completed === chests[chestId]
+      (definition.type === "butterfly"
+        ? p.completed === chests[definition.chestId]
+        : definition.pickupIds.every(
+            (id) => !collected.includes(id) || p.revealed,
+          ) &&
+          p.completed ===
+            definition.pickupIds.every((id) => collected.includes(id)))
     );
   });
 }

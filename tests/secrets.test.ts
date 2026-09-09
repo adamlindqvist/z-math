@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Vector3, Scene, Mesh } from "three";
 import { Butterfly } from "../src/game/entities/Butterfly";
-import { WORLD_SECRETS } from "../src/game/secrets/definitions";
+import { BUTTERFLY_SECRETS as WORLD_SECRETS } from "../src/game/secrets/definitions";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import { World } from "../src/game/World";
 import { disposeTree } from "../src/game/Area";
@@ -71,7 +71,7 @@ describe("secret rewards and saves", () => {
       },
     });
     const saved = JSON.parse(storage.getItem()!);
-    expect(saved.version).toBe(7);
+    expect(saved.version).toBe(8);
     for (const change of [
       { version: 6 },
       { secrets: {} },
@@ -338,7 +338,8 @@ describe("secret in the existing world", () => {
               typeof i.target === "object" &&
               i.target &&
               "kind" in i.target &&
-              i.target.kind !== "chest",
+              i.target.kind === "secret" &&
+              i.target.id === secret.id,
           ),
       ).toBe(false);
     } finally {

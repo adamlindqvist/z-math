@@ -50,6 +50,7 @@ npm run preview     # Preview the production build
 
 ## Verification
 
+- Use Codex's built-in browser (`iab`) for visual testing and screenshots through the available browser tools. Do not use the `agent-browser` skill or CLI for visual testing or screenshots. If the built-in browser is unavailable, report that limitation instead of falling back to `agent-browser`.
 - Run relevant tests and `npm run build` after gameplay code changes. Add or adjust tests when game rules or error-prone behavior changes.
 - For UI and input changes, briefly check landscape iPad layout, touch controls, dialogs, pausing, and the gameplay path through receiving the chest reward. Keep it quick and simple.
 - Check persistence after reloading when progress or rewards are affected.

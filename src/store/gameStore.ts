@@ -5,6 +5,8 @@ import {
 } from "../game/entities/chestDefinitions";
 import {
   WORLD_SECRETS,
+  BUTTERFLY_SECRETS,
+  ROCK_SECRETS,
   freshSecrets,
   validSecrets,
   type SecretId,
@@ -39,6 +41,7 @@ import {
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const RUPEE_IDS = [
+  ...ROCK_SECRETS.flatMap((s) => [...s.pickupIds]),
   "path-1",
   "path-2",
   "path-3",
@@ -56,6 +59,7 @@ export type Target =
   | "bokoblin"
   | null
   | { kind: "chest"; id: ChestId; label: string }
+  | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
   | null
@@ -87,6 +91,7 @@ export interface GameState extends Progress {
   quizCorrectAnswers: number;
   dungeonQuiz: string | null;
   activeChest: ChestId | null;
+  activeSecret: SecretId | null;
   motion: { index: number; from: number; to: number } | null;
   reward: number;
   rewardItems: ItemId[];
@@ -113,7 +118,7 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 7 ||
+      p?.version !== 8 ||
       !validInventory(p) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
@@ -136,7 +141,8 @@ export function parseSave(raw: string | null): Progress {
       !p.chests ||
       Object.keys(p.chests).length !== CHEST_IDS.length ||
       !CHEST_IDS.every((id) => typeof p.chests[id] === "boolean") ||
-      !validSecrets(p.secrets, p.chests, p.bridgeUnlocked) ||
+      !Array.isArray(p.collected) ||
+      !validSecrets(p.secrets, p.chests, p.bridgeUnlocked, p.collected) ||
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
@@ -191,6 +197,7 @@ export function createGameStore(
     dungeonQuiz: null,
     activeChest: null,
     motion: null,
+    activeSecret: null,
     reward: 0,
     rewardItems: [],
     savingAvailable,
@@ -207,7 +214,7 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 7,
+            version: 8,
             items: state.items,
             equipment: state.equipment,
             location: state.location,
@@ -229,7 +236,7 @@ export function createGameStore(
   // The chest flag, currency and associated discovery are committed together.
   const chestAward = (id: ChestId): Partial<GameState> => {
     if (state.chests[id]) return {};
-    const secret = WORLD_SECRETS.find((s) => s.chestId === id);
+    const secret = BUTTERFLY_SECRETS.find((s) => s.chestId === id);
     return {
       rupees: state.rupees + CHESTS[id].reward,
       chests: { ...state.chests, [id]: true },
@@ -330,6 +337,7 @@ export function createGameStore(
       set(
         {
           secrets: { ...state.secrets, [id]: { ...progress, revealed: true } },
+          ...(state.activeSecret === id ? { activeSecret: null } : {}),
         },
         true,
       );
@@ -395,6 +403,7 @@ export function createGameStore(
         location: destination,
         target: null,
         motion: null,
+        activeSecret: null,
         question: null,
         feedback: null,
         dungeonQuiz: null,
@@ -444,6 +453,7 @@ export function createGameStore(
         dungeonQuiz: null,
         activeChest: null,
         motion: null,
+        activeSecret: null,
         reward: 0,
         rewardItems: [],
         resetId: state.resetId + 1,
@@ -466,6 +476,7 @@ export function createGameStore(
         dungeonQuiz: null,
         activeChest: null,
         motion: null,
+        activeSecret: null,
         reward: 0,
         rewardItems: [],
         resetId: state.resetId + 1,
@@ -492,7 +503,13 @@ export function createGameStore(
               1);
       if (adjacent && canVisit(destination, state.dungeons))
         set(
-          { location: destination, target: null, motion: null, reward: 0 },
+          {
+            location: destination,
+            target: null,
+            motion: null,
+            activeSecret: null,
+            reward: 0,
+          },
           true,
         );
     },
@@ -530,13 +547,36 @@ export function createGameStore(
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "secret") {
+          const definition = ROCK_SECRETS.find((s) => s.id === target.id);
+          if (
+            !definition ||
+            state.location ||
+            state.activeSecret ||
+            state.secrets[target.id].revealed ||
+            (definition.requiresBridge && !state.bridgeUnlocked)
+          )
+            return;
+          set(
+            {
+              activeSecret: target.id,
+              target: null,
+              secrets: {
+                ...state.secrets,
+                [target.id]: { ...state.secrets[target.id], discovered: true },
+              },
+            },
+            true,
+          );
+          return;
+        }
         if (target.kind === "chest") {
           if (
             state.location ||
             (target.id === "south" && !state.bridgeUnlocked)
           )
             return;
-          const secret = WORLD_SECRETS.find((s) => s.chestId === target.id);
+          const secret = BUTTERFLY_SECRETS.find((s) => s.chestId === target.id);
           if (
             secret &&
             (!state.secrets[secret.id].revealed ||
@@ -721,16 +761,38 @@ export function createGameStore(
         });
     },
     collect: (id: string) => {
+      const secret = ROCK_SECRETS.find((s) =>
+        s.pickupIds.some((pickup) => pickup === id),
+      );
       if (
-        !state.overlay &&
-        !state.location &&
-        RUPEE_IDS.includes(id) &&
-        !state.collected.includes(id)
+        state.overlay ||
+        state.location ||
+        !RUPEE_IDS.includes(id) ||
+        state.collected.includes(id) ||
+        (secret && !state.secrets[secret.id].revealed)
       )
-        set(
-          { rupees: state.rupees + 1, collected: [...state.collected, id] },
-          true,
-        );
+        return;
+      const collected = [...state.collected, id];
+      set(
+        {
+          rupees: state.rupees + 1,
+          collected,
+          ...(secret
+            ? {
+                secrets: {
+                  ...state.secrets,
+                  [secret.id]: {
+                    ...state.secrets[secret.id],
+                    completed: secret.pickupIds.every((pickup) =>
+                      collected.includes(pickup),
+                    ),
+                  },
+                },
+              }
+            : {}),
+        },
+        true,
+      );
     },
     finishMotion: () => {
       if (state.motion) set({ motion: null });
@@ -772,6 +834,7 @@ export function createGameStore(
           dungeonQuiz: null,
           activeChest: null,
           motion: null,
+          activeSecret: null,
           overlay: null,
           target: null,
           question: null,
