@@ -89,6 +89,8 @@ export interface GameState extends Progress {
   target: Target;
   question: MathQuestion | null;
   feedback: "retry" | "correct" | "complete" | null;
+  /** Question keys already used in the open quiz, so none of them repeats. */
+  askedQuestions: string[];
   quizCorrectAnswers: number;
   dungeonQuiz: string | null;
   activeChest: ChestId | null;
@@ -194,6 +196,7 @@ export function createGameStore(
     target: null,
     question: null,
     feedback: null,
+    askedQuestions: [],
     quizCorrectAnswers: 0,
     dungeonQuiz: null,
     activeChest: null,
@@ -243,6 +246,22 @@ export function createGameStore(
     }
     listeners.forEach((fn) => fn());
     if (sound) emitSound(sound);
+  };
+  // A generated question is always recorded so the same one cannot come up
+  // twice while the quiz is open.
+  const askQuestion = (question: MathQuestion): Partial<GameState> => ({
+    question,
+    feedback: null,
+    askedQuestions: [...state.askedQuestions, question.key],
+  });
+  const nextQuestion = (): MathQuestion | null => {
+    if (state.dungeonQuiz) {
+      const c = resolveRoom(state.location)?.room.challenge;
+      return c
+        ? generateTempleQuestion(c.kind, Math.random, state.askedQuestions)
+        : null;
+    }
+    return generateAdditionQuestion(Math.random, state.askedQuestions);
   };
   // The chest flag, currency and associated discovery are committed together.
   const chestAward = (id: ChestId): Partial<GameState> => {
@@ -426,6 +445,7 @@ export function createGameStore(
         activeSecret: null,
         question: null,
         feedback: null,
+        askedQuestions: [],
         dungeonQuiz: null,
         activeChest: null,
         reward: 0,
@@ -469,6 +489,7 @@ export function createGameStore(
         target: null,
         question: null,
         feedback: null,
+        askedQuestions: [],
         quizCorrectAnswers: 0,
         dungeonQuiz: null,
         activeChest: null,
@@ -492,6 +513,7 @@ export function createGameStore(
         target: null,
         question: null,
         feedback: null,
+        askedQuestions: [],
         quizCorrectAnswers: 0,
         dungeonQuiz: null,
         activeChest: null,
@@ -634,18 +656,21 @@ export function createGameStore(
         if (found && found.room.challenge?.id === target.id) {
           const c = found.room.challenge;
           const answers = state.dungeons[found.dungeon.id].answers[c.id];
-          if (answers < c.required)
+          if (answers < c.required) {
+            const templeQuestion = generateTempleQuestion(c.kind);
             set(
               {
                 overlay: "quiz",
                 dungeonQuiz: c.id,
-                question: generateTempleQuestion(c.kind),
+                question: templeQuestion,
+                askedQuestions: [templeQuestion.key],
                 quizCorrectAnswers: answers,
                 feedback: null,
               },
               false,
               "interact",
             );
+          }
         }
         return;
       }
@@ -667,6 +692,7 @@ export function createGameStore(
         activeChest: null,
         question: null,
         feedback: null,
+        askedQuestions: [],
         quizCorrectAnswers: 0,
       }),
     beginQuiz: () => {
@@ -676,13 +702,16 @@ export function createGameStore(
         state.activeChest &&
         !state.chests[state.activeChest] &&
         CHESTS[state.activeChest].opening === "quiz"
-      )
+      ) {
+        const question = generateAdditionQuestion();
         set({
           overlay: "quiz",
-          question: generateAdditionQuestion(),
+          question,
+          askedQuestions: [question.key],
           feedback: null,
           quizCorrectAnswers: 0,
         });
+      }
     },
     answer: (answer: number) => {
       if (state.dungeonQuiz) {
@@ -694,8 +723,7 @@ export function createGameStore(
           c.id !== state.dungeonQuiz ||
           state.overlay !== "quiz" ||
           !state.question ||
-          state.feedback === "correct" ||
-          state.feedback === "complete"
+          state.feedback
         )
           return;
         const progress = state.dungeons[found.dungeon.id];
@@ -740,8 +768,7 @@ export function createGameStore(
         !state.question ||
         !state.activeChest ||
         state.chests[state.activeChest] ||
-        state.feedback === "correct" ||
-        state.feedback === "complete"
+        state.feedback
       )
         return;
       if (answer !== state.question.correctAnswer) {
@@ -763,17 +790,29 @@ export function createGameStore(
         "complete",
       );
     },
+    // A wrong answer is followed by a fresh question, so guessing through the
+    // buttons never gets the child to the next star.
+    replaceQuestion: () => {
+      if (state.overlay !== "quiz" || state.feedback !== "retry") return;
+      const question = nextQuestion();
+      if (question) set(askQuestion(question));
+    },
     finishQuiz: () => {
       if (state.dungeonQuiz) {
         const c = resolveRoom(state.location)?.room.challenge;
         if (!c) return;
         if (state.feedback === "correct")
-          set({ question: generateTempleQuestion(c.kind), feedback: null });
+          set(
+            askQuestion(
+              generateTempleQuestion(c.kind, Math.random, state.askedQuestions),
+            ),
+          );
         else if (state.feedback === "complete")
           set({
             overlay: state.rewardItems.length ? "itemReward" : null,
             question: null,
             feedback: null,
+            askedQuestions: [],
             dungeonQuiz: null,
             activeChest: null,
             quizCorrectAnswers: 0,
@@ -782,12 +821,17 @@ export function createGameStore(
         return;
       }
       if (state.feedback === "correct")
-        set({ question: generateAdditionQuestion(), feedback: null });
+        set(
+          askQuestion(
+            generateAdditionQuestion(Math.random, state.askedQuestions),
+          ),
+        );
       else if (state.feedback === "complete")
         set({
           overlay: null,
           question: null,
           feedback: null,
+          askedQuestions: [],
           quizCorrectAnswers: 0,
           reward: state.activeChest ? CHESTS[state.activeChest].reward : 0,
           activeChest: null,
@@ -878,6 +922,7 @@ export function createGameStore(
           target: null,
           question: null,
           feedback: null,
+          askedQuestions: [],
           quizCorrectAnswers: 0,
           reward: 0,
           rewardItems: [],

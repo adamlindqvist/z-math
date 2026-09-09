@@ -16,6 +16,8 @@ import {
   useGameState,
 } from "../store/gameStore";
 import { Modal, emblem } from "./Dialogue";
+/** How long the wrong-answer message stays up before a new question appears. */
+export const RETRY_DELAY = 1800;
 export function MathQuiz() {
   const {
     overlay,
@@ -34,6 +36,9 @@ export function MathQuiz() {
     feedback === "retry" && selection?.question === question
       ? selection.answer
       : null;
+  // On a wrong answer the correct one is pointed out in a calm blue, so the
+  // child still learns the answer without it looking like a win.
+  const revealAnswer = feedback === "retry";
   const challenge = dungeonQuiz
     ? resolveRoom(location)?.room.challenge
     : undefined;
@@ -42,6 +47,10 @@ export function MathQuiz() {
   useEffect(() => {
     if (feedback === "correct" || feedback === "complete") {
       const timer = setTimeout(() => gameStore.finishQuiz(), 1000);
+      return () => clearTimeout(timer);
+    }
+    if (feedback === "retry") {
+      const timer = setTimeout(() => gameStore.replaceQuestion(), RETRY_DELAY);
       return () => clearTimeout(timer);
     }
   }, [feedback]);
@@ -54,7 +63,7 @@ export function MathQuiz() {
       <button
         className="cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none absolute top-3 right-3 grid size-16 place-items-center rounded-[22px] bg-[#e4eddd] text-ink [&_svg]:size-8"
         aria-label="Försök senare"
-        disabled={feedback === "correct" || feedback === "complete"}
+        disabled={isCorrect}
         onClick={() => gameStore.close()}
       >
         <X size={20} />
@@ -123,9 +132,9 @@ export function MathQuiz() {
           <button
             key={answer}
             data-testid="answer"
-            className={`cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none relative min-h-24 rounded-3xl border-[3px] border-[#56a7a2] bg-[#e6f6ef] p-2.5 text-[40px] text-ink shadow-[0_5px_0_#b0d8c7] max-[600px]:text-[34px] ${(feedback === "correct" || feedback === "complete") && answer === question.correctAnswer ? "border-[#286b3d]! bg-[#d5ef9e]! text-[#20552f]!" : answer === retryAnswer ? "border-[#b65a24]! bg-[#fff0d6]! text-[#873e18]!" : ""}`}
-            disabled={feedback === "correct" || feedback === "complete"}
-            aria-label={`${answer}${isCorrect && answer === question.correctAnswer ? ", rätt svar" : answer === retryAnswer ? ", inte rätt, prova igen" : ""}`}
+            className={`cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none relative min-h-24 rounded-3xl border-[3px] border-[#56a7a2] bg-[#e6f6ef] p-2.5 text-[40px] text-ink shadow-[0_5px_0_#b0d8c7] max-[600px]:text-[34px] ${(feedback === "correct" || feedback === "complete") && answer === question.correctAnswer ? "border-[#286b3d]! bg-[#d5ef9e]! text-[#20552f]!" : answer === retryAnswer ? "border-[#b65a24]! bg-[#fff0d6]! text-[#873e18]!" : revealAnswer && answer === question.correctAnswer ? "border-[#2f6f93]! bg-[#dfeef7]! text-[#1e4a63]!" : ""}`}
+            disabled={!!feedback}
+            aria-label={`${answer}${isCorrect && answer === question.correctAnswer ? ", rätt svar" : answer === retryAnswer ? ", inte rätt" : revealAnswer && answer === question.correctAnswer ? ", det här var rätt svar" : ""}`}
             onClick={() => {
               setSelection({ question, answer });
               gameStore.answer(answer);
@@ -140,6 +149,11 @@ export function MathQuiz() {
               <X
                 aria-hidden="true"
                 className="absolute top-1.5 right-1.5 size-7 rounded-full bg-[#b65a24] p-1 text-white"
+              />
+            ) : revealAnswer && answer === question.correctAnswer ? (
+              <Check
+                aria-hidden="true"
+                className="absolute top-1.5 right-1.5 size-7 rounded-full bg-[#2f6f93] p-1 text-white"
               />
             ) : null}
             {answer}
@@ -179,9 +193,12 @@ export function MathQuiz() {
             {isCorrect
               ? "Rätt! Bra jobbat!"
               : feedback === "retry"
-                ? "Inte rätt än. Prova igen!"
+                ? "Inte rätt. Nu kommer en ny fråga!"
                 : "Räkna gärna på fingrarna."}
           </div>
+          {feedback === "retry" && (
+            <div className="mt-0.5 text-lg">Det blå svaret var rätt.</div>
+          )}
           {feedback === "complete" && (
             <div className="mt-0.5 text-lg">
               {challenge

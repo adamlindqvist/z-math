@@ -44,7 +44,11 @@ it.each([false, true])(
     if (!temple) s.beginQuiz();
     s.answer(99);
     s.answer(99);
+    expect(events).toEqual(["interact", "retry"]);
+    s.replaceQuestion();
+    s.answer(99);
     expect(events).toEqual(["interact", "retry", "retry"]);
+    s.replaceQuestion();
     const required = temple ? 5 : 3;
     for (let i = 0; i < required; i++) {
       const answer = s.getState().question!.correctAnswer;

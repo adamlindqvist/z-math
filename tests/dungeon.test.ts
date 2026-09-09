@@ -101,7 +101,12 @@ describe("Vattentemplet rules and persistence", () => {
     s.answer(99);
     expect(s.getState().question).toBe(q);
     s.answer(q.correctAnswer);
-    s.answer(q.correctAnswer);
+    expect(s.getState().quizCorrectAnswers).toBe(0);
+    s.replaceQuestion();
+    const next = s.getState().question!;
+    expect(next.key).not.toBe(q.key);
+    s.answer(next.correctAnswer);
+    s.answer(next.correctAnswer);
     expect(s.getState().quizCorrectAnswers).toBe(1);
     const restored = createGameStore(storage);
     expect(restored.getState().location?.room).toBe("light");

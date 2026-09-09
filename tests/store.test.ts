@@ -25,6 +25,10 @@ describe("progress", () => {
     expect(store.getState().question).toBe(question);
     expect(store.getState().feedback).toBe("retry");
     store.answer(question.correctAnswer);
+    expect(store.getState().quizCorrectAnswers).toBe(0);
+    store.replaceQuestion();
+    expect(store.getState().question).not.toBe(question);
+    store.answer(store.getState().question!.correctAnswer);
     expect(store.getState()).toMatchObject({
       rupees: 0,
       chests: { glade: false, south: false },

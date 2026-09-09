@@ -10,7 +10,7 @@ import { World } from "../src/game/World";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { gameStore } from "../src/store/gameStore";
 import { Dialogue } from "../src/components/Dialogue";
-import { MathQuiz } from "../src/components/MathQuiz";
+import { MathQuiz, RETRY_DELAY } from "../src/components/MathQuiz";
 import { TouchControls } from "../src/components/TouchControls";
 import { HUD } from "../src/components/HUD";
 import type { Game } from "../src/game/Game";
@@ -219,14 +219,44 @@ describe("playable controls and interface", () => {
         .click(),
     );
     expect(host.querySelector('[role="status"]')?.textContent).toContain(
-      "Inte rätt än. Prova igen!",
+      "Inte rätt. Nu kommer en ny fråga!",
     );
     expect(
-      host.querySelector(`[aria-label="${wrong}, inte rätt, prova igen"]`),
+      host.querySelector(`[aria-label="${wrong}, inte rätt"]`),
     ).not.toBeNull();
+    // The right answer is pointed out too, without the green "you won" styling.
+    const revealed = host.querySelector(
+      `[aria-label="${q.correctAnswer}, det här var rätt svar"]`,
+    );
+    expect(revealed).not.toBeNull();
+    expect(revealed!.className).toContain("bg-[#dfeef7]!");
+    expect(
+      host.querySelector('[aria-label*="rätt svar"]')?.className,
+    ).not.toContain("bg-[#d5ef9e]!");
     expect(gameStore.getState().question).toBe(q);
     expect(gameStore.getState().rupees).toBe(0);
+    // Every answer button is locked so guessing cannot advance the quiz.
+    expect(
+      Array.from(
+        host.querySelectorAll<HTMLButtonElement>('[data-testid="answer"]'),
+      ).every((b) => b.disabled),
+    ).toBe(true);
+    act(() =>
+      Array.from(
+        host.querySelectorAll<HTMLButtonElement>('[data-testid="answer"]'),
+      )
+        .find((b) => b.textContent === String(q.correctAnswer))!
+        .click(),
+    );
+    expect(gameStore.getState().quizCorrectAnswers).toBe(0);
+    // After the message a new question replaces the one that was answered wrong.
+    act(() => vi.advanceTimersByTime(RETRY_DELAY));
+    expect(gameStore.getState().question!.key).not.toBe(q.key);
+    expect(gameStore.getState().feedback).toBeNull();
+    expect(host.querySelector('[aria-label*="inte rätt"]')).toBeNull();
+    const asked = [q.key];
     for (let index = 0; index < 3; index++) {
+      asked.push(gameStore.getState().question!.key);
       const correct = gameStore.getState().question!.correctAnswer;
       act(() =>
         Array.from(
@@ -251,6 +281,7 @@ describe("playable controls and interface", () => {
       act(() => vi.advanceTimersByTime(600));
       expect(host.querySelector('[aria-label*="rätt svar"]')).toBeNull();
     }
+    expect(new Set(asked).size).toBe(asked.length);
     expect(host.querySelector('[aria-label="Kistans mattelås"]')).toBeNull();
     expect(gameStore.getState().rupees).toBe(5);
     expect(gameStore.getState().reward).toBe(5);
@@ -364,17 +395,26 @@ describe("temple interface and input", () => {
       gameStore.getState().question!.correctAnswer,
     );
     expect(host.querySelector('[aria-label="Stjärna"]')).toBeNull();
+    const wrongTurn = gameStore.getState().question!;
     act(() => gameStore.answer(99));
-    expect(host.textContent).toContain("Prova igen");
+    expect(host.textContent).toContain("Nu kommer en ny fråga");
+    act(() => vi.advanceTimersByTime(RETRY_DELAY));
+    expect(gameStore.getState().question!.key).not.toBe(wrongTurn.key);
     act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
     act(() => vi.advanceTimersByTime(2100));
     act(() => gameStore.close());
     click("Öppna porten");
     expect(gameStore.getState().quizCorrectAnswers).toBe(1);
+    const asked = [gameStore.getState().question!.key];
     for (let i = 0; i < 4; i++) {
       act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
-      if (i < 3) act(() => vi.advanceTimersByTime(2100));
+      if (i < 3) {
+        act(() => vi.advanceTimersByTime(2100));
+        asked.push(gameStore.getState().question!.key);
+      }
     }
+    // The five counting variants are used exactly once each in one session.
+    expect(new Set(asked).size).toBe(asked.length);
     expect(host.textContent).toContain("Porten är öppen");
     act(() => vi.advanceTimersByTime(2100));
     expect(host.querySelector('[role="dialog"]')).toBeNull();
