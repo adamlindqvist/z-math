@@ -24,6 +24,10 @@ export class Game {
   private time = 0;
   private observer: ResizeObserver;
   private resetId = gameStore.getState().resetId;
+  // The sun follows the player so its shadow frustum covers whichever area is
+  // in view; a fixed frustum clipped shadows off in the distant south glade.
+  private sun = new THREE.DirectionalLight("#fff0d2", 2.8);
+  private sunOffset = new THREE.Vector3(-8, 17, 9).setLength(40);
   private contextLost = (event: Event) => {
     event.preventDefault();
     gameStore.pause();
@@ -61,22 +65,22 @@ export class Game {
       this.contextLost,
     );
     this.scene.add(new THREE.HemisphereLight("#ffefd8", "#9da981", 2.2));
-    const sun = new THREE.DirectionalLight("#fff0d2", 2.8);
-    sun.position.set(-8, 17, 9);
+    const sun = this.sun;
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     Object.assign(sun.shadow.camera, {
-      left: -18,
-      right: 18,
-      top: 35,
-      bottom: -35,
+      left: -20,
+      right: 20,
+      top: 20,
+      bottom: -20,
       near: 1,
       far: 80,
     });
     sun.shadow.normalBias = 0.04;
     sun.shadow.bias = -0.0003;
     sun.shadow.radius = 4;
-    this.scene.add(sun);
+    this.scene.add(sun, sun.target);
+    this.updateSun();
     this.world = this.createArea();
     this.scene.add(this.player.root);
     this.mountArea();
@@ -132,6 +136,14 @@ export class Game {
         "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan med Eldtemplet",
     );
   }
+  // Snapped to whole units so the shadow map does not crawl while walking.
+  private updateSun() {
+    const { x, z } = this.player.position;
+    this.sun.target.position.set(Math.round(x), 0, Math.round(z));
+    this.sun.position.copy(this.sun.target.position).add(this.sunOffset);
+    this.sun.target.updateMatrixWorld();
+    this.sun.shadow.camera.updateProjectionMatrix();
+  }
   private resize() {
     const { clientWidth: w, clientHeight: h } = this.container;
     if (w && h) {
@@ -168,6 +180,7 @@ export class Game {
       );
     this.interactions.update(this.player.position, this.world, this.time);
     this.camera.update(this.player.position, dt);
+    this.updateSun();
     this.renderer.render(this.scene, this.camera.camera);
     this.frame = requestAnimationFrame(this.tick);
   };
