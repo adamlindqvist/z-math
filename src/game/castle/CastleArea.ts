@@ -11,6 +11,7 @@ import { gameStore, type GameState } from "../../store/gameStore";
 import { SHOP_IDS } from "../../items/shop";
 import { shopModel } from "./models";
 import { gladeDistance } from "../gladeLayout";
+import { furnishHall } from "./hall";
 export const CASTLE_ENTRANCE = {
   x: gladeDistance(-7),
   z: gladeDistance(-2) + 1.35,
@@ -23,6 +24,7 @@ export class CastleArea implements Area {
   rupees = [];
   protected targets: Interaction[] = [];
   private textures: THREE.Texture[] = [];
+  private flames: THREE.Mesh[] = [];
   constructor(public room: "hall" | "shop" = "hall") {
     const stone = material("#d7c8aa"),
       trim = material("#a78d6a");
@@ -45,9 +47,9 @@ export class CastleArea implements Area {
     box(this.root, material("#a84d50"), 0, 0.015, 1.5, 2, 0.03, 4);
     this.door(0, 4.2, "Utgång", false, 0, true);
     if (room === "hall") {
-      this.door(4.65, 0, "Butik", false, -Math.PI / 2);
-      this.door(-4.65, 0, "Bibliotek", true, Math.PI / 2);
-      this.door(0, -4.2, "Kungssal", true);
+      this.door(4.65, 0, "Butik", false, -Math.PI / 2, false, "\u{1F6D2}");
+      this.door(-4.65, 0, "Bibliotek", true, Math.PI / 2, false, "\u{1F4DA}");
+      this.door(0, -4.2, "Kungssal", true, 0, false, "\u{1F451}");
       this.targets.push(
         {
           x: -4,
@@ -60,8 +62,9 @@ export class CastleArea implements Area {
           target: { kind: "castleDoor", id: "throne", label: "Titta" },
         },
       );
+      this.flames = furnishHall(this.root, this.collision);
     } else {
-      this.sign("Bosses butik", 0, 2.35, -4.1);
+      this.sign("\u{1F6D2}", 0, 2.35, -3.85);
       const bosse = character("hero");
       bosse.coat.color.set("#935b40");
       box(bosse.root, material("#f7e6bd"), 0, 0.7, 0.34, 0.46, 0.45, 0.05);
@@ -104,36 +107,54 @@ export class CastleArea implements Area {
     }
   }
   private sign(
-    text: string,
+    symbol: string,
     x: number,
     y: number,
     z: number,
     parent = this.root,
   ) {
-    // Canvas texture is decorative; React carries readable and spoken labels.
+    // Picture signs only: a five-year-old reads the symbol, not words.
+    // React carries the readable and spoken labels.
     if (
       typeof document === "undefined" ||
       typeof CanvasRenderingContext2D === "undefined"
     )
       return;
     const canvas = document.createElement("canvas");
-    canvas.width = 768;
-    canvas.height = 128;
+    canvas.width = 256;
+    canvas.height = 256;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.fillStyle = "#fff0cc";
-    ctx.fillRect(0, 0, 768, 128);
-    ctx.fillStyle = "#354a36";
-    ctx.font = "bold 48px sans-serif";
+    ctx.fillRect(0, 0, 256, 256);
     ctx.textAlign = "center";
-    ctx.fillText(text, 384, 82);
+    ctx.textBaseline = "alphabetic";
+    // Emoji metrics vary per glyph, so measure once and scale it to fit
+    // inside the plaque instead of trusting a fixed font size.
+    const fit = 200;
+    ctx.font = "100px sans-serif";
+    let m = ctx.measureText(symbol);
+    const height =
+      (m.actualBoundingBoxAscent || 100) + (m.actualBoundingBoxDescent || 0);
+    ctx.font = `${Math.round(100 * Math.min(fit / (m.width || 100), fit / height))}px sans-serif`;
+    m = ctx.measureText(symbol);
+    ctx.fillStyle = "#354a36";
+    ctx.fillText(
+      symbol,
+      128,
+      128 +
+        ((m.actualBoundingBoxAscent || 0) - (m.actualBoundingBoxDescent || 0)) /
+          2,
+    );
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     this.textures.push(texture);
     const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(3, 0.5),
+      new THREE.PlaneGeometry(0.7, 0.7),
       new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }),
     );
+    // Tilted toward the camera and standing clear of the stone so no part of
+    // the picture disappears into a lintel or wall.
     mesh.position.set(x, y, z);
     mesh.rotation.x = -Math.PI / 4;
     parent.add(mesh);
@@ -145,6 +166,7 @@ export class CastleArea implements Area {
     locked: boolean,
     rotation = 0,
     low = false,
+    symbol?: string,
   ) {
     const frame = new THREE.Group();
     frame.name = `castle-door-${label}`;
@@ -167,10 +189,8 @@ export class CastleArea implements Area {
     }
     box(frame, stone, 0, 1.93, 0, 2.45, 0.45, 0.65);
     box(frame, material("#ead9b9"), 0, 0.025, 0, 1.4, 0.05, 1.1);
-    if (low) {
-      frame.scale.y = 0.22;
-      this.sign(label, x, 0.65, z - 0.4);
-    } else this.sign(label, 0, 2.25, 0.2, frame);
+    if (low) frame.scale.y = 0.22;
+    else if (symbol) this.sign(symbol, 0, 2.45, 0.47, frame);
     if (locked) {
       const panel = box(
         frame,
@@ -210,7 +230,16 @@ export class CastleArea implements Area {
   interactions(_state: GameState, _position: THREE.Vector3) {
     return this.targets;
   }
-  update(_dt: number, _time: number, position?: THREE.Vector3) {
+  update(_dt: number, time: number, position?: THREE.Vector3) {
+    // Candles, torches and the fire breathe a little so the hall feels alive.
+    for (const flame of this.flames) {
+      const { phase, size } = flame.userData as { phase: number; size: number };
+      const pulse =
+        Math.sin(time * 6 + phase) * 0.5 + Math.sin(time * 11 + phase) * 0.5;
+      flame.scale.y = size * (1 + pulse * 0.12);
+      (flame.material as THREE.MeshStandardMaterial).emissiveIntensity =
+        0.9 + pulse * 0.25;
+    }
     if (
       this.room === "shop" &&
       position &&
