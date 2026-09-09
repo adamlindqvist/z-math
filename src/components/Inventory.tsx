@@ -51,7 +51,7 @@ export function InventoryDialog() {
             </div>
           ))}
         </div>
-        <p>Och {state.reward} ädelstenar! Utrustningen är på.</p>
+        <p>Och {state.reward} rupees! Utrustningen är på.</p>
         <button
           className={primaryButton}
           onClick={() => gameStore.openInventory()}

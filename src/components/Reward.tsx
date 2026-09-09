@@ -19,7 +19,7 @@ export function Reward() {
       </span>
       <p className="text-lg leading-tight whitespace-nowrap max-[600px]:text-base">
         <span className="font-bold text-[#536d5e]">
-          Du fick +{reward} ädelstenar
+          Du fick +{reward} rupees
         </span>
       </p>
     </div>

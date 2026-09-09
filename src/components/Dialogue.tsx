@@ -160,7 +160,7 @@ export function Dialogue() {
       </h2>
       <p>
         {overlay === "npc"
-          ? "Följ de gröna ädelstenarna. Hitta kistan!"
+          ? "Följ de gröna rupees. Hitta kistan!"
           : overlay === "locked"
             ? "Räkna och samla tre stjärnor!"
             : "Kistan är tom nu. Leta efter stenporten!"}
