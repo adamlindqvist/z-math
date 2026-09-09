@@ -1,11 +1,10 @@
 import * as THREE from "three";
-import { box, ball, material } from "../models";
+import { box, ball, material, woodenShield, woodenSword } from "../models";
 import type { ShopItemId } from "../../items/shop";
 export function shopModel(id: ShopItemId) {
   const root = new THREE.Group();
   root.name = id;
-  const wood = material("#b4773e"),
-    green = material("#267347"),
+  const green = material("#267347"),
     gold = material("#f4ce65");
   if (id === "green-hat") {
     ball(root, green, 0, 0, 0, 0.4, 0.22, 0.35);
@@ -26,13 +25,13 @@ export function shopModel(id: ShopItemId) {
     box(root, material("#3489cb"), 0, 0.2, 0, 0.85, 0.24, 0.2);
     box(root, gold, 0, -0.12, 0.12, 0.5, 0.08, 0.03);
   } else if (id === "wooden-sword") {
-    box(root, wood, 0, 0.2, 0, 0.13, 0.95, 0.09);
-    box(root, gold, 0, -0.15, 0, 0.4, 0.09, 0.14);
-    box(root, material("#64452e"), 0, -0.32, 0, 0.1, 0.25, 0.1);
+    // The display pieces are the hero's gear, just scaled up for the stand.
+    const sword = woodenSword(root);
+    sword.scale.setScalar(1.6);
+    sword.position.y = -0.18;
   } else {
-    ball(root, wood, 0, 0, 0, 0.34, 0.43, 0.08);
-    box(root, gold, 0, 0, 0.09, 0.07, 0.7, 0.04);
-    box(root, gold, 0, 0, 0.09, 0.52, 0.07, 0.04);
+    const shield = woodenShield(root);
+    shield.scale.setScalar(1.35);
   }
   return root;
 }

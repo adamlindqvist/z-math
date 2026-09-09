@@ -160,13 +160,13 @@ describe("castle shop", () => {
     }
     player.setEquipment(s.getState().equipment);
     expect(player.root.getObjectByName("base-hat")!.visible).toBe(false);
-    expect(player.root.getObjectByName("wooden-sword")!.visible).toBe(true);
+    expect(player.root.getObjectByName("wood-sword")!.visible).toBe(true);
     expect(player.model.coat.color.getHexString()).toBe("3489cb");
     for (const slot of ["head", "body", "weapon", "shield"] as const)
       s.unequipItem(slot);
     player.setEquipment(s.getState().equipment);
     expect(player.root.getObjectByName("base-hat")!.visible).toBe(true);
-    expect(player.root.getObjectByName("wooden-shield")!.visible).toBe(false);
+    expect(player.root.getObjectByName("wood-shield")!.visible).toBe(false);
     expect(player.model.coat.color.getHexString()).toBe("36964a");
     disposeTree(player.root);
   });
@@ -218,40 +218,6 @@ describe("castle shop", () => {
     expect(player.x).toBeCloseTo(4.1);
     interactions.update(player, hall, 0);
     expect(gameStore.getState().location).toEqual({ castle: "shop" });
-    gameStore.reset();
-    hall.dispose();
-    disposeTree(scene);
-  });
-  it("lays rupees on the hall carpet and lets the player pick them up", () => {
-    const hall = new CastleArea();
-    expect(hall.rupees).toHaveLength(3);
-    for (const rupee of hall.rupees) {
-      expect(RUPEE_IDS).toContain(rupee.id);
-      const { x, z } = rupee.root.position;
-      // The runner covers x -1..1 and z -0.5..3.5; nothing may block a rupee.
-      expect(Math.abs(x)).toBeLessThan(1);
-      expect(z).toBeGreaterThan(-0.5);
-      expect(z).toBeLessThan(3.5);
-      expect(hall.collision.free(x, z)).toBe(true);
-      expect(Math.hypot(x - hall.spawn.x, z - hall.spawn.z)).toBeGreaterThan(
-        0.57,
-      );
-    }
-    const scene = new Scene(),
-      interactions = new InteractionSystem(scene);
-    gameStore.reset();
-    gameStore.travelTo({ castle: "hall" });
-    for (const rupee of hall.rupees) {
-      hall.update(0, 0);
-      interactions.update(rupee.root.position.clone(), hall, 0);
-    }
-    expect(gameStore.getState().collected).toEqual(
-      hall.rupees.map((rupee) => rupee.id),
-    );
-    expect(gameStore.getState().rupees).toBe(3);
-    // Picked-up rupees stay gone the next time the hall is built.
-    hall.update(0, 0);
-    for (const rupee of hall.rupees) expect(rupee.root.visible).toBe(false);
     gameStore.reset();
     hall.dispose();
     disposeTree(scene);

@@ -9,15 +9,9 @@ export class Player {
   root = this.model.root;
   private phase = 0;
   constructor() {
-    for (const id of ["green-hat", "wooden-sword", "wooden-shield"] as const) {
-      const model = shopModel(id);
-      model.position.set(
-        id === "wooden-sword" ? 0.43 : id === "wooden-shield" ? -0.4 : 0,
-        id === "green-hat" ? 1.55 : 0.7,
-        0.1,
-      );
-      this.root.add(model);
-    }
+    const hat = shopModel("green-hat");
+    hat.position.set(0, 1.55, 0.1);
+    this.root.add(hat);
     this.reset();
     this.setEquipment(freshInventory().equipment);
   }
@@ -26,9 +20,9 @@ export class Player {
       equipment.head !== "green-hat";
     this.root.getObjectByName("green-hat")!.visible =
       equipment.head === "green-hat";
-    this.root.getObjectByName("wooden-sword")!.visible =
+    this.root.getObjectByName("wood-sword")!.visible =
       equipment.weapon === "wooden-sword";
-    this.root.getObjectByName("wooden-shield")!.visible =
+    this.root.getObjectByName("wood-shield")!.visible =
       equipment.shield === "wooden-shield";
     this.model.coat.color.set(
       equipment.body === "blue-tunic" ? "#3489cb" : "#36964a",

@@ -318,8 +318,66 @@ export function character(role: "hero" | "princess") {
     fireBlade.position.z = -0.02;
     flame(fireSword, 0, 0.21, 0.025, 0.28);
     ball(fireSword, material("#ed722c"), 0, -0.115, 0, 0.055);
+    // Starter gear reuses the hand anchors so it sits in the grip, not the body.
+    const woodShield = woodenShield(root);
+    woodShield.name = "wood-shield";
+    woodShield.position.copy(shield.position);
+    woodShield.rotation.copy(shield.rotation);
+    const woodSword = woodenSword(root);
+    woodSword.name = "wood-sword";
+    woodSword.position.copy(sword.position);
+    woodSword.rotation.copy(sword.rotation);
   }
   return { root, body, left, right, coat };
+}
+
+// Starter gear, shared so the shop display and the hero show the same thing.
+export function woodenShield(parent: THREE.Object3D) {
+  const group = new THREE.Group();
+  parent.add(group);
+  const gold = material("#efbd45", 0.4);
+  const round: [number, number][] = Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * Math.PI * 2;
+    return [Math.sin(a) * 0.3, Math.cos(a) * 0.34];
+  });
+  silhouette(group, material("#7d4f2c"), round, 0.06);
+  const face = silhouette(
+    group,
+    material("#b4773e"),
+    round.map(([x, y]) => [x * 0.84, y * 0.84]),
+    0.03,
+  );
+  face.position.z = 0.06;
+  box(group, gold, 0, 0, 0.105, 0.06, 0.5, 0.03);
+  box(group, gold, 0, 0, 0.105, 0.42, 0.06, 0.03);
+  return group;
+}
+
+export function woodenSword(parent: THREE.Object3D) {
+  const group = new THREE.Group();
+  parent.add(group);
+  const grip = material("#8a5a30");
+  mesh(
+    new THREE.CylinderGeometry(0.037, 0.037, 0.2, 8),
+    material("#64452e"),
+    group,
+  );
+  box(group, grip, 0, 0.13, 0, 0.26, 0.06, 0.09);
+  const blade = silhouette(
+    group,
+    material("#c08a4c", 0.7),
+    [
+      [-0.06, 0.16],
+      [-0.06, 0.56],
+      [0, 0.66],
+      [0.06, 0.56],
+      [0.06, 0.16],
+    ],
+    0.04,
+  );
+  blade.position.z = -0.02;
+  ball(group, grip, 0, -0.115, 0, 0.05);
+  return group;
 }
 
 // A small geometric flame shared by the temple and its equipment.
