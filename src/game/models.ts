@@ -182,11 +182,15 @@ export function character(role: "hero" | "princess") {
     for (const side of [-1, 1])
       ball(root, gold, side * 0.38, 1.14, 0.07, 0.035, 0.06, 0.035);
   } else {
-    ball(root, coat, 0, 1.49, -0.14, 0.35, 0.23, 0.31);
+    const baseHat = new THREE.Group();
+    baseHat.name = "base-hat";
+    root.add(baseHat);
+    const hatMaterial = coat.clone();
+    ball(baseHat, hatMaterial, 0, 1.49, -0.14, 0.35, 0.23, 0.31);
     const hat = mesh(
       new THREE.ConeGeometry(0.3, 0.75, 12),
-      coat,
-      root,
+      hatMaterial,
+      baseHat,
       0,
       1.31,
       -0.4,
@@ -315,7 +319,7 @@ export function character(role: "hero" | "princess") {
     flame(fireSword, 0, 0.21, 0.025, 0.28);
     ball(fireSword, material("#ed722c"), 0, -0.115, 0, 0.055);
   }
-  return { root, body, left, right };
+  return { root, body, left, right, coat };
 }
 
 // A small geometric flame shared by the temple and its equipment.

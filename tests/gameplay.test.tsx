@@ -1,3 +1,4 @@
+import { ShopDialog } from "../src/components/Shop";
 import { InventoryDialog } from "../src/components/Inventory";
 // @vitest-environment jsdom
 import { act } from "react";
@@ -52,6 +53,7 @@ beforeEach(() => {
         <TouchControls game={{ current: { input } as Game }} />
         <Dialogue />
         <InventoryDialog />
+        <ShopDialog />
         <MathQuiz />
       </>,
     ),
@@ -474,13 +476,13 @@ describe("inventory interface", () => {
         .querySelector<HTMLButtonElement>('[aria-label="Ta av svärd"]')!
         .click(),
     );
-    expect(gameStore.getState().equipment.sword).toBeNull();
+    expect(gameStore.getState().equipment.weapon).toBeNull();
     act(() =>
       host
         .querySelector<HTMLButtonElement>('[aria-label="Ta på svärd"]')!
         .click(),
     );
-    expect(gameStore.getState().equipment.sword).toBe("temple-sword");
+    expect(gameStore.getState().equipment.weapon).toBe("temple-sword");
     key("Escape");
     expect(gameStore.getState().overlay).toBeNull();
     expect(input.direction()).toEqual({ x: 0, y: 0 });
@@ -595,5 +597,61 @@ describe("dialog action placement", () => {
     expect(bar()).toBeNull();
     expect(panel().contains(button("Ja, börja om"))).toBe(true);
     expect(panel().contains(button("Nej, spela vidare"))).toBe(true);
+  });
+});
+
+describe("shop dialogs", () => {
+  it("opens one dialog, buys once, equips, and clears held movement", () => {
+    act(() => {
+      gameStore.openDebug();
+      gameStore.debugOpenShop();
+    });
+    expect(host.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    click("Grön äventyrsmössa");
+    const before = gameStore.getState().rupees;
+    click("Köp");
+    expect(gameStore.getState().rupees).toBe(before - 15);
+    expect(host.textContent).toContain("Du köpte Grön äventyrsmössa!");
+    click("Ta på");
+    expect(gameStore.getState().equipment.head).toBe("green-hat");
+    expect(gameStore.getState().overlay).toBeNull();
+    key("ArrowUp");
+    expect(input.direction().y).toBe(-1);
+    act(() => {
+      gameStore.setTarget({ kind: "shop", label: "Handla" });
+      gameStore.interact();
+    });
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    key("Escape");
+    expect(gameStore.getState().overlay).toBeNull();
+    act(() => gameStore.debugEndSession());
+  });
+  it("shows missing funds, locked doors and already-owned goods without charging", () => {
+    act(() => {
+      gameStore.travelTo({ castle: "hall" });
+      gameStore.setTarget({
+        kind: "castleDoor",
+        id: "library",
+        label: "Titta",
+      });
+      gameStore.interact();
+    });
+    expect(host.textContent).toContain("Biblioteket är stängt idag!");
+    click("Spela vidare");
+    act(() => {
+      gameStore.travelTo({ castle: "shop" });
+      gameStore.setTarget({
+        kind: "shop",
+        itemId: "wooden-shield",
+        label: "Titta",
+      });
+      gameStore.interact();
+    });
+    expect(button("Du behöver 25 rupees till").disabled).toBe(true);
+    act(() => gameStore.grantItems(["wooden-shield"]));
+    expect(host.textContent).toContain("Den där har du ju redan!");
+    click("Ta på");
+    expect(gameStore.getState().rupees).toBe(0);
+    expect(gameStore.getState().equipment.shield).toBe("wooden-shield");
   });
 });

@@ -118,3 +118,16 @@ Vid `gladePosition(5, 5.2)` strax söder om dammen finns en mossig sten med en s
 Mjuka, magiska ljudeffekter följer insamling, quiz, interaktioner, stenpussel och upptäckter. Slå på eller av dem med **Ljudeffekter på/av** i pausmenyn. Valet sparas separat och behålls när äventyret startas om. Uppläsning fungerar även med effekterna avstängda och tystar effekterna medan den talar.
 
 `src/audio/` innehåller Web Audio-syntes, typade ljudhändelser och kopplingen till appens livscykel. Inga ljudfiler eller extra paket behövs. Ljud aktiveras genom beröring eller tangenttryckning; om webbläsaren blockerar ljud går det fortfarande att spela.
+
+
+### Slottsbutiken
+
+Gå fram till slottets ytterdörr för att komma till entréhallen. Butiken ligger till höger; biblioteket och kungssalen är stängda. Hos Handlare Bosse kan du trycka på handlaren eller en utställd vara när du står nära, eller använda handlingsknappen/E. Bosse hälsar kort när du närmar dig.
+
+Sortimentet består av grön äventyrsmössa med fjäder (15 rupees), blå tunika (20), träsvärd (30) och träsköld (25). Köp en gång och välj **Ta på** eller **Fortsätt handla**. Väskan låter dig byta och ta av saker. Grundmössan och de gröna kläderna återkommer när nya kläder tas av. Allt är kosmetiskt; bron kräver fortfarande ägande av tempelsvärdet och tempelskölden. Befintliga engångsbelöningar är oförändrade: spelaren behöver välja hur rupees används.
+
+`src/game/castle/` innehåller entréhallen, `ShopScene` och geometriska varumodeller. Båda rummen använder `Area`, samma renderare och rumskamera som templen. `src/items/shop.ts` innehåller fasta priser; föremålsregistret skiljer kategori från utrustningsplats (`head`, `body`, `weapon`, `shield`). Köphistoriken sparas tillsammans med ägande och utrustning, och saldot valideras som intjänade rupees minus köp.
+
+Sparversionen är **9**, under nyckeln `glantans-skatt-v1`. Äldre sparningar startar ett nytt spel. Vid lagringsfel går det att fortsätta spela och handla under sessionen. I utvecklingsläget finns hallen och butiken som debugdestinationer samt **Prova butiksköp (100 test-rupees)**. Testpengarna och testköpen sparas inte; avsluta testsessionen för att återgå till ditt riktiga spel.
+
+Butiksdialoger och interiör har granskats i Codex inbyggda webbläsare med 1024 × 768 och 768 × 1024. Automatiska tester täcker köp, sparande, utrustning, passagekollisioner, träfftestning och inmatningsavbrott. Fysisk iPad/Safari och manuell tvåfingerkontroll återstår.

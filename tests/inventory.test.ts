@@ -14,19 +14,19 @@ describe("inventory", () => {
     };
     const s = createGameStore(storage);
     expect(s.getState()).toMatchObject(freshInventory());
-    s.equipItem("temple-sword", "sword");
-    expect(s.getState().equipment.sword).toBeNull();
+    s.equipItem("temple-sword", "weapon");
+    expect(s.getState().equipment.weapon).toBeNull();
     s.grantItems(["temple-sword", "temple-shield", "temple-sword"]);
-    s.equipItem("temple-shield", "sword");
-    s.equipItem("missing" as ItemId, "sword");
-    expect(s.getState().equipment.sword).toBeNull();
-    s.equipItem("temple-sword", "sword");
+    s.equipItem("temple-shield", "weapon");
+    s.equipItem("missing" as ItemId, "weapon");
+    expect(s.getState().equipment.weapon).toBeNull();
+    s.equipItem("temple-sword", "weapon");
     s.equipItem("temple-shield", "shield");
-    s.unequipItem("clothes");
-    expect(s.getState().equipment.clothes).toBe("green-clothes");
-    s.unequipItem("sword");
+    s.unequipItem("body");
+    expect(s.getState().equipment.body).toBe("green-clothes");
+    s.unequipItem("weapon");
     s.grantItems(["temple-sword"], true);
-    expect(s.getState().equipment.sword).toBeNull();
+    expect(s.getState().equipment.weapon).toBeNull();
     expect(createGameStore(storage).getState()).toMatchObject({
       items: s.getState().items,
       equipment: s.getState().equipment,
@@ -40,10 +40,10 @@ describe("inventory", () => {
         p.items.push("green-clothes");
       },
       (p: typeof good) => {
-        p.equipment.clothes = null;
+        p.equipment.body = null;
       },
       (p: typeof good) => {
-        p.equipment.sword = "temple-shield";
+        p.equipment.weapon = "temple-shield";
       },
       (p: typeof good) => {
         p.items = ["green-clothes"];
@@ -75,7 +75,7 @@ describe("inventory", () => {
     player.setEquipment(s.getState().equipment);
     expect(sword.visible).toBe(true);
     expect(shield.visible).toBe(true);
-    s.unequipItem("sword");
+    s.unequipItem("weapon");
     player.setEquipment(s.getState().equipment);
     expect(sword.visible).toBe(false);
     expect(shield.visible).toBe(true);

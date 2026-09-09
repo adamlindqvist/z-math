@@ -178,7 +178,10 @@ export const DUNGEONS: DungeonDefinition[] = [
     ],
   },
 ];
-export type Location = { dungeon: string; room: string } | null;
+export type Location =
+  | { dungeon: string; room: string; castle?: never }
+  | { castle: "hall" | "shop"; dungeon?: never; room?: never }
+  | null;
 export interface DungeonProgress {
   answers: Record<string, number>;
   stones: Record<string, number[]>;
@@ -216,7 +219,8 @@ export function canVisit(
   location: Location,
   progress: Record<string, DungeonProgress>,
 ) {
-  if (!location) return true;
+  if (!location || location.castle === "hall" || location.castle === "shop")
+    return true;
   const found = resolveRoom(location);
   if (!found) return false;
   const { dungeon, room } = found;

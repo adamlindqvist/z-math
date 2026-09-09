@@ -128,13 +128,13 @@ describe("Eldtemplet", () => {
     travel(s, "light");
     expect(s.getState().location).toBeNull();
     const world = new World();
-    expect(world.passages().some((p) => p.destination.dungeon === "fire")).toBe(
-      false,
-    );
+    expect(
+      world.passages().some((p) => p.destination?.dungeon === "fire"),
+    ).toBe(false);
     unlock(gameStore);
-    expect(world.passages().some((p) => p.destination.dungeon === "fire")).toBe(
-      true,
-    );
+    expect(
+      world.passages().some((p) => p.destination?.dungeon === "fire"),
+    ).toBe(true);
     const player = new Player();
     player.position.set(0, 0, 16.75);
     walk(player, world.collision, -2, 22.5);
@@ -208,19 +208,19 @@ describe("Eldtemplet", () => {
     quiz(restored, "fire-treasure-lock");
     expect(restored.getState().overlay).toBe("itemReward");
     expect(restored.getState().equipment).toMatchObject({
-      sword: "fire-sword",
+      weapon: "fire-sword",
       shield: "fire-shield",
     });
     const saved = createGameStore(storage);
     expect(saved.getState().items).toHaveLength(5);
     expect(saved.getState().rupees).toBe(5);
-    saved.equipItem("temple-sword", "sword");
+    saved.equipItem("temple-sword", "weapon");
     saved.equipItem("temple-shield", "shield");
     expect(saved.getState().equipment).toMatchObject({
-      sword: "temple-sword",
+      weapon: "temple-sword",
       shield: "temple-shield",
     });
-    saved.equipItem("fire-sword", "sword");
+    saved.equipItem("fire-sword", "weapon");
     saved.equipItem("fire-shield", "shield");
     travel(saved, null);
     travel(saved, "light");
@@ -352,8 +352,9 @@ describe("Eldtemplet", () => {
     const player = new Player();
     for (const theme of ["fire", "temple"] as const) {
       player.setEquipment({
-        clothes: "green-clothes",
-        sword: `${theme}-sword`,
+        head: null,
+        body: "green-clothes",
+        weapon: `${theme}-sword`,
         shield: `${theme}-shield`,
       });
       expect(player.root.getObjectByName("fire-sword")!.visible).toBe(

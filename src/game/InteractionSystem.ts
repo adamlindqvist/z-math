@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { gameStore } from "../store/gameStore";
+import { gameStore, type Target } from "../store/gameStore";
 import type { Area } from "./Area";
 export class InteractionSystem {
   ring: THREE.Mesh;
@@ -87,4 +87,28 @@ export class InteractionSystem {
           gameStore.collect(rupee.id);
       });
   }
+}
+
+/** Only objects explicitly marked by an area can respond to a nearby tap. */
+export function pickInteraction(
+  world: Area,
+  position: THREE.Vector3,
+  camera: THREE.Camera,
+  point: THREE.Vector2,
+): Target {
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(point, camera);
+  const hit = ray.intersectObject(world.root, true)[0];
+  let object: THREE.Object3D | null = hit?.object ?? null;
+  while (object && !object.userData.target) object = object.parent;
+  const target = object?.userData.target as Target | undefined;
+  if (!target) return null;
+  const choice = world
+    .interactions(gameStore.getState(), position)
+    .find((i) => JSON.stringify(i.target) === JSON.stringify(target));
+  return choice &&
+    Math.hypot(position.x - choice.x, position.z - choice.z) < 1.85 &&
+    world.collision.visible(position, choice)
+    ? target
+    : null;
 }

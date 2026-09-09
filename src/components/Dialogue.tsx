@@ -133,6 +133,8 @@ export function Dialogue() {
   const { overlay } = useGameState();
   if (
     !overlay ||
+    overlay === "shop" ||
+    overlay === "castleDoor" ||
     overlay === "quiz" ||
     overlay === "inventory" ||
     overlay === "itemReward" ||

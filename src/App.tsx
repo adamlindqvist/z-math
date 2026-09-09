@@ -1,3 +1,4 @@
+import { ShopDialog } from "./components/Shop";
 import { connectSound } from "./audio/connectSound";
 import { sound } from "./audio/sound";
 import { InventoryDialog } from "./components/Inventory";
@@ -69,6 +70,7 @@ export default function App() {
           <TouchControls game={game} />
           <Dialogue />
           <InventoryDialog />
+          <ShopDialog />
           <MathQuiz />
           <Reward />
           {DebugMenu && (

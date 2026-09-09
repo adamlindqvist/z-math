@@ -435,8 +435,9 @@ describe("temple equipment reward", () => {
       "temple-shield",
     ]);
     expect(restored.getState().equipment).toEqual({
-      clothes: "green-clothes",
-      sword: "temple-sword",
+      head: null,
+      body: "green-clothes",
+      weapon: "temple-sword",
       shield: "temple-shield",
     });
     s.answer(s.getState().question!.correctAnswer);

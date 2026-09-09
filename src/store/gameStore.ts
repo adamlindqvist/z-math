@@ -1,3 +1,10 @@
+import {
+  SHOP,
+  isShopItem,
+  validPurchases,
+  purchaseTotal,
+  type ShopItemId,
+} from "../items/shop";
 import type { SoundEvent } from "../audio/types";
 import {
   CHESTS,
@@ -56,6 +63,8 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "shop"; itemId?: ShopItemId; label: string }
+  | { kind: "castleDoor"; id: "library" | "throne"; label: string }
   | "npc"
   | "bokoblin"
   | null
@@ -63,6 +72,8 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "shop"
+  | "castleDoor"
   | null
   | "npc"
   | "bokoblin"
@@ -75,6 +86,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  purchases: ShopItemId[];
   location: Location;
   dungeons: Record<string, DungeonProgress>;
   rupees: number;
@@ -85,6 +97,10 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  shopSelection: ShopItemId | null;
+  shopPurchased: boolean;
+  castleMessage: string;
+  shopGreeting: boolean;
   overlay: Overlay;
   target: Target;
   question: MathQuestion | null;
@@ -105,6 +121,7 @@ export interface GameState extends Progress {
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
+  purchases: [],
   location: null,
   dungeons: freshDungeons(),
   rupees: 0,
@@ -121,8 +138,9 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 8 ||
+      p?.version !== 9 ||
       !validInventory(p) ||
+      !validPurchases(p.purchases, p.items) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
       (!p.bridgeUnlocked &&
@@ -161,10 +179,12 @@ export function parseSave(raw: string | null): Progress {
             (sum, id) => sum + (p.chests[id] ? CHESTS[id].reward : 0),
             0,
           ) +
-          dungeonRewardTotal(p.dungeons)
+          dungeonRewardTotal(p.dungeons) -
+          purchaseTotal(p.purchases)
     )
       return fresh();
     return {
+      purchases: p.purchases,
       items: p.items,
       equipment: p.equipment,
       location: p.location,
@@ -191,6 +211,10 @@ export function createGameStore(
     savingAvailable = false;
   }
   let state: GameState = {
+    shopSelection: null,
+    shopPurchased: false,
+    castleMessage: "",
+    shopGreeting: false,
     ...progress,
     overlay: null,
     target: null,
@@ -227,7 +251,8 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 8,
+            version: 9,
+            purchases: state.purchases,
             items: state.items,
             equipment: state.equipment,
             location: state.location,
@@ -382,14 +407,52 @@ export function createGameStore(
       if (
         !isItemId(id) ||
         !state.items.includes(id) ||
-        ITEMS[id].category !== slot
+        ITEMS[id].equipSlot !== slot
       )
         return;
       set({ equipment: { ...state.equipment, [slot]: id } }, true);
     },
     unequipItem: (slot: EquipmentSlot) => {
-      if (slot !== "sword" && slot !== "shield") return;
-      set({ equipment: { ...state.equipment, [slot]: null } }, true);
+      if (!["head", "body", "weapon", "shield"].includes(slot)) return;
+      set(
+        {
+          equipment: {
+            ...state.equipment,
+            [slot]: slot === "body" ? "green-clothes" : null,
+          },
+        },
+        true,
+      );
+    },
+    greetShop: () => {
+      if (state.location?.castle === "shop" && !state.shopGreeting)
+        set({ shopGreeting: true });
+    },
+    selectShopItem: (id: ShopItemId | null) => {
+      if (state.overlay === "shop" && (id === null || isShopItem(id)))
+        set({ shopSelection: id, shopPurchased: false });
+    },
+    buyItem: (id: ItemId) => {
+      if (
+        state.location?.castle !== "shop" ||
+        state.overlay !== "shop" ||
+        !isShopItem(id) ||
+        state.items.includes(id) ||
+        state.rupees < SHOP[id]
+      )
+        return false;
+      set(
+        {
+          ...receiveItems(state, [id]),
+          rupees: state.rupees - SHOP[id],
+          purchases: [...state.purchases, id],
+          shopSelection: id,
+          shopPurchased: true,
+        },
+        true,
+        "reward",
+      );
+      return true;
     },
     openInventory: () => {
       if (state.motion || (state.overlay && state.overlay !== "itemReward"))
@@ -440,6 +503,9 @@ export function createGameStore(
       set({
         ...update,
         location: destination,
+        shopGreeting: false,
+        shopSelection: null,
+        shopPurchased: false,
         target: null,
         motion: null,
         activeSecret: null,
@@ -461,6 +527,19 @@ export function createGameStore(
       set(
         solveThrough(found.dungeon.id, found.dungeon.rooms.indexOf(found.room)),
       );
+    },
+    debugOpenShop: () => {
+      if (state.overlay !== "debug") return;
+      beginDebugSession();
+      set({
+        rupees: Math.max(100, state.rupees),
+        location: { castle: "shop" },
+        overlay: "shop",
+        target: null,
+        shopSelection: null,
+        shopPurchased: false,
+        shopGreeting: false,
+      });
     },
     debugGrantAllItems: () => {
       if (state.overlay !== "debug") return;
@@ -497,6 +576,9 @@ export function createGameStore(
         activeSecret: null,
         reward: 0,
         rewardItems: [],
+        shopGreeting: false,
+        shopSelection: null,
+        shopPurchased: false,
         resetId: state.resetId + 1,
       });
     },
@@ -521,6 +603,9 @@ export function createGameStore(
         activeSecret: null,
         reward: 0,
         rewardItems: [],
+        shopGreeting: false,
+        shopSelection: null,
+        shopPurchased: false,
         resetId: state.resetId + 1,
         debugActive: false,
         debugNoclip: false,
@@ -532,6 +617,11 @@ export function createGameStore(
       const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
       const next = resolveRoom(destination);
       if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
+      const castleAdjacent =
+        (!state.location && destination?.castle === "hall") ||
+        (state.location?.castle === "hall" &&
+          (destination === null || destination?.castle === "shop")) ||
+        (state.location?.castle === "shop" && destination?.castle === "hall");
       const adjacent = !state.location
         ? !!next && next.dungeon.rooms[0] === next.room
         : (!destination &&
@@ -543,10 +633,13 @@ export function createGameStore(
             next.dungeon === found?.dungeon &&
             Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
               1);
-      if (adjacent && canVisit(destination, state.dungeons))
+      if ((castleAdjacent || adjacent) && canVisit(destination, state.dungeons))
         set(
           {
             location: destination,
+            shopGreeting: false,
+            shopSelection: null,
+            shopPurchased: false,
             target: null,
             motion: null,
             activeSecret: null,
@@ -590,6 +683,30 @@ export function createGameStore(
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "shop") {
+          if (state.location?.castle !== "shop") return;
+          set(
+            {
+              overlay: "shop",
+              shopSelection: target.itemId ?? null,
+              shopPurchased: false,
+            },
+            false,
+            "interact",
+          );
+          return;
+        }
+        if (target.kind === "castleDoor") {
+          if (state.location?.castle !== "hall") return;
+          set({
+            overlay: "castleDoor",
+            castleMessage:
+              target.id === "library"
+                ? "Biblioteket är stängt idag!"
+                : "Kungssalen är stängd idag!",
+          });
+          return;
+        }
         if (target.kind === "secret") {
           const definition = ROCK_SECRETS.find((s) => s.id === target.id);
           if (
@@ -888,6 +1005,9 @@ export function createGameStore(
       set(
         {
           target: null,
+          shopGreeting: false,
+          shopSelection: null,
+          shopPurchased: false,
           resetId: state.resetId + 1,
           dungeons: {
             ...state.dungeons,
@@ -926,6 +1046,9 @@ export function createGameStore(
           quizCorrectAnswers: 0,
           reward: 0,
           rewardItems: [],
+          shopGreeting: false,
+          shopSelection: null,
+          shopPurchased: false,
           resetId: state.resetId + 1,
         },
         true,
@@ -944,6 +1067,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    purchases: [...state.purchases],
     items: [...state.items],
     equipment: { ...state.equipment },
     location: state.location ? { ...state.location } : null,
@@ -981,6 +1105,11 @@ function validLocation(
   progress: Record<string, DungeonProgress>,
 ): boolean {
   if (value === null) return true;
+  if (value && typeof value === "object" && "castle" in value)
+    return (
+      Object.keys(value).length === 1 &&
+      (value.castle === "hall" || value.castle === "shop")
+    );
   if (
     !value ||
     typeof value !== "object" ||

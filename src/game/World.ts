@@ -1,3 +1,5 @@
+import { CASTLE_ENTRANCE } from "./castle/CastleArea";
+import type { Passage } from "./Area";
 import { StrangeRock } from "./entities/StrangeRock";
 import { GLADE_SCALE, gladeDistance, gladePosition } from "./gladeLayout";
 import { Butterfly } from "./entities/Butterfly";
@@ -88,15 +90,18 @@ export class World implements Area {
       },
     ];
   }
-  passages() {
-    return DUNGEONS.filter(
-      (d) => !d.requiresBridge || gameStore.getState().bridgeUnlocked,
-    ).map((d) => ({
-      x: d.entrance.x,
-      z: d.entrance.z,
-      rotation: d.entrance.rotation,
-      destination: { dungeon: d.id, room: d.rooms[0].id },
-    }));
+  passages(): Passage[] {
+    return [
+      { ...CASTLE_ENTRANCE, destination: { castle: "hall" } },
+      ...DUNGEONS.filter(
+        (d) => !d.requiresBridge || gameStore.getState().bridgeUnlocked,
+      ).map((d) => ({
+        x: d.entrance.x,
+        z: d.entrance.z,
+        rotation: d.entrance.rotation,
+        destination: { dungeon: d.id, room: d.rooms[0].id },
+      })),
+    ];
   }
   dispose() {
     disposeTree(this.root);
@@ -267,16 +272,23 @@ export class World implements Area {
       gold = material("#e9bc5b"),
       banner = material("#b375ad"),
       window = material("#4b6573");
-    box(castle, stone, 0, 1.25, 0, 2.5, 2.5, 2.3);
+    // Hollow entrance: the doorway has depth instead of a door painted on a solid block.
+    for (const side of [-1, 1])
+      box(castle, stone, side * 0.95, 1.25, 0, 0.6, 2.5, 2.3);
+    box(castle, stone, 0, 2.2, 0, 1.3, 0.6, 2.3);
+    box(castle, stone, 0, 1.25, -1, 1.3, 2.5, 0.3);
+    box(castle, material("#514d43"), 0, 0.9, -0.82, 1.3, 1.8, 0.02);
     box(castle, mortar, 0, 0.13, 0, 3.15, 0.26, 2.75);
     box(castle, trim, 0, 2.42, 0, 2.6, 0.16, 2.4);
     for (let row = 0; row < 5; row++) {
       const y = 0.4 + row * 0.41;
-      box(castle, mortar, 0, y, 1.156, 2.5, 0.025, 0.012);
+      for (const side of [-1, 1])
+        box(castle, mortar, side * 0.95, y, 1.156, 0.6, 0.025, 0.012);
       box(castle, mortar, 1.256, y, 0, 0.012, 0.025, 2.3);
       for (let col = 0; col < 3; col++) {
         const offset = -0.85 + col * 0.78 + (row % 2) * 0.3;
-        box(castle, mortar, offset, y + 0.2, 1.156, 0.025, 0.38, 0.012);
+        if (Math.abs(offset) > 0.68)
+          box(castle, mortar, offset, y + 0.2, 1.156, 0.025, 0.38, 0.012);
         box(castle, mortar, 1.256, y + 0.2, offset, 0.012, 0.38, 0.025);
       }
     }
@@ -327,39 +339,31 @@ export class World implements Area {
       pennant.position.set(side * 0.78, 2.23, 1.18);
       box(castle, gold, side * 0.78, 2.24, 1.21, 0.42, 0.055, 0.07);
     }
-    // Rounded arch with a wooden, iron-banded gate.
+    // Open stone arch, with a recessed interior and a light threshold.
     const arch = new THREE.Shape();
-    arch.moveTo(-0.54, 0.16);
-    arch.lineTo(-0.54, 1.22);
-    arch.absarc(0, 1.22, 0.54, Math.PI, 0, true);
-    arch.lineTo(0.54, 0.16);
+    arch.moveTo(-0.7, 0);
+    arch.lineTo(-0.7, 1.22);
+    arch.absarc(0, 1.22, 0.7, Math.PI, 0, true);
+    arch.lineTo(0.7, 0);
+    arch.lineTo(0.54, 0);
+    arch.lineTo(0.54, 1.22);
+    arch.absarc(0, 1.22, 0.54, 0, Math.PI, false);
+    arch.lineTo(-0.54, 0);
     arch.closePath();
-    mesh(
+    const entranceArch = mesh(
       new THREE.ExtrudeGeometry(arch, {
-        depth: 0.07,
+        depth: 0.18,
         bevelEnabled: false,
-        curveSegments: 8,
+        curveSegments: 12,
       }),
       trim,
       castle,
       0,
       0,
-      1.16,
+      1.12,
     );
-    const gate = mesh(
-      new THREE.ShapeGeometry(arch, 8),
-      material("#80563b"),
-      castle,
-      0,
-      0.035,
-      1.24,
-    );
-    gate.scale.set(0.78, 0.89, 1);
-    for (const x of [-0.25, 0, 0.25])
-      box(castle, mortar, x, 0.65, 1.25, 0.025, 1.06, 0.02);
-    for (const y of [0.42, 0.98])
-      box(castle, material("#434b51"), 0, y, 1.27, 0.8, 0.065, 0.035);
-    ball(castle, gold, 0.22, 0.73, 1.29, 0.055);
+    entranceArch.name = "open-castle-arch";
+    box(castle, trim, 0, 0.04, 1.45, 1.05, 0.08, 1.1);
     // Rear keep, steep slate roof and a royal flag above the battlements.
     box(castle, stone, 0, 2.7, -0.34, 1.3, 1.35, 1.3);
     box(castle, trim, 0, 3.31, -0.34, 1.4, 0.14, 1.4);
@@ -394,7 +398,14 @@ export class World implements Area {
       0.025,
     );
     flag.position.set(0, 4.91, -0.34);
-    this.collision.add(gladeDistance(-7), gladeDistance(-2), 1.6, 1.4);
+    for (const side of [-1, 1])
+      this.collision.add(
+        gladeDistance(-7) + side * 1.075,
+        gladeDistance(-2),
+        0.525,
+        1.4,
+      );
+    this.collision.add(gladeDistance(-7), gladeDistance(-2) - 0.75, 0.55, 0.65);
     const trunk = material("#8e7250");
     const treePositions = [
       [-9, -5, 1.1],

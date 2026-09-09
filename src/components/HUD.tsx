@@ -24,23 +24,28 @@ export function HUD() {
   const solved = current
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
-  const hint = current
-    ? solved
-      ? "Gå genom den öppna porten!"
-      : current.room.hint
-    : state.bridgeUnlocked
-      ? state.chests.south
-        ? state.dungeons.fire.rewards.includes("fire-treasure-lock")
-          ? "Du hittade Eldtemplets skatt!"
-          : "Gå in i Eldtemplet!"
-        : "Gå över bron till kistan!"
-      : hasBridgeEquipment(state)
-        ? "Gå till bron. Skräm iväg Bokoblin!"
-        : state.chests.glade
-          ? "Hitta svärd och sköld i Vattentemplet!"
-          : state.talkedToNpc
-            ? "Leta efter kistan!"
-            : "Prata med Zelda!";
+  const hint =
+    state.location?.castle === "hall"
+      ? "Butiken ligger till höger!"
+      : state.location?.castle === "shop"
+        ? "Gå fram till Bosse eller en vara!"
+        : current
+          ? solved
+            ? "Gå genom den öppna porten!"
+            : current.room.hint
+          : state.bridgeUnlocked
+            ? state.chests.south
+              ? state.dungeons.fire.rewards.includes("fire-treasure-lock")
+                ? "Du hittade Eldtemplets skatt!"
+                : "Gå in i Eldtemplet!"
+              : "Gå över bron till kistan!"
+            : hasBridgeEquipment(state)
+              ? "Gå till bron. Skräm iväg Bokoblin!"
+              : state.chests.glade
+                ? "Hitta svärd och sköld i Vattentemplet!"
+                : state.talkedToNpc
+                  ? "Leta efter kistan!"
+                  : "Prata med Zelda!";
   return (
     <div className="pointer-events-none absolute top-[max(20px,env(safe-area-inset-top))] right-[max(20px,env(safe-area-inset-right))] left-[max(20px,env(safe-area-inset-left))] z-4 flex items-start justify-between gap-4 max-[600px]:right-3 max-[600px]:left-3 max-[600px]:gap-2">
       <div className="min-w-0 max-w-[430px] [@media(max-height:850px)]:max-w-[320px]">
@@ -73,9 +78,13 @@ export function HUD() {
           </div>
           <div>
             <p className="text-base font-bold text-[#536d5e] max-[600px]:text-sm">
-              {current
-                ? `${current.dungeon.name} · ${current.room.name}`
-                : "Legend of Matte"}
+              {state.location?.castle
+                ? state.location.castle === "hall"
+                  ? "Slottets entréhall"
+                  : "Bosses butik"
+                : current
+                  ? `${current.dungeon.name} · ${current.room.name}`
+                  : "Legend of Matte"}
             </p>
             <h2>{hint}</h2>
           </div>

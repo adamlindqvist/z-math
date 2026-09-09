@@ -1,3 +1,4 @@
+import { shopModel } from "./castle/models";
 import { freshInventory, type Equipment } from "../items/definitions";
 import { Vector3 } from "three";
 import { character } from "./models";
@@ -8,16 +9,36 @@ export class Player {
   root = this.model.root;
   private phase = 0;
   constructor() {
+    for (const id of ["green-hat", "wooden-sword", "wooden-shield"] as const) {
+      const model = shopModel(id);
+      model.position.set(
+        id === "wooden-sword" ? 0.43 : id === "wooden-shield" ? -0.4 : 0,
+        id === "green-hat" ? 1.55 : 0.7,
+        0.1,
+      );
+      this.root.add(model);
+    }
     this.reset();
     this.setEquipment(freshInventory().equipment);
   }
   setEquipment(equipment: Equipment) {
+    this.root.getObjectByName("base-hat")!.visible =
+      equipment.head !== "green-hat";
+    this.root.getObjectByName("green-hat")!.visible =
+      equipment.head === "green-hat";
+    this.root.getObjectByName("wooden-sword")!.visible =
+      equipment.weapon === "wooden-sword";
+    this.root.getObjectByName("wooden-shield")!.visible =
+      equipment.shield === "wooden-shield";
+    this.model.coat.color.set(
+      equipment.body === "blue-tunic" ? "#3489cb" : "#36964a",
+    );
     this.root.getObjectByName("sword")!.visible =
-      equipment.sword === "temple-sword";
+      equipment.weapon === "temple-sword";
     this.root.getObjectByName("shield")!.visible =
       equipment.shield === "temple-shield";
     this.root.getObjectByName("fire-sword")!.visible =
-      equipment.sword === "fire-sword";
+      equipment.weapon === "fire-sword";
     this.root.getObjectByName("fire-shield")!.visible =
       equipment.shield === "fire-shield";
   }

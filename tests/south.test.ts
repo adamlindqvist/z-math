@@ -76,7 +76,7 @@ describe("southern glade", () => {
     unlock(s);
     s.interact();
     expect(s.getState().bridgeUnlocked).toBe(true);
-    expect(s.getState().equipment.sword).toBeNull();
+    expect(s.getState().equipment.weapon).toBeNull();
     expect(s.getState().rupees).toBe(0);
   });
   it("binds the quiz to its chest across target changes, retries and duplicate answers", () => {

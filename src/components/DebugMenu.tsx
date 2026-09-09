@@ -92,6 +92,15 @@ export default function DebugMenu() {
           >
             <DoorOpen aria-hidden="true" /> Gläntan
           </button>
+          {(["hall", "shop"] as const).map((castle) => (
+            <button
+              key={castle}
+              className={actionClass}
+              onClick={() => gameStore.debugTravelTo({ castle })}
+            >
+              {castle === "hall" ? "Entréhall" : "Bosses butik"}
+            </button>
+          ))}
           {DUNGEONS.flatMap((dungeon) =>
             dungeon.rooms.map((room) => {
               const selected =
@@ -129,6 +138,12 @@ export default function DebugMenu() {
             onClick={() => gameStore.debugCompleteCurrentRoom()}
           >
             <CheckCircle2 aria-hidden="true" /> Klara aktuellt rum
+          </button>
+          <button
+            className={actionClass}
+            onClick={() => gameStore.debugOpenShop()}
+          >
+            Prova butiksköp (100 test-rupees)
           </button>
           <button
             className={actionClass}

@@ -6,7 +6,9 @@ export class Input {
     if (e.code === "Escape" && !e.repeat) {
       e.preventDefault();
       if (
-        ["inventory", "itemReward"].includes(gameStore.getState().overlay ?? "")
+        ["inventory", "itemReward", "shop", "castleDoor"].includes(
+          gameStore.getState().overlay ?? "",
+        )
       )
         gameStore.close();
       else gameStore.pause();
