@@ -14,6 +14,13 @@ type Store = ReturnType<typeof createGameStore>;
 const enter = (s: Store) => { s.travelTo({castle:"hall"}); s.travelTo({castle:"throne"}); };
 const press = (s: Store, id: WorldObjectId) => { s.setTarget({kind:"worldObject",id,label:WORLD_OBJECTS[id].label}); s.interact(); };
 const open = (s: Store) => { s.setTarget({kind:"chest",id:"royal-treasure",label:"Öppna"}); s.interact(); };
+const solveQuiz = (s: Store) => {
+  s.beginQuiz();
+  for (let i = 0; i < 3; i++) {
+    s.answer(s.getState().question!.correctAnswer);
+    s.finishQuiz();
+  }
+};
 const symbols = PUZZLES["royal-symbols"].symbols;
 const orders = symbols.flatMap(a => symbols.filter(b=>b!==a).map(b=>[a,b,symbols.find(c=>c!==a&&c!==b)!]));
 afterEach(()=>gameStore.reset());
@@ -30,6 +37,8 @@ describe("royal secret persistence",()=>{
     // Reloading mid-slide restores the destination with no replay.
     s=createGameStore(storage);
     const writes=vi.spyOn(storage,"setItem"); open(s);
+    expect(s.getState()).toMatchObject({overlay:"locked",rupees:0,chests:{"royal-treasure":false}});
+    solveQuiz(s);
     expect(writes).toHaveBeenCalledTimes(1);
     expect(s.getState()).toMatchObject({rupees:20,items:expect.arrayContaining(["royal-crown"]),equipment:{head:"royal-crown"},chests:{"royal-treasure":true},overlay:"itemReward",question:null});
     open(s); s.close(); open(s);
@@ -38,6 +47,27 @@ describe("royal secret persistence",()=>{
     s.close(); s.unequipItem("head");
     s=createGameStore(storage); expect(s.getState().equipment.head).toBeNull();
     expect(s.getState().chests["royal-treasure"]).toBe(true);
+  });
+  it("allows retries and restarts an unfinished royal quiz after closing or reloading",()=>{
+    const storage=memory(); let s=createGameStore(storage); enter(s);
+    symbols.forEach(id=>press(s,id)); s.finishBarrier("royal-throne"); open(s); s.beginQuiz();
+    s.answer(-1);
+    expect(s.getState()).toMatchObject({feedback:"retry",quizCorrectAnswers:0,rupees:0,chests:{"royal-treasure":false}});
+    s.replaceQuestion();
+    s.answer(s.getState().question!.correctAnswer); s.finishQuiz();
+    expect(s.getState().quizCorrectAnswers).toBe(1);
+    expect(s.getState().items).not.toContain("royal-crown");
+    s.close(); open(s); s.beginQuiz();
+    expect(s.getState().quizCorrectAnswers).toBe(0);
+    s.answer(s.getState().question!.correctAnswer); s.finishQuiz();
+    s=createGameStore(storage);
+    expect(s.getState()).toMatchObject({rupees:0,chests:{"royal-treasure":false}});
+    open(s); solveQuiz(s);
+    expect(s.getState()).toMatchObject({overlay:"itemReward",reward:20,rewardItems:["royal-crown"]});
+    s.answer(1); s.finishQuiz(); s.close(); open(s); s.beginQuiz();
+    expect(s.getState()).toMatchObject({overlay:"empty",rupees:20,question:null});
+    const restored=createGameStore(storage);
+    expect(restored.getState()).toMatchObject({rupees:20,chests:{"royal-treasure":true},equipment:{head:"royal-crown"}});
   });
   it("saves revealed pickups independently, including uncollected pickups and exactly 22 rupees",()=>{
     const storage=memory(); let s=createGameStore(storage); enter(s);
@@ -48,11 +78,11 @@ describe("royal secret persistence",()=>{
       s.collect(pickup); s.collect(pickup); press(s,id); s.collect(pickup);
     }
     expect(s.getState().rupees).toBe(2);
-    symbols.forEach(id=>press(s,id)); s.finishBarrier("royal-throne"); open(s);
+    symbols.forEach(id=>press(s,id)); s.finishBarrier("royal-throne"); open(s); solveQuiz(s);
     expect(createGameStore(storage).getState().rupees).toBe(22);
   });
   it("rejects corrupt history and previous save versions, but tolerates unavailable storage",()=>{
-    const storage=memory(),s=createGameStore(storage); enter(s); symbols.forEach(id=>press(s,id)); s.finishBarrier("royal-throne"); open(s);
+    const storage=memory(),s=createGameStore(storage); enter(s); symbols.forEach(id=>press(s,id)); s.finishBarrier("royal-throne"); open(s); solveQuiz(s);
     const saved=JSON.parse(storage.getItem()!);
     for(const change of [
       {version:9},{puzzles:{}},{puzzles:{"royal-symbols":{activated:["unknown"]}}},
@@ -62,7 +92,7 @@ describe("royal secret persistence",()=>{
       {worldObjects:["royal-book"]}, {collected:["royal-pot-rupee"],rupees:21}, {rupees:40},
     ]) expect(parseSave(JSON.stringify({...saved,...change})).location).toBeNull();
     const unavailable=createGameStore({getItem:()=>null,setItem:()=>{throw new Error("denied");}});
-    enter(unavailable); symbols.forEach(id=>press(unavailable,id)); unavailable.finishBarrier("royal-throne"); open(unavailable);
+    enter(unavailable); symbols.forEach(id=>press(unavailable,id)); unavailable.finishBarrier("royal-throne"); open(unavailable); solveQuiz(unavailable);
     expect(unavailable.getState()).toMatchObject({rupees:20,savingAvailable:false});
   });
   it("guards locations, overlays and nonadjacent travel, with silent restoration and debug isolation",()=>{
@@ -74,7 +104,7 @@ describe("royal secret persistence",()=>{
     symbols.forEach(id=>press(s,id)); expect(events).toEqual(["click","click","mechanism"]);
     const restored=createGameStore(storage); restored.subscribeSound(e=>events.push(e));
     expect(events).toHaveLength(3);
-    const baseline=storage.getItem(); restored.openDebug(); restored.debugTravelTo({castle:"throne"}); restored.closeDebug(); open(restored);
+    const baseline=storage.getItem(); restored.openDebug(); restored.debugTravelTo({castle:"throne"}); restored.closeDebug(); open(restored); solveQuiz(restored);
     expect(restored.getState().rupees).toBe(20); expect(storage.getItem()).toBe(baseline);
     restored.openDebug(); restored.debugEndSession(); expect(restored.getState().rupees).toBe(0);
     restored.reset(); expect(restored.getState()).toMatchObject({puzzles:{"royal-symbols":{activated:[]}},worldObjects:[],movingBarriers:[],objectEvent:null});

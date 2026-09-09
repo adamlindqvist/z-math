@@ -7,7 +7,7 @@ export const CHESTS = {
   south: { opening: "quiz", reward: 5, location: null },
   "butterfly-01": { opening: "direct", reward: 10, location: null },
   "butterfly-02": { opening: "direct", reward: 10, location: null },
-  "royal-treasure": { opening: "direct", reward: 20, location: { castle: "throne" }, items: ["royal-crown"], puzzle: "royal-symbols", barrier: "royal-throne" },
+  "royal-treasure": { opening: "quiz", reward: 20, location: { castle: "throne" }, items: ["royal-crown"], puzzle: "royal-symbols", barrier: "royal-throne" },
 } as const satisfies Record<string, ChestDefinition>;
 export type ChestId = keyof typeof CHESTS;
 export const CHEST_IDS = Object.keys(CHESTS) as ChestId[];

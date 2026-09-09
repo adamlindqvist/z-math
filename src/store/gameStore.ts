@@ -949,6 +949,7 @@ export function createGameStore(
       set(
         {
           ...chestAward(state.activeChest),
+          rewardItems: [...((CHESTS[state.activeChest] as ChestDefinition).items ?? [])],
           feedback: "complete",
           quizCorrectAnswers,
         },
@@ -994,7 +995,7 @@ export function createGameStore(
         );
       else if (state.feedback === "complete")
         set({
-          overlay: null,
+          overlay: state.rewardItems.length ? "itemReward" : null,
           question: null,
           feedback: null,
           askedQuestions: [],

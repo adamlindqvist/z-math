@@ -63,7 +63,7 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 
 Gå genom entréhallens norra dörr till den tomma Kungasalen. Undersök skölden, den tomma rustningen och kungaporträttet med handlingsknappen eller genom att trycka på föremålet när du står nära. Märkena kan aktiveras i valfri ordning och sparas direkt. Boken visar en bildledtråd. Det finns inga personer, tidsgränser eller felval i rummet.
 
-När märkena lyser glider tronen åt sidan. Om spelaren står i vägen väntar tronen tills vägen är fri. Den högra sidogången är öppen; överflödig dekoration har tagits bort så att huvudföremålen syns tydligare. Kistan ger 20 rupees och en **kungakrona** en gång, utan mattefrågor. Kronan tas på direkt och kan bytas i väskan. En lös hjälm och en kruka gömmer dessutom varsin rupee.
+När märkena lyser glider tronen åt sidan. Om spelaren står i vägen väntar tronen tills vägen är fri. Den högra sidogången är öppen; överflödig dekoration har tagits bort så att huvudföremålen syns tydligare. Kistan öppnas efter tre enkla additionsfrågor och ger 20 rupees och en **kungakrona** en gång. Fel svar kostar inget. Stänger du quizet börjar de tre frågorna om nästa gång. Kronan tas på direkt och kan bytas i väskan. En lös hjälm och en kruka gömmer dessutom varsin rupee.
 
 Kungasalen använder sparversion 10. Äldre eller ogiltiga sparningar börjar om. En omladdning efter löst pussel visar tronen i sitt öppna läge utan att spela om ljud eller dela ut belöningar igen.
 
