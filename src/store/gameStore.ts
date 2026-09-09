@@ -58,6 +58,9 @@ export const RUPEE_IDS = [
   "south-path-2",
   "south-path-3",
   "south-path-4",
+  "castle-1",
+  "castle-2",
+  "castle-3",
 ];
 export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
@@ -960,7 +963,8 @@ export function createGameStore(
       );
       if (
         state.overlay ||
-        state.location ||
+        // The hall keeps its own rupees on the carpet; other rooms have none.
+        (state.location && state.location.castle !== "hall") ||
         !RUPEE_IDS.includes(id) ||
         state.collected.includes(id) ||
         (secret && !state.secrets[secret.id].revealed)

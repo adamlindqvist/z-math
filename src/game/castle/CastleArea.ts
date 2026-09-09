@@ -12,6 +12,7 @@ import { SHOP_IDS } from "../../items/shop";
 import { shopModel } from "./models";
 import { gladeDistance } from "../gladeLayout";
 import { furnishHall } from "./hall";
+import { Collectible } from "../entities/Collectible";
 export const CASTLE_ENTRANCE = {
   x: gladeDistance(-7),
   z: gladeDistance(-2) + 1.35,
@@ -21,7 +22,7 @@ export class CastleArea implements Area {
   collision = new CollisionSystem(4.6, 4.2);
   spawn = { x: 0, z: 2.5 };
   cameraMode = "room" as const;
-  rupees = [];
+  rupees: Collectible[] = [];
   protected targets: Interaction[] = [];
   private textures: THREE.Texture[] = [];
   private flames: THREE.Mesh[] = [];
@@ -63,6 +64,13 @@ export class CastleArea implements Area {
         },
       );
       this.flames = furnishHall(this.root, this.collision);
+      // A few rupees lie on the red runner so the hall rewards a look around.
+      this.rupees = [
+        new Collectible("castle-1", 1.5, 0),
+        new Collectible("castle-2", 2.5, 0),
+        new Collectible("castle-3", 3.5, 0),
+      ];
+      this.root.add(...this.rupees.map((rupee) => rupee.root));
     } else {
       this.sign("\u{1F6D2}", 0, 2.35, -3.85);
       const bosse = character("hero");
@@ -240,6 +248,9 @@ export class CastleArea implements Area {
       (flame.material as THREE.MeshStandardMaterial).emissiveIntensity =
         0.9 + pulse * 0.25;
     }
+    const collected = gameStore.getState().collected;
+    for (const rupee of this.rupees)
+      rupee.update(time, collected.includes(rupee.id));
     if (
       this.room === "shop" &&
       position &&
