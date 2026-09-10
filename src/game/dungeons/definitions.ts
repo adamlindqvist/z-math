@@ -179,8 +179,9 @@ export const DUNGEONS: DungeonDefinition[] = [
   },
 ];
 export type Location =
-  | { dungeon: string; room: string; castle?: never }
-  | { castle: "hall" | "shop" | "throne"; dungeon?: never; room?: never }
+  | { dungeon: string; room: string; castle?: never; world?: never }
+  | { castle: "hall" | "shop" | "throne"; dungeon?: never; room?: never; world?: never }
+  | { world: "volcano"; dungeon?: never; room?: never; castle?: never }
   | null;
 export interface DungeonProgress {
   answers: Record<string, number>;
@@ -215,12 +216,16 @@ export function roomSolved(room: RoomDefinition, progress: DungeonProgress) {
     return progress.answers[room.challenge.id] === room.challenge.required;
   return !!room.stones?.every((s, i) => progress.stones[room.id][i] === s.goal);
 }
+export const volcanoUnlocked = (progress: Record<string, DungeonProgress>) =>
+  progress.fire.rewards.includes("fire-treasure-lock");
+
 export function canVisit(
   location: Location,
   progress: Record<string, DungeonProgress>,
 ) {
   if (!location || location.castle === "hall" || location.castle === "shop" || location.castle === "throne")
     return true;
+  if (location.world === "volcano") return volcanoUnlocked(progress);
   const found = resolveRoom(location);
   if (!found) return false;
   const { dungeon, room } = found;

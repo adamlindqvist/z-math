@@ -1,3 +1,5 @@
+import { VolcanoArea } from "./VolcanoArea";
+import { portalSpawn, VOLCANO_ENTRANCE } from "./volcanoPortal";
 import { ThroneRoomArea } from "./castle/ThroneRoomArea";
 import { CastleArea, ShopScene, CASTLE_ENTRANCE } from "./castle/CastleArea";
 import type { Location } from "./dungeons/definitions";
@@ -175,6 +177,7 @@ export class Game {
   private createArea(): Area {
     const location = gameStore.getState().location;
     this.areaKey = JSON.stringify(location);
+    if (location?.world === "volcano") return new VolcanoArea();
     if (location?.castle === "throne") return new ThroneRoomArea();
     if (location?.castle === "hall") return new CastleArea();
     if (location?.castle === "shop") return new ShopScene();
@@ -196,8 +199,9 @@ export class Game {
           : gameStore.getState().location?.castle === "hall" && this.previousLocation?.castle === "throne"
             ? { x: 0, z: -2.5 } : null;
     const spawn =
+      (!gameStore.getState().location && this.previousLocation?.world === "volcano" ? portalSpawn(VOLCANO_ENTRANCE, 1) : null) ??
       castleSpawn ??
-      (this.world.cameraMode === "glade" && entrance
+      (!gameStore.getState().location && entrance
         ? {
             x: entrance.x + Math.sin(entrance.rotation ?? 0) * 1.4,
             z: entrance.z + Math.cos(entrance.rotation ?? 0) * 1.4,
@@ -209,7 +213,7 @@ export class Game {
     this.camera.setMode(this.world.cameraMode, this.player.position);
     this.renderer.domElement.setAttribute(
       "aria-label",
-      (gameStore.getState().location?.castle === "hall"
+      (gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
         ? "Slottets entréhall"
         : gameStore.getState().location?.castle === "shop"
           ? "Bosses butik"

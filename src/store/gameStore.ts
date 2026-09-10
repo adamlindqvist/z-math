@@ -1,3 +1,4 @@
+import { volcanoUnlocked } from "../game/dungeons/definitions";
 import { freshPuzzles, validPuzzles, puzzleSolved, PUZZLES, type PuzzlesProgress } from "../game/puzzles/definitions";
 import { WORLD_OBJECTS, PICKUP_OBJECTS, sameLocation, validWorldObjects, type WorldObjectId } from "../game/interactables/definitions";
 import { canOpenChest } from "../game/entities/chestAccess";
@@ -652,6 +653,9 @@ export function createGameStore(
       const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
       const next = resolveRoom(destination);
       if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
+      const volcanoAdjacent =
+        (state.location === null && destination?.world === "volcano" && volcanoUnlocked(state.dungeons)) ||
+        (state.location?.world === "volcano" && destination === null);
       const castleAdjacent =
         (!state.location && destination?.castle === "hall") ||
         (state.location?.castle === "hall" &&
@@ -668,7 +672,7 @@ export function createGameStore(
             next.dungeon === found?.dungeon &&
             Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
               1);
-      if ((castleAdjacent || adjacent) && canVisit(destination, state.dungeons))
+      if ((volcanoAdjacent || castleAdjacent || adjacent) && canVisit(destination, state.dungeons))
         set(
           {
             location: destination,
@@ -1162,6 +1166,8 @@ function validLocation(
   progress: Record<string, DungeonProgress>,
 ): boolean {
   if (value === null) return true;
+  if (value && typeof value === "object" && "world" in value)
+    return Object.keys(value).length === 1 && value.world === "volcano" && volcanoUnlocked(progress);
   if (value && typeof value === "object" && "castle" in value)
     return (
       Object.keys(value).length === 1 &&

@@ -67,6 +67,12 @@ När märkena lyser glider tronen åt sidan. Om spelaren står i vägen väntar 
 
 Kungasalen använder sparversion 10. Äldre eller ogiltiga sparningar börjar om. En omladdning efter löst pussel visar tronen i sitt öppna läge utan att spela om ljud eller dela ut belöningar igen.
 
+### Vulkanvärlden
+
+När Eldtemplets slutskatt öppnas tänds stenportalen i södra gläntans sydöstra del. Följ ask-/jordstigen dit och gå genom den orange öppningen. Portalen leder till Vulkanvärlden, med basaltstenar, askstigar, lava och en vulkan. Lavan går inte att gå i men gör ingen skada. Den gröna trädportalen leder tillbaka till södra gläntan.
+
+Världen innehåller ännu inga skatter, tempel eller hemligheter. Tre öppna platser lämnar utrymme för kommande innehåll. Platsen sparas som `{ world: "volcano" }`; vid ankomst och omladdning står spelaren på vulkansidan av returportalen och kan fortsätta framåt längs stigen. För att återvända vänder man om och går tillbaka genom portalen. Upplåsningen följer Eldtemplets belöning och påverkas inte av vilken utrustning som används. Miljön byggs i `src/game/VolcanoArea.ts`, och de två portalerna delar modeller och placeringar i `src/game/volcanoPortal.ts`.
+
 ## Struktur
 
 `src/game/` äger värld, kamera, input, kollisionssystem, modeller och renderloop. `src/components/` äger UI och touchkontroller. `src/store/gameStore.ts` är den typade bryggan mellan dem och sparar framsteg. React uppdateras bara när spelstatus ändras, aldrig varje bildruta. `src/math/` innehåller frågekontrakt samt generatorer för addition och bildfrågor.

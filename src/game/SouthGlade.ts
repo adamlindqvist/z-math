@@ -64,6 +64,12 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
     ]),
     path,
   );
+  gladePath(root, new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.8, 0.08, 22),
+    new THREE.Vector3(3.5, 0.08, 24.7),
+    new THREE.Vector3(6, 0.08, 25.5),
+    new THREE.Vector3(6, 0.08, 24),
+  ]), path);
   const wood = material("#b68b59"),
     rail = material("#ead5a6");
   for (let i = 0; i < 15; i++)
@@ -126,7 +132,7 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
     [7, 20, 1.1],
     [-6, 25, 1.1],
     [0, 25.5, 0.9],
-    [6, 25.5, 1.15],
+    [8, 25.8, 1.15],
   ]);
   gladeRocks(root, collision, [
     [-7.3, 16.7, 0.45],

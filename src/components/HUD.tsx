@@ -1,4 +1,4 @@
-import { resolveRoom, roomSolved } from "../game/dungeons/definitions";
+import { resolveRoom, roomSolved, volcanoUnlocked } from "../game/dungeons/definitions";
 import {
   Crown,
   Backpack,
@@ -26,6 +26,8 @@ export function HUD() {
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
   const hint =
+    state.location?.world === "volcano" ? "Utforska vulkanvärlden!" :
+    state.location === null && volcanoUnlocked(state.dungeons) ? "Gå till den lysande portalen!" :
     state.location?.castle === "throne"
       ? "Vad finns här?"
       : state.location?.castle === "hall"
@@ -57,7 +59,7 @@ export function HUD() {
             className="grid size-16 shrink-0 place-items-center rounded-[20px] bg-[#ffedab] text-forest [&_svg]:size-11! max-[600px]:hidden"
             aria-hidden="true"
           >
-            {state.location?.castle === "throne" ? <Crown /> : current ? (
+            {state.location?.world === "volcano" || (state.location === null && volcanoUnlocked(state.dungeons)) ? <DoorOpen /> : state.location?.castle === "throne" ? <Crown /> : current ? (
               solved ? (
                 <DoorOpen />
               ) : (
@@ -81,7 +83,7 @@ export function HUD() {
           </div>
           <div>
             <p className="text-base font-bold text-[#536d5e] max-[600px]:text-sm">
-              {state.location?.castle
+              {state.location?.world === "volcano" ? "Vulkanvärlden" : state.location?.castle
                 ? state.location.castle === "hall"
                   ? "Slottets entréhall"
                   : state.location.castle === "throne" ? "Kungasalen" : "Bosses butik"

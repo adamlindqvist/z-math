@@ -1,3 +1,5 @@
+import { buildVolcanoPortal, VOLCANO_ENTRANCE } from "./volcanoPortal";
+import { volcanoUnlocked } from "./dungeons/definitions";
 import { CASTLE_ENTRANCE } from "./castle/CastleArea";
 import type { Passage } from "./Area";
 import { StrangeRock } from "./entities/StrangeRock";
@@ -92,6 +94,7 @@ export class World implements Area {
   }
   passages(): Passage[] {
     return [
+      ...(volcanoUnlocked(gameStore.getState().dungeons) ? [{ ...VOLCANO_ENTRANCE, destination: { world: "volcano" as const } }] : []),
       { ...CASTLE_ENTRANCE, destination: { castle: "hall" } },
       ...DUNGEONS.filter(
         (d) => !d.requiresBridge || gameStore.getState().bridgeUnlocked,
@@ -112,6 +115,7 @@ export class World implements Area {
     gladeDistance(17.55),
     gladeDistance(9.45),
   );
+  private volcanoPortal = buildVolcanoPortal(this.root, this.collision, VOLCANO_ENTRANCE);
   bokoblin = new Bokoblin(gameStore.getState().bridgeUnlocked);
   southChest = new Chest(gameStore.getState().chests.south);
   chest = new Chest(gameStore.getState().chests.glade);
@@ -177,6 +181,7 @@ export class World implements Area {
   private burstShown = { ...gameStore.getState().chests };
   constructor() {
     buildSouthGlade(this.root, this.collision);
+    this.volcanoPortal.update(volcanoUnlocked(gameStore.getState().dungeons), 0);
     this.root.add(...this.rocks.map((rock) => rock.root));
     for (const { definition, chest, butterfly } of this.secrets) {
       chest.root.position.set(
@@ -601,6 +606,7 @@ export class World implements Area {
     this.collision.add(gladeDistance(-3.5), gladeDistance(1.3), 0.3);
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
+    this.volcanoPortal.update(volcanoUnlocked(gameStore.getState().dungeons), time);
     const state = gameStore.getState();
     if (this.secretResetId !== state.resetId) {
       this.secretResetId = state.resetId;
