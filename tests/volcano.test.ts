@@ -88,7 +88,7 @@ function reachable(
 }
 afterEach(() => gameStore.reset());
 describe("Vulkanvärlden", () => {
-  it("collects the four trail rupees only in the volcano and keeps them collected after reload", () => {
+  it("collects every trail rupee only in the volcano and keeps them collected after reload", () => {
     const storage = memory(), s = createGameStore(storage);
     for (const { id } of VOLCANO_RUPEES) s.collect(id);
     expect(s.getState().collected).toEqual([]);
@@ -98,10 +98,10 @@ describe("Vulkanvärlden", () => {
     s.travelTo({ world: "volcano" });
     const before = s.getState().rupees;
     for (const { id } of VOLCANO_RUPEES) { s.collect(id); s.collect(id); }
-    expect(s.getState().rupees).toBe(before + 4);
+    expect(s.getState().rupees).toBe(before + VOLCANO_RUPEES.length);
     const restored = createGameStore(storage);
     for (const { id } of VOLCANO_RUPEES) restored.collect(id);
-    expect(restored.getState().rupees).toBe(before + 4);
+    expect(restored.getState().rupees).toBe(before + VOLCANO_RUPEES.length);
     expect(restored.getState().collected).toEqual(VOLCANO_RUPEES.map(r => r.id));
   });
   it("picks up trail rupees by walking over them and hides them on revisits", () => {
@@ -117,7 +117,7 @@ describe("Vulkanvärlden", () => {
         area.update(0, 0);
         expect(rupee.root.visible).toBe(false);
       }
-      expect(gameStore.getState().rupees).toBe(before + 4);
+      expect(gameStore.getState().rupees).toBe(before + VOLCANO_RUPEES.length);
       const returned = new VolcanoArea();
       expect(returned.rupees.every(r => !r.root.visible)).toBe(true);
       returned.dispose();
@@ -338,7 +338,7 @@ describe("Vulkanvärlden", () => {
       }
       expect(area.collision.free(0, -7.8)).toBe(false);
       expect(area.collision.free(15, 0)).toBe(false);
-      expect(area.rupees).toHaveLength(4);
+      expect(area.rupees).toHaveLength(VOLCANO_RUPEES.length);
       expect(area.interactions(gameStore.getState())).toHaveLength(1);
       expect(area.collision.free(VOLCANO_CHEST_POSITION.x, VOLCANO_CHEST_POSITION.z)).toBe(false);
     } finally {
