@@ -3,6 +3,7 @@ import { type Area, type Interaction, disposeTree } from "./Area";
 import { CollisionSystem } from "./CollisionSystem";
 import { GLADE_SCALE, gladeDistance, gladePosition } from "./gladeLayout";
 import { gladePath } from "./gladeScenery";
+import { volcanoGround } from "./volcanoScenery";
 import { material, mesh, box } from "./models";
 import {
   buildVolcanoPortal,
@@ -95,13 +96,16 @@ export class VolcanoArea implements Area {
       geometry.scale(GLADE_SCALE, 1, GLADE_SCALE);
       mesh(geometry, surface, this.root, 0, y);
     }
+    const trailPoints: THREE.Vector3[] = [];
     const trail = (points: number[][]) =>
-      gladePath(
-        this.root,
-        new THREE.CatmullRomCurve3(
-          points.map(([x, z]) => new THREE.Vector3(x, 0.035, z)),
+      trailPoints.push(
+        ...gladePath(
+          this.root,
+          new THREE.CatmullRomCurve3(
+            points.map(([x, z]) => new THREE.Vector3(x, 0.035, z)),
+          ),
+          ash,
         ),
-        ash,
       );
     trail([
       [-7, 5],
@@ -297,6 +301,15 @@ export class VolcanoArea implements Area {
       crack.rotation.y = 0.6;
       crack.castShadow = false;
     }
+    // Burnt ground detail, scattered like the glade flowers but fire themed.
+    volcanoGround(this.root, this.collision, trailPoints, this.glow, {
+      seed: 53,
+      count: 110,
+      minX: -10.5,
+      minZ: -7.35,
+      width: 21,
+      depth: 14.7,
+    });
   }
   update(dt: number, time: number) {
     const state = gameStore.getState();

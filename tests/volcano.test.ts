@@ -346,4 +346,21 @@ describe("Vulkanvärlden", () => {
       world.dispose();
     }
   });
+
+  it("scatters burnt ground detail that never blocks the player", () => {
+    const area = new VolcanoArea(), twinArea = new VolcanoArea();
+    try {
+      const ground = area.root.getObjectByName("volcano-ground");
+      expect(ground).toBeDefined();
+      expect(ground!.children.length).toBeGreaterThan(20);
+      for (const detail of ground!.children)
+        expect(area.collision.free(detail.position.x, detail.position.z, 0.05)).toBe(true);
+      const twin = twinArea.root.getObjectByName("volcano-ground")!;
+      expect(twin.children).toHaveLength(ground!.children.length);
+      expect(twin.children[0].position.toArray()).toEqual(ground!.children[0].position.toArray());
+    } finally {
+      area.dispose();
+      twinArea.dispose();
+    }
+  });
 });

@@ -110,35 +110,53 @@ export function gladeBushes(
   });
 }
 
-export function gladeFlowers(
-  root: THREE.Group,
+export interface ScatterOptions {
+  seed: number;
+  count: number;
+  minX: number;
+  minZ: number;
+  width: number;
+  depth: number;
+  clearance?: number;
+  radius?: number;
+}
+
+// Deterministic scatter shared by the glades and the volcano: same seed gives
+// the same layout every reload, and nothing lands on a path or an obstacle.
+export function scatterDetail(
   collision: CollisionSystem,
   points: THREE.Vector3[],
-  options: {
-    seed: number;
-    count: number;
-    minX: number;
-    minZ: number;
-    width: number;
-    depth: number;
-  },
+  options: ScatterOptions,
+  place: (x: number, z: number, i: number, random: () => number) => void,
 ) {
-  // Deterministic scattered flowers and grass, never on the main path.
   let seed = options.seed;
   const random = () => {
     seed = (seed * 16807) % 2147483647;
     return (seed - 1) / 2147483646;
   };
-  const stem = material("#6c984f"),
-    petals = [material("#fff4d1"), material("#e8aaa1"), material("#d8c4e5")];
+  const clearance = options.clearance ?? 1.1,
+    radius = options.radius ?? 0.3;
   for (let i = 0; i < options.count; i++) {
     const x = gladeDistance(options.minX + random() * options.width),
       z = gladeDistance(options.minZ + random() * options.depth);
     if (
-      !collision.free(x, z, 0.3) ||
-      points.some((p) => Math.hypot(p.x - x, p.z - z) < 1.1)
+      !collision.free(x, z, radius) ||
+      points.some((p) => Math.hypot(p.x - x, p.z - z) < clearance)
     )
       continue;
+    place(x, z, i, random);
+  }
+}
+
+export function gladeFlowers(
+  root: THREE.Group,
+  collision: CollisionSystem,
+  points: THREE.Vector3[],
+  options: ScatterOptions,
+) {
+  const stem = material("#6c984f"),
+    petals = [material("#fff4d1"), material("#e8aaa1"), material("#d8c4e5")];
+  scatterDetail(collision, points, options, (x, z, i) => {
     if (i % 3 === 0) {
       mesh(
         new THREE.CylinderGeometry(0.018, 0.022, 0.2, 4),
@@ -172,5 +190,5 @@ export function gladeFlowers(
       );
       tuft.rotation.z = 0.2;
     }
-  }
+  });
 }
