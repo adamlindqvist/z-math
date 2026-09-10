@@ -92,9 +92,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             <Footprints size={23} />
           </div>
         </div>
-        <span className="mt-2 block rounded-xl bg-[#fffbeeec] text-lg font-extrabold text-ink">
-          Dra för att gå
-        </span>
+      
       </div>
       {(!state.location || state.target) && (
         <button

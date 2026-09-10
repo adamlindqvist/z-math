@@ -255,7 +255,7 @@ export function Dialogue() {
           ? "Följ de gröna rupees. Hitta kistan!"
           : overlay === "locked"
             ? "Räkna och samla tre stjärnor!"
-            : "Kistan är tom nu. Leta efter stenporten!"}
+            : "Kistan är tom nu!"}
       </p>
     </Modal>
   );
