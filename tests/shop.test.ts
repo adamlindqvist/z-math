@@ -182,7 +182,7 @@ describe("castle shop", () => {
       .getWorldPosition(new Vector3())
       .project(camera.camera);
     const point = new Vector2(projected.x, projected.y);
-    const near = new Vector3(2.9, 0, 1.3);
+    const near = new Vector3(2.8, 0, -2.45);
     expect(pickInteraction(shop, near, camera.camera, point)).toMatchObject({
       kind: "shop",
       itemId: "wooden-shield",
@@ -190,9 +190,9 @@ describe("castle shop", () => {
     expect(
       pickInteraction(shop, new Vector3(-3, 0, 3), camera.camera, point),
     ).toBeNull();
-    shop.collision.add(2.9, 1.45, 0.8, 0.1);
+    shop.collision.add(2.8, -1.95, 0.8, 0.1);
     expect(
-      pickInteraction(shop, new Vector3(2.9, 0, 1.9), camera.camera, point),
+      pickInteraction(shop, new Vector3(2.8, 0, -1.65), camera.camera, point),
     ).toBeNull();
     shop.dispose();
   });
@@ -302,5 +302,27 @@ describe("castle shop", () => {
     hall.dispose();
     shop.dispose();
     expect(Object.values(SHOP)).toEqual([15, 20, 30, 25]);
+  });
+  it("keeps a wide walking route from the left entrance to the shopkeeper", () => {
+    const shop = new ShopScene();
+    const player = { x: shop.spawn.x, z: shop.spawn.z };
+    for (const destination of [
+      { x: -1.5, z: 0 },
+      { x: 0, z: 0 },
+      { x: 2.5, z: 0 },
+    ]) {
+      shop.collision.move(
+        player,
+        destination.x - player.x,
+        destination.z - player.z,
+      );
+      expect(player.x).toBeCloseTo(destination.x);
+      expect(player.z).toBeCloseTo(destination.z);
+    }
+    // The open center also lets the child turn around and reach the front.
+    shop.collision.move(player, 0, 3);
+    expect(player.x).toBeCloseTo(2.5);
+    expect(player.z).toBeCloseTo(3);
+    shop.dispose();
   });
 });

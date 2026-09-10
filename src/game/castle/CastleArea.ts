@@ -31,7 +31,7 @@ export class CastleArea implements Area {
       trim = material("#a78d6a");
     box(this.root, material("#ead9b9"), 0, -0.15, 0, 9.6, 0.3, 8.8);
     // Wall segments leave real openings, aligned with the doorway frames.
-    // Cutaway front wall and low portals keep the player visible from above.
+    // The front wall and hall exit are cut away for visibility from above.
     if (room === "hall") {
       for (const x of [-2.9, 2.9])
         box(this.root, stone, x, 1.3, -4.35, 3.8, 2.6, 0.3);
@@ -51,7 +51,7 @@ export class CastleArea implements Area {
         box(this.root, stone, -4.75, 0.65, z, 0.3, 1.3, 3.4);
       box(this.root, stone, 0, 0.2, 4.35, 9.6, 0.4, 0.3);
       box(this.root, material("#a84d50"), -1.5, 0.015, 0, 4.5, 0.03, 2);
-      this.door(-4.2, 0, "Utgång", false, Math.PI / 2, true);
+      this.door(-4.2, 0, "Utgång", false, Math.PI / 2);
     }
     if (room === "hall") {
       this.door(4.65, 0, "Butik", false, -Math.PI / 2, false, "\u{1F6D2}");
@@ -75,6 +75,11 @@ export class CastleArea implements Area {
       this.root.add(...this.rupees.map((rupee) => rupee.root));
     } else {
       this.sign("\u{1F6D2}", 0, 2.35, -3.85);
+      const counter = new THREE.Group();
+      counter.name = "shop-counter";
+      counter.position.set(1.4, 0, 0);
+      counter.rotation.y = -Math.PI / 2;
+      this.root.add(counter);
       const bosse = character("hero");
       bosse.coat.color.set("#935b40");
       box(bosse.root, material("#f7e6bd"), 0, 0.7, 0.34, 0.46, 0.45, 0.05);
@@ -85,34 +90,44 @@ export class CastleArea implements Area {
         if (o.name.includes("sword") || o.name.includes("shield"))
           o.visible = false;
       });
-      this.root.add(bosse.root);
+      counter.add(bosse.root);
       const target = { kind: "shop" as const, label: "Handla" };
       bosse.root.userData.target = target;
-      this.targets.push({ x: 0, z: -1.15, target });
-      box(this.root, trim, 0, 0.45, -1.95, 1.8, 0.9, 0.65);
-      this.collision.add(0, -2.1, 1, 0.65);
-      // Shelves hug the back and right walls so the left doorway stays clear.
+      this.targets.push({ x: 2.55, z: 0, target });
+      box(counter, trim, 0, 0.45, -1.95, 1.8, 0.9, 0.65);
+      this.collision.add(3.5, 0, 0.65, 1);
+      // One row of goods leaves the center and front available for future
+      // displays, with a direct aisle from the left entrance to the counter.
       const shelves = [
-        [-2.8, -3.2],
-        [-1.6, 2.9],
-        [2.9, -2.3],
-        [2.9, 0.2],
+        { x: -2.75, z: -3.55, rotation: 0 },
+        { x: -0.9, z: -3.55, rotation: 0 },
+        { x: 0.95, z: -3.55, rotation: 0 },
+        { x: 2.8, z: -3.55, rotation: 0 },
       ];
       SHOP_IDS.forEach((id, i) => {
-        const [x, z] = shelves[i];
-        box(this.root, trim, x, 0.35, z, 1.15, 0.7, 0.7);
-        box(this.root, trim, x, 0.92, z - 0.32, 1.15, 1.2, 0.1);
-        box(this.root, trim, x, 0.72, z, 1.25, 0.08, 0.75);
-        this.collision.add(x, z, 0.58, 0.35);
+        const { x, z, rotation } = shelves[i];
+        const display = new THREE.Group();
+        display.position.set(x, 0, z);
+        display.rotation.y = rotation;
+        this.root.add(display);
+        box(display, trim, 0, 0.35, 0, 1.15, 0.7, 0.7);
+        box(display, trim, 0, 0.92, -0.32, 1.15, 1.2, 0.1);
+        box(display, trim, 0, 0.72, 0, 1.25, 0.08, 0.75);
+        const sideFacing = rotation !== 0;
+        this.collision.add(x, z, sideFacing ? 0.35 : 0.58, sideFacing ? 0.58 : 0.35);
         const model = shopModel(id);
-        model.position.set(x, 1.25, z);
+        model.position.set(0, 1.25, 0);
         model.userData.target = {
           kind: "shop",
           itemId: id,
           label: "Titta på varan",
         };
-        this.root.add(model);
-        this.targets.push({ x, z: z + 0.35, target: model.userData.target });
+        display.add(model);
+        this.targets.push({
+          x: x + Math.sin(rotation) * 0.35,
+          z: z + Math.cos(rotation) * 0.35,
+          target: model.userData.target,
+        });
       });
       for (const x of [-3.8, 3.8]) {
         box(this.root, trim, x, 1.15, -4, 0.08, 2.3, 0.08);
@@ -120,6 +135,42 @@ export class CastleArea implements Area {
       }
       box(this.root, trim, 3.9, 0.25, 2.6, 0.6, 0.5, 0.6);
       this.collision.add(3.9, 2.6, 0.3);
+
+      // A few homely details, kept on existing furniture or against the wall.
+      // The rug remains flat and the entrance and central walking space stay clear.
+      const cream = material("#f2dfb5"),
+        terracotta = material("#b86d4d"),
+        leaves = material("#547d48"),
+        cloth = material("#d1ac70"),
+        wood = material("#805c40");
+      for (const z of [-0.87, 0.87])
+        box(this.root, cream, -1.5, 0.034, z, 4.22, 0.008, 0.045);
+      for (const x of [-3.59, 0.59])
+        box(this.root, cream, x, 0.034, 0, 0.045, 0.008, 1.78);
+
+      // A short woven runner drapes over the front of Bosse's counter.
+      box(counter, cloth, 0, 0.908, -1.94, 0.66, 0.016, 0.65);
+      box(counter, cloth, 0, 0.77, -1.616, 0.66, 0.28, 0.018);
+      box(counter, cream, 0, 0.655, -1.604, 0.57, 0.035, 0.008);
+
+      // Turn the existing corner pedestal into a plant stand, with no new obstacle.
+      ball(this.root, terracotta, 3.9, 0.68, 2.6, 0.22, 0.19, 0.22);
+      box(this.root, leaves, 3.9, 0.98, 2.6, 0.035, 0.45, 0.035);
+      for (const [dx, dy, dz, tilt] of [
+        [-0.14, 1.03, 0, -0.7],
+        [0.14, 1.13, 0.02, 0.7],
+        [-0.05, 1.25, -0.05, -0.2],
+      ]) {
+        const leaf = ball(this.root, leaves, 3.9 + dx, dy, 2.6 + dz, 0.1, 0.22, 0.065);
+        leaf.rotation.z = tilt;
+      }
+
+      // A small framed landscape above the clothing display.
+      box(this.root, wood, -2.75, 2.04, -4.13, 1.05, 0.72, 0.07);
+      box(this.root, material("#b8d8d5"), -2.75, 2.04, -4.087, 0.9, 0.57, 0.02);
+      ball(this.root, cloth, -2.52, 2.17, -4.07, 0.09, 0.09, 0.012);
+      ball(this.root, leaves, -2.9, 1.82, -4.065, 0.3, 0.13, 0.016);
+      ball(this.root, material("#829c65"), -2.59, 1.82, -4.06, 0.28, 0.1, 0.016);
     }
   }
   private sign(
@@ -270,7 +321,7 @@ export class CastleArea implements Area {
     if (
       this.room === "shop" &&
       position &&
-      Math.hypot(position.x, position.z + 1.15) < 2.6
+      Math.hypot(position.x - 2.55, position.z) < 2.6
     )
       gameStore.greetShop();
   }
