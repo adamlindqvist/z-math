@@ -165,7 +165,7 @@ describe("castle shop", () => {
     for (const slot of ["head", "body", "weapon", "shield"] as const)
       s.unequipItem(slot);
     player.setEquipment(s.getState().equipment);
-    expect(player.root.getObjectByName("base-hat")!.visible).toBe(true);
+    expect(player.root.getObjectByName("base-hat")!.visible).toBe(false);
     expect(player.root.getObjectByName("wood-shield")!.visible).toBe(false);
     expect(player.model.coat.color.getHexString()).toBe("36964a");
     disposeTree(player.root);

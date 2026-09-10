@@ -470,6 +470,10 @@ describe("inventory interface", () => {
     expect(input.direction()).toEqual({ x: 0, y: 0 });
     expect(host.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(host.textContent).toContain("Gröna kläder");
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Ta av grön mössa"]')!.click());
+    expect(gameStore.getState().equipment.head).toBeNull();
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Ta på grön mössa"]')!.click());
+    expect(gameStore.getState().equipment.head).toBe("base-hat");
     expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
     act(() =>
       host

@@ -181,6 +181,6 @@ describe("royal room geometry and animation",()=>{
     expect(player.root.getObjectByName("green-hat")!.visible).toBe(false);
     expect(player.root.getObjectByName("base-hat")!.visible).toBe(false);
     s.unequipItem("head"); player.setEquipment(s.getState().equipment);
-    expect(player.root.getObjectByName("base-hat")!.visible).toBe(true); disposeTree(player.root);
+    expect(player.root.getObjectByName("base-hat")!.visible).toBe(false); disposeTree(player.root);
   });
 });

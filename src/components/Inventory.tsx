@@ -30,6 +30,13 @@ export function ItemPicture({ id }: { id: ItemId }) {
     <circle cx="40" cy="49" r="8" fill="#b53951" />
     <circle cx="21" cy="51" r="4" fill="#c32040" /><circle cx="59" cy="51" r="4" fill="#c32040" />
   </svg>;
+  if (id === "base-hat")
+    return (
+      <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
+        <path d="M12 56 Q10 29 35 25 L68 12 L59 40 Q70 47 68 56Z" fill="#36964a" />
+        <path d="M9 55 Q40 47 71 55 L68 64 H12Z" fill="#267347" />
+      </svg>
+    );
   if (id === "green-hat")
     return (
       <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">

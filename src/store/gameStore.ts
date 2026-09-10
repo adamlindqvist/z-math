@@ -157,7 +157,7 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 10 ||
+      p?.version !== 11 ||
       !validInventory(p) ||
       !validPuzzles(p.puzzles) || !validWorldObjects(p.worldObjects) ||
       !validPurchases(p.purchases, p.items) ||
@@ -277,7 +277,7 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 10,
+            version: 11,
             puzzles: state.puzzles,
             worldObjects: state.worldObjects,
             purchases: state.purchases,

@@ -4,6 +4,24 @@ import { freshInventory, type ItemId } from "../src/items/definitions";
 import { Player } from "../src/game/Player";
 
 describe("inventory", () => {
+  it("removes and restores the starter hat and persists bareheaded play", () => {
+    let raw = "";
+    const storage = { getItem: () => raw, setItem: (_: string, value: string) => { raw = value; } };
+    const s = createGameStore(storage);
+    const player = new Player();
+    const hat = player.root.getObjectByName("base-hat")!;
+    expect(hat.visible).toBe(true);
+    s.unequipItem("head");
+    const restored = createGameStore(storage);
+    expect(restored.getState().items).toContain("base-hat");
+    expect(restored.getState().equipment.head).toBeNull();
+    player.setEquipment(restored.getState().equipment);
+    expect(hat.visible).toBe(false);
+    restored.equipItem("base-hat", "head");
+    player.setEquipment(restored.getState().equipment);
+    expect(hat.visible).toBe(true);
+    expect(createGameStore(storage).getState().equipment.head).toBe("base-hat");
+  });
   it("grants once, validates equipment, keeps clothes on and persists changes", () => {
     let raw = "";
     const storage = {

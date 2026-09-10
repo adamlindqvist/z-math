@@ -19,7 +19,7 @@ export class Player {
   }
   setEquipment(equipment: Equipment) {
     this.root.getObjectByName("base-hat")!.visible =
-      equipment.head !== "green-hat" && equipment.head !== "royal-crown";
+      equipment.head === "base-hat";
     this.root.getObjectByName("green-hat")!.visible =
       equipment.head === "green-hat";
     this.root.getObjectByName("royal-crown")!.visible = equipment.head === "royal-crown";

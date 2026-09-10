@@ -9,6 +9,13 @@ export type ItemDefinition = {
   icon: "shirt" | "sword" | "shield" | "package" | "hat";
 };
 export const ITEMS = {
+  "base-hat": {
+    name: "Grön mössa",
+    description: "Din första mössa!",
+    category: "cosmetic",
+    equipSlot: "head",
+    icon: "hat",
+  },
   "royal-crown": { name: "Kungakrona", description: "En gyllene krona med kungens märke!", category: "cosmetic", equipSlot: "head", icon: "hat" },
   "green-hat": {
     name: "Grön äventyrsmössa",
@@ -76,8 +83,8 @@ export interface Inventory {
   equipment: Equipment;
 }
 export const freshInventory = (): Inventory => ({
-  items: ["green-clothes"],
-  equipment: { head: null, body: "green-clothes", weapon: null, shield: null },
+  items: ["green-clothes", "base-hat"],
+  equipment: { head: "base-hat", body: "green-clothes", weapon: null, shield: null },
 });
 export function isItemId(id: unknown): id is ItemId {
   return typeof id === "string" && Object.hasOwn(ITEMS, id);
@@ -105,6 +112,7 @@ export function validInventory(value: unknown): boolean {
     !p.items.every(isItemId) ||
     new Set(p.items).size !== p.items.length ||
     !p.items.includes("green-clothes") ||
+    !p.items.includes("base-hat") ||
     !p.equipment ||
     typeof p.equipment !== "object" ||
     Object.keys(p.equipment).length !== 4
