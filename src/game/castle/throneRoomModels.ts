@@ -5,6 +5,7 @@ import { ObjectReaction, type ReactionKind } from "../interactables/ObjectReacti
 import { WORLD_OBJECTS, type WorldObjectId } from "../interactables/definitions";
 
 import { royalMedallion } from "../royalMedallion";
+import { KingRhoam } from "../entities/KingRhoam";
 type Medallion = ReturnType<typeof royalMedallion>;
 export function furnishThroneRoom(root: THREE.Group, collision: CollisionSystem, revealed: readonly string[]) {
   const stone = material("#d8c9b0"), trim = material("#a89270"), dark = material("#483b48"), wood = material("#845236"), gold = material("#ecca70", 0.35), red = material("#9e3449"), steel = material("#909da8", 0.4);
@@ -80,6 +81,8 @@ export function furnishThroneRoom(root: THREE.Group, collision: CollisionSystem,
   royalMedallion(throne, 0, 1.72, 0.02, 0.75);
   const indicators = [-0.43, 0, 0.43].map(x => royalMedallion(throne, x, 0.29, 0.69, 0.65));
   register("royal-throne", throne);
+  // Parent the seated king to the throne so he follows its secret slide.
+  throne.add(new KingRhoam().root);
   // The western niche wall hides most of the chest.
 
   box(root, trim, -0.94, 0.47, -3.2, 0.2, 0.94, 1.8);
