@@ -92,6 +92,13 @@ export default function DebugMenu() {
           >
             <DoorOpen aria-hidden="true" /> Gläntan
           </button>
+          <button
+            className={actionClass}
+            aria-current={state.location?.world === "volcano" ? "location" : undefined}
+            onClick={() => gameStore.debugTravelTo({ world: "volcano" })}
+          >
+            <DoorOpen aria-hidden="true" /> Vulkanvärlden
+          </button>
           {(["hall", "shop", "throne"] as const).map((castle) => (
             <button
               key={castle}

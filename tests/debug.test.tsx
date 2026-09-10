@@ -110,8 +110,10 @@ describe("debug menu", () => {
   });
 
   afterEach(() => {
-    if (gameStore.getState().debugActive) gameStore.debugEndSession();
-    else if (gameStore.getState().overlay === "debug") gameStore.closeDebug();
+    act(() => {
+      if (gameStore.getState().debugActive) gameStore.debugEndSession();
+      else if (gameStore.getState().overlay === "debug") gameStore.closeDebug();
+    });
     act(() => root.unmount());
     input.dispose();
     host.remove();
@@ -144,6 +146,14 @@ describe("debug menu", () => {
     expect(input.direction()).toEqual({ x: 0, y: 0 });
     expect(host.querySelector('[role="dialog"]')).not.toBeNull();
     expect(host.textContent).toContain("Gläntan");
+    const volcanoButton = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Vulkanvärlden"),
+    )!;
+    expect(volcanoButton).toBeDefined();
+    act(() => volcanoButton.click());
+    expect(gameStore.getState().location).toEqual({ world: "volcano" });
+    expect(gameStore.getState().debugActive).toBe(true);
+    expect(volcanoButton.getAttribute("aria-current")).toBe("location");
     for (const dungeon of DUNGEONS)
       for (const room of dungeon.rooms)
         expect(host.textContent).toContain(`${dungeon.name} · ${room.name}`);
