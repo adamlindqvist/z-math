@@ -14,6 +14,11 @@ import {
 } from "./definitions";
 import { FEEDBACK_SECONDS, type MinibossEncounter } from "./state";
 
+/** Seconds the giant takes to settle into the arena, or to walk its route again. */
+const PATROL_BLEND = 0.8;
+/** Radians per second; a full turn-around then takes about one blend. */
+const TURN_SPEED = 4;
+
 const font = new FontLoader().parse(fontData);
 const definition = MINIBOSSES.stone_giant;
 const runeTarget = (value: number) => ({
@@ -118,6 +123,8 @@ export class StoneGiantEncounter {
   }[] = [];
   private sparks: THREE.Mesh[] = [];
   private encounter: MinibossEncounter | null = null;
+  /** 1 while roaming freely, 0 while facing the player; blended, never snapped. */
+  private patrol = 1;
   private elapsed = 0;
   private clock = 0;
   private resetId = gameStore.getState().resetId;
@@ -371,7 +378,10 @@ export class StoneGiantEncounter {
     this.chest.root.position.set(0, 0, 0);
     this.chest.root.userData.target = chestTarget;
     this.root.add(this.chest.root);
-    this.render(gameStore.getState());
+    const initial = gameStore.getState();
+    this.patrol = this.patrolling(initial) ? 1 : 0;
+    this.body.rotation.y = this.patrolYaw();
+    this.render(initial);
   }
   interactions(state: GameState): Interaction[] {
     if (minibossDefeated(state.minibosses, "stone_giant") && !state.encounter)
@@ -414,13 +424,31 @@ export class StoneGiantEncounter {
         this.encounter = gameStore.getState().encounter;
         this.elapsed = 0;
       }
-      if (player && current && current.status !== "collapsing") {
-        const angle = Math.atan2(player.x - CENTER.x, player.z - CENTER.z);
-        this.body.rotation.y +=
-          Math.atan2(
-            Math.sin(angle - this.body.rotation.y),
-            Math.cos(angle - this.body.rotation.y),
-          ) * Math.min(1, dt * 2);
+      const active = gameStore.getState();
+      const patrolling = this.patrolling(active);
+      // Blended both ways, so leaving the arena walks the giant back to its
+      // route instead of teleporting it there.
+      const step = dt / PATROL_BLEND;
+      this.patrol += THREE.MathUtils.clamp(
+        (patrolling ? 1 : 0) - this.patrol,
+        -step,
+        step,
+      );
+      const facing = patrolling
+        ? this.patrolYaw()
+        : player && active.encounter?.status !== "collapsing"
+          ? Math.atan2(player.x - CENTER.x, player.z - CENTER.z)
+          : null;
+      if (facing !== null) {
+        const turn = Math.atan2(
+          Math.sin(facing - this.body.rotation.y),
+          Math.cos(facing - this.body.rotation.y),
+        );
+        this.body.rotation.y += THREE.MathUtils.clamp(
+          turn * Math.min(1, dt * 3),
+          -TURN_SPEED * dt,
+          TURN_SPEED * dt,
+        );
       }
     }
     const next = gameStore.getState();
@@ -429,6 +457,18 @@ export class StoneGiantEncounter {
       state.overlay || state.motion ? 0 : dt,
       next.chests[definition.chest],
       minibossDefeated(next.minibosses, "stone_giant") && !next.encounter,
+    );
+  }
+  private patrolling(state: GameState) {
+    return (
+      !state.encounter && !minibossDefeated(state.minibosses, "stone_giant")
+    );
+  }
+  /** Facing along the patrol route, so the giant looks where it walks. */
+  private patrolYaw() {
+    return Math.atan2(
+      1.4 * Math.cos(this.clock * 0.45),
+      -1.1 * Math.sin(this.clock * 0.45),
     );
   }
   private render(state: GameState) {
@@ -463,23 +503,12 @@ export class StoneGiantEncounter {
     }
     this.rune.visible = collapse < 0.55 && (!defeated || !!encounter);
     this.backRune.visible = this.rune.visible;
-    const patrol =
-      !encounter && !defeated
-        ? 1
-        : status === "intro"
-          ? Math.max(0, 1 - this.elapsed / 0.8)
-          : 0;
+    const patrol = this.patrol;
     this.boss.position.set(
       Math.sin(this.clock * 0.45) * 1.4 * patrol,
       0,
       Math.cos(this.clock * 0.45) * 1.1 * patrol,
     );
-    if (!encounter && !defeated) {
-      this.body.rotation.y = Math.atan2(
-        1.4 * Math.cos(this.clock * 0.45),
-        -1.1 * Math.sin(this.clock * 0.45),
-      );
-    }
     this.body.position.y = collapse
       ? 0
       : Math.sin(this.clock * (2 + phase * 1.8)) * (0.025 + phase * 0.035) +

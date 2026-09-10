@@ -608,6 +608,51 @@ describe("Stenjätten in the 3D world", () => {
       area.dispose();
     }
   });
+  it("walks back onto the patrol route instead of snapping when the player leaves", () => {
+    enterVolcano(gameStore);
+    const area = new VolcanoArea();
+    const inside = new Vector3(
+      STONE_GIANT_CENTER.x,
+      0,
+      STONE_GIANT_CENTER.z + 2,
+    );
+    const outside = new Vector3(
+      STONE_GIANT_CENTER.x + 7,
+      0,
+      STONE_GIANT_CENTER.z,
+    );
+    const boss = area.root.getObjectByName("stone-giant")!;
+    try {
+      let time = 0;
+      const step = (player: Vector3) => {
+        const before = boss.position.clone();
+        const facing = boss.children[0].rotation.y;
+        time += 1 / 60;
+        area.update(1 / 60, time, player);
+        return {
+          moved: boss.position.distanceTo(before),
+          turned: Math.abs(
+            Math.atan2(
+              Math.sin(boss.children[0].rotation.y - facing),
+              Math.cos(boss.children[0].rotation.y - facing),
+            ),
+          ),
+        };
+      };
+      for (let i = 0; i < 90; i++) step(inside);
+      expect(gameStore.getState().encounter).not.toBeNull();
+      expect(Math.hypot(boss.position.x, boss.position.z)).toBeLessThan(0.1);
+      for (let i = 0; i < 120; i++) {
+        const { moved, turned } = step(outside);
+        expect(moved).toBeLessThan(0.1);
+        expect(turned).toBeLessThan(0.1);
+      }
+      expect(gameStore.getState().encounter).toBeNull();
+      expect(Math.hypot(boss.position.x, boss.position.z)).toBeGreaterThan(1);
+    } finally {
+      area.dispose();
+    }
+  });
   it("pauses animation clocks, completes the collapse and reveals a persistent chest", () => {
     enterVolcano(gameStore);
     const area = new VolcanoArea(),
