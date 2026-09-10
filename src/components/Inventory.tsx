@@ -25,6 +25,19 @@ export function ItemPicture({ id }: { id: ItemId }) {
     package: Package,
   };
   const Icon = icons[ITEMS[id].icon];
+  if (id === "lava_hat") return (
+    <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
+      <path d="M13 55Q12 20 40 20Q68 20 67 55L72 66H8Z" fill="#383440" stroke="#72606a" strokeWidth="3" />
+      <path d="M25 30L32 44L25 58M53 29L47 46L55 57" fill="none" stroke="#ffad44" strokeWidth="5" />
+      <path d="M35 30L42 14L47 31Z" fill="#ff7626" />
+    </svg>
+  );
+  if (id === "stone_armor") return (
+    <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
+      <path d="M23 14L8 21L5 38L18 43L18 68H62V43L75 38L72 21L57 14L48 22H32Z" fill="#777783" stroke="#434552" strokeWidth="4" />
+      <path d="M40 25V61M23 50H58M20 18L25 35L8 39M60 18L55 35L73 39" fill="none" stroke="#434552" strokeWidth="4" />
+    </svg>
+  );
   if (id === "royal-crown")
     return (
       <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">

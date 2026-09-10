@@ -142,3 +142,53 @@ export function garmentModel(definition: GarmentDefinition) {
   }
   return root;
 }
+
+export const stoneGarment: GarmentDefinition = {
+  materials: {
+    stone: { color: "#737785" },
+    edge: { color: "#434552" },
+    under: { color: "#b6b6b9" },
+  },
+  parts: [
+    {
+      name: "stone-torso",
+      section: "base",
+      material: "edge",
+      shape: { kind: "box", size: [0.57, 0.55, 0.4] },
+      position: [0, 0, 0],
+    },
+    ...[-1, 1].flatMap((side): GarmentPart[] => [
+      {
+        name: `stone-plate-${side}`,
+        section: "base",
+        material: "stone",
+        shape: { kind: "box", size: [0.27, 0.42, 0.1] },
+        position: [side * 0.15, 0.04, 0.24],
+        rotation: [0, side * -0.12, side * 0.07],
+      },
+      {
+        name: `stone-shoulder-${side}`,
+        section: "sleeves",
+        material: "stone",
+        shape: { kind: "box", size: [0.28, 0.24, 0.34] },
+        position: [side * 0.34, 0.2, 0],
+        rotation: [0, 0, side * -0.15],
+      },
+      {
+        name: `stone-sleeve-${side}`,
+        section: "sleeves",
+        material: "under",
+        shape: { kind: "ellipsoid", size: [0.1, 0.17, 0.11] },
+        position: [side * 0.37, 0.02, 0.02],
+      },
+      {
+        name: `stone-waist-${side}`,
+        section: "belt",
+        material: "stone",
+        shape: { kind: "box", size: [0.29, 0.16, 0.46] },
+        position: [side * 0.15, -0.23, 0],
+        rotation: [0, 0, side * 0.06],
+      },
+    ]),
+  ],
+};

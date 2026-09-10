@@ -76,6 +76,102 @@ afterEach(() => {
 });
 
 describe("playable controls and interface", () => {
+  it("selects and clears runes with simultaneous touch controls and ignores canceled actions", () => {
+    act(() => {
+      gameStore.openDebug();
+      gameStore.debugTravelTo({ world: "volcano" });
+      gameStore.closeDebug();
+      gameStore.updateMinibossPresence("stone_giant", 0);
+      gameStore.finishMinibossFeedback(gameStore.getState().encounter!);
+      gameStore.setTarget({
+        kind: "runeStone",
+        boss: "stone_giant",
+        value: 3,
+        label: "Välj 3",
+      });
+    });
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 160,
+        height: 160,
+      }),
+    });
+    pointer(joystick, "pointerdown", 1, 122, 80);
+    const action = button("Välj 3");
+    pointer(action, "pointerdown", 2, 400, 80);
+    pointer(action, "pointercancel", 2, 400, 80);
+    pointer(action, "pointerup", 2, 400, 80);
+    expect(gameStore.getState().encounter!.selected).toEqual([]);
+    pointer(action, "pointerdown", 3, 400, 80);
+    pointer(action, "pointerup", 3, 400, 80);
+    // Safari's follow-up compatibility click must not deselect the same stone.
+    act(() =>
+      action.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, detail: 1 }),
+      ),
+    );
+    expect(gameStore.getState().encounter!.selected).toEqual([3]);
+    expect(host.textContent).toContain("3 + ? = 5");
+    expect(input.direction().x).toBe(1);
+    click("Ångra");
+    expect(gameStore.getState().encounter!.selected).toEqual([]);
+    pointer(joystick, "pointercancel", 1, 122, 80);
+    expect(input.direction().x).toBe(0);
+    act(() => {
+      gameStore.openInventory();
+    });
+    expect(host.querySelector('[aria-label="Stenjättens runa"]')).toBeNull();
+    act(() => {
+      gameStore.close();
+      gameStore.debugEndSession();
+    });
+  });
+  it("shows actual sums and progress in the world HUD without opening a quiz", () => {
+    act(() => {
+      gameStore.openDebug();
+      gameStore.debugTravelTo({ world: "volcano" });
+      gameStore.closeDebug();
+      gameStore.updateMinibossPresence("stone_giant", 0);
+      gameStore.finishMinibossFeedback(gameStore.getState().encounter!);
+      for (const value of [3, 1]) {
+        gameStore.setTarget({
+          kind: "runeStone",
+          boss: "stone_giant",
+          value,
+          label: `Välj ${value}`,
+        });
+        gameStore.interact();
+      }
+    });
+    expect(host.textContent).toContain("3 + 1 = 4");
+    expect(host.textContent).toContain("Prova igen");
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+    act(() => {
+      gameStore.finishMinibossFeedback(gameStore.getState().encounter!);
+      for (const value of [1, 4]) {
+        gameStore.setTarget({
+          kind: "runeStone",
+          boss: "stone_giant",
+          value,
+          label: `Välj ${value}`,
+        });
+        gameStore.interact();
+      }
+    });
+    expect(host.textContent).toContain("1 + 4 = 5!");
+    expect(
+      host.querySelector('[aria-label="1 av 3 runor lösta"]'),
+    ).not.toBeNull();
+    act(() =>
+      gameStore.finishMinibossFeedback(gameStore.getState().encounter!),
+    );
+    expect(host.textContent).toContain("? + ? = 7");
+    act(() => gameStore.debugEndSession());
+  });
   it("normalizes diagonal motion and stops input without pausing on lost focus", () => {
     key("KeyW");
     key("KeyD");

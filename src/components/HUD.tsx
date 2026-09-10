@@ -1,3 +1,4 @@
+import { MinibossHUD } from "./MinibossHUD";
 import { resolveRoom, roomSolved, volcanoUnlocked } from "../game/dungeons/definitions";
 import {
   Crown,
@@ -54,7 +55,7 @@ export function HUD() {
   return (
     <div className="pointer-events-none absolute top-[max(20px,env(safe-area-inset-top))] right-[max(20px,env(safe-area-inset-right))] left-[max(20px,env(safe-area-inset-left))] z-4 flex items-start justify-between gap-4 max-[600px]:right-3 max-[600px]:left-3 max-[600px]:gap-2">
       <div className="min-w-0 max-w-[430px] [@media(max-height:850px)]:max-w-[320px]">
-        <section className="flex items-center gap-3.5 rounded-[26px] border-[3px] border-white bg-cream p-4 text-ink shadow-[0_5px_0_#344e3020] [&_h2]:text-[23px] [&_h2]:leading-tight [&_h2]:font-black max-[600px]:gap-2 max-[600px]:p-2.5 max-[600px]:[&_h2]:text-lg">
+        {state.encounter && !state.overlay ? <MinibossHUD encounter={state.encounter} /> : <section className="flex items-center gap-3.5 rounded-[26px] border-[3px] border-white bg-cream p-4 text-ink shadow-[0_5px_0_#344e3020] [&_h2]:text-[23px] [&_h2]:leading-tight [&_h2]:font-black max-[600px]:gap-2 max-[600px]:p-2.5 max-[600px]:[&_h2]:text-lg">
           <div
             className="grid size-16 shrink-0 place-items-center rounded-[20px] bg-[#ffedab] text-forest [&_svg]:size-11! max-[600px]:hidden"
             aria-hidden="true"
@@ -93,7 +94,7 @@ export function HUD() {
             </p>
             <h2>{hint}</h2>
           </div>
-        </section>
+        </section>}
         {current?.room.stones && !state.overlay && (
           <div className="pointer-events-auto mt-3 flex flex-wrap items-center gap-3 rounded-3xl bg-cream p-2.5">
             <span

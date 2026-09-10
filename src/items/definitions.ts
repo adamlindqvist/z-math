@@ -1,5 +1,6 @@
 import {
   forestGarment,
+  stoneGarment,
   starterGarment,
   type GarmentDefinition,
 } from "./garments";
@@ -7,6 +8,7 @@ export type EquipmentSlot = "head" | "body" | "weapon" | "shield";
 export type ItemCategory =
   "currency" | "cosmetic" | "equipment" | "quest" | "collectible";
 export type ItemDefinition = {
+  source?: { kind: "miniboss"; id: "stone_giant" };
   garment?: GarmentDefinition;
   name: string;
   category: ItemCategory;
@@ -15,6 +17,23 @@ export type ItemDefinition = {
   icon: "shirt" | "sword" | "shield" | "package" | "hat";
 };
 export const ITEMS = {
+  lava_hat: {
+    name: "Lavamössa",
+    description: "En glödande mössa från Stenjättens skatt!",
+    category: "cosmetic",
+    equipSlot: "head",
+    icon: "hat",
+    source: { kind: "miniboss", id: "stone_giant" },
+  },
+  stone_armor: {
+    name: "Stenrustning",
+    description: "En stark stenrustning från Stenjättens skatt!",
+    category: "cosmetic",
+    equipSlot: "body",
+    icon: "shirt",
+    garment: stoneGarment,
+    source: { kind: "miniboss", id: "stone_giant" },
+  },
   "base-hat": {
     name: "Grön mössa",
     description: "Din första mössa!",

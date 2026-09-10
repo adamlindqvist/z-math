@@ -1,3 +1,5 @@
+import { StoneGiantEncounter } from "./minibosses/StoneGiantEncounter";
+import { RUNE_STONES, STONE_GIANT_CENTER, inStoneGiantArena, minibossDefeated } from "./minibosses/definitions";
 import * as THREE from "three";
 import { type Area, type Interaction, disposeTree } from "./Area";
 import { CollisionSystem } from "./CollisionSystem";
@@ -33,6 +35,7 @@ export class VolcanoArea implements Area {
   collision = new CollisionSystem(gladeDistance(11.1), gladeDistance(8.1));
   spawn = portalSpawn(VOLCANO_RETURN, -1);
   rupees = VOLCANO_RUPEES.map(({ id, x, z }) => new Collectible(id, x, z));
+  miniboss = new StoneGiantEncounter();
   chest = new Chest(gameStore.getState().chests["volcano-01"]);
   private glow = new THREE.MeshStandardMaterial({
     color: "#ff833d",
@@ -50,13 +53,16 @@ export class VolcanoArea implements Area {
     return [{ ...VOLCANO_RETURN, destination: null }];
   }
   interactions(state: GameState): Interaction[] {
-    return [{
+    return [...this.miniboss.interactions(state), {
       ...VOLCANO_CHEST_POSITION,
       target: { kind: "chest", id: "volcano-01", label: state.chests["volcano-01"] ? "Titta i kistan" : "Öppna" },
     }];
   }
   constructor() {
     this.root.name = "volcano-world";
+    this.root.add(this.miniboss.root);
+    for (const stone of RUNE_STONES) this.collision.add(stone.x, stone.z, 0.57);
+
     const { x, z } = VOLCANO_CHEST_POSITION;
     this.chest.root.position.set(x, 0, z);
     this.chest.root.userData.target = { kind: "chest", id: "volcano-01", label: "Öppna" };
@@ -136,6 +142,7 @@ export class VolcanoArea implements Area {
     ]);
     for (const [x, z] of VOLCANO_CLEARINGS) {
       const p = gladePosition(x, z);
+      if (inStoneGiantArena(p.x, p.z)) continue;
       mesh(
         new THREE.CylinderGeometry(1.55, 1.6, 0.04, 20),
         ash,
@@ -213,8 +220,8 @@ export class VolcanoArea implements Area {
       [-9, 0, 0.6],
       [-6, -5, 0.9],
       [-4, 5, 0.55],
-      [3, 6, 0.7],
-      [8, 1, 0.7],
+      [-3, 6, 0.7],
+      [10, 0, 0.7],
       [9, -6, 1],
       [-9, -6, 0.9],
       [5, -5, 0.6],
@@ -230,7 +237,7 @@ export class VolcanoArea implements Area {
     for (const [x, z] of [
       [-10, 2],
       [-6, 6],
-      [9, 3],
+      [10, 3],
       [-7, -6],
       [7, -6],
     ]) {
@@ -260,7 +267,7 @@ export class VolcanoArea implements Area {
     for (let i = 0; i < 42; i++) {
       const x = -10 + ((i * 7.31) % 20),
         z = -7 + ((i * 3.73) % 14);
-      if (this.collision.free(gladeDistance(x), gladeDistance(z), 0.1)) {
+      if (!inStoneGiantArena(gladeDistance(x), gladeDistance(z)) && this.collision.free(gladeDistance(x), gladeDistance(z), 0.1)) {
         const pebble = mesh(
           rockGeometry,
           rock,
@@ -309,10 +316,20 @@ export class VolcanoArea implements Area {
       minZ: -7.35,
       width: 21,
       depth: 14.7,
+      exclude: (x, z) => inStoneGiantArena(x, z),
     });
   }
-  update(dt: number, time: number) {
+  update(dt: number, time: number, playerPosition?: THREE.Vector3) {
+    this.miniboss.update(dt, playerPosition);
     const state = gameStore.getState();
+    // A chest can appear under the player after the collapse. Let them walk
+    // out before making it solid; never trap them inside a new obstacle.
+    const clearOfChest = !playerPosition || Math.hypot(
+      Math.max(Math.abs(playerPosition.x - STONE_GIANT_CENTER.x) - 0.54, 0),
+      Math.max(Math.abs(playerPosition.z - STONE_GIANT_CENTER.z) - 0.4, 0),
+    ) >= 0.32;
+    this.collision.dynamic = clearOfChest && minibossDefeated(state.minibosses, "stone_giant") && !state.encounter
+      ? [{ ...STONE_GIANT_CENTER, halfX: 0.54, halfZ: 0.4 }] : [];
     this.chest.update(dt, state.chests["volcano-01"] && !(state.activeChest === "volcano-01" && state.overlay === "quiz"));
     for (const rupee of this.rupees) rupee.update(time, state.collected.includes(rupee.id));
     this.glow.emissiveIntensity = 0.65 + Math.sin(time * 1.4) * 0.12;

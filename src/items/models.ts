@@ -18,6 +18,20 @@ export function itemModel(id: ItemId) {
     root.add(garmentModel(item.garment));
     return root;
   }
+  if (id === "lava_hat") {
+    const dark = material("#383440"),
+      lava = material("#ffbc55");
+    lava.emissive.set("#ff641d");
+    lava.emissiveIntensity = 0.9;
+    ball(root, dark, 0, 0, 0, 0.39, 0.29, 0.36);
+    box(root, dark, 0, -0.09, 0.08, 0.73, 0.14, 0.62);
+    for (const side of [-1, 1]) {
+      const seam = box(root, lava, side * 0.15, 0.04, 0.33, 0.055, 0.23, 0.035);
+      seam.rotation.z = side * 0.35;
+    }
+    mesh(new THREE.ConeGeometry(0.095, 0.2, 5), lava, root, 0, 0.22, 0.25);
+    return root;
+  }
   const green = material("#267347"),
     gold = material("#f4ce65");
   if (id === "royal-crown") {

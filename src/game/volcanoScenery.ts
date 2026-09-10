@@ -19,7 +19,7 @@ export function volcanoGround(
   collision: CollisionSystem,
   points: THREE.Vector3[],
   glow: THREE.Material,
-  options: ScatterOptions,
+  options: ScatterOptions & { exclude?: (x: number, z: number) => boolean },
 ) {
   const soot = material("#3b3238"),
     ash = material("#cfb8a0"),
@@ -31,6 +31,7 @@ export function volcanoGround(
   group.name = "volcano-ground";
   root.add(group);
   scatterDetail(collision, points, options, (x, z, i, random) => {
+    if (options.exclude?.(x, z)) return;
     const angle = random() * Math.PI * 2;
     // Cracks are the loudest detail, so only one place in ten gets one.
     switch (i % 10) {

@@ -1,3 +1,11 @@
+import {
+  freshMinibosses, validMinibosses, minibossDefeated,
+  STONE_GIANT_START_DISTANCE, STONE_GIANT_EXIT_DISTANCE,
+  type MinibossId, type MinibossProgress,
+} from "../game/minibosses/definitions";
+import {
+  startEncounter, selectRune, finishFeedback, type MinibossEncounter,
+} from "../game/minibosses/state";
 import { VOLCANO_RUPEES } from "../game/volcanoLayout";
 import { volcanoUnlocked } from "../game/dungeons/definitions";
 import {
@@ -66,7 +74,7 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 export const RUPEE_IDS = [
   ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee",
@@ -91,6 +99,7 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "runeStone"; boss: MinibossId; value: number; label: string }
   | { kind: "worldObject"; id: WorldObjectId; label: string }
   | { kind: "shop"; itemId?: ShopItemId; label: string }
   | { kind: "castleDoor"; id: "library"; label: string }
@@ -116,6 +125,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  minibosses: MinibossProgress;
   puzzles: PuzzlesProgress;
   worldObjects: WorldObjectId[];
   purchases: ShopItemId[];
@@ -129,6 +139,7 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  encounter: MinibossEncounter | null;
   objectEvent: { id: WorldObjectId; sequence: number } | null;
   movingBarriers: string[];
   shopSelection: ShopItemId | null;
@@ -155,6 +166,7 @@ export interface GameState extends Progress {
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
+  minibosses: freshMinibosses(),
   puzzles: freshPuzzles(),
   worldObjects: [],
   purchases: [],
@@ -176,10 +188,12 @@ export function parseSave(raw: string | null): Progress {
     if (
       p?.version !== SAVE_VERSION ||
       !validInventory(p) ||
+      !validMinibosses(p.minibosses) ||
       !validPuzzles(p.puzzles) ||
       !validWorldObjects(p.worldObjects) ||
       !validPurchases(p.purchases, p.items) ||
       !validDungeons(p.dungeons) ||
+      (p.minibosses.stone_giant > 0 && !volcanoUnlocked(p.dungeons)) ||
       !validLocation(p.location, p.dungeons) ||
       (!p.bridgeUnlocked &&
         DUNGEONS.some(
@@ -202,6 +216,10 @@ export function parseSave(raw: string | null): Progress {
       !CHEST_IDS.every((id) => typeof p.chests[id] === "boolean") ||
       !Array.isArray(p.collected) ||
       !validSecrets(p.secrets, p.chests, p.bridgeUnlocked, p.collected) ||
+      (p.chests["stone-giant-treasure"] &&
+        (!minibossDefeated(p.minibosses, "stone_giant") ||
+          !p.items.includes("lava_hat") ||
+          !p.items.includes("stone_armor"))) ||
       (p.chests["royal-treasure"] &&
         (!puzzleSolved(p.puzzles, "royal-symbols") ||
           !p.items.includes("royal-crown"))) ||
@@ -234,6 +252,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      minibosses: p.minibosses,
       puzzles: p.puzzles,
       worldObjects: p.worldObjects,
       purchases: p.purchases,
@@ -268,6 +287,7 @@ export function createGameStore(
     castleMessage: "",
     shopGreeting: false,
     ...progress,
+    encounter: null,
     overlay: null,
     target: null,
     question: null,
@@ -306,6 +326,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            minibosses: state.minibosses,
             puzzles: state.puzzles,
             worldObjects: state.worldObjects,
             purchases: state.purchases,
@@ -419,6 +440,35 @@ export function createGameStore(
   };
   return {
     getState: () => state,
+    updateMinibossPresence: (id: MinibossId, distance: number) => {
+      if (
+        state.location?.world !== "volcano" || state.overlay ||
+        state.motion || !Number.isFinite(distance)
+      ) return;
+      if (state.encounter?.id === id && distance > STONE_GIANT_EXIT_DISTANCE) {
+        set({ encounter: null, target: null });
+      } else if (
+        !state.encounter && distance <= STONE_GIANT_START_DISTANCE &&
+        !minibossDefeated(state.minibosses, id)
+      ) {
+        set({ encounter: startEncounter(id, state.minibosses[id]), target: null });
+      }
+    },
+    finishMinibossFeedback: (expected: MinibossEncounter) => {
+      if (
+        state.encounter !== expected || state.overlay || state.motion ||
+        state.location?.world !== "volcano"
+      ) return;
+      const encounter = finishFeedback(expected);
+      if (encounter !== expected) set({ encounter, target: null });
+    },
+    resetRuneSelection: () => {
+      if (
+        state.overlay || state.motion || state.encounter?.status !== "choosing" ||
+        !state.encounter.selected.length
+      ) return;
+      set({ encounter: { ...state.encounter, selected: [] } });
+    },
     discoverSecret: (id: SecretId) => {
       const definition = WORLD_SECRETS.find((s) => s.id === id);
       if (
@@ -568,6 +618,7 @@ export function createGameStore(
       set({
         ...update,
         location: destination,
+        encounter: null,
         shopGreeting: false,
         shopSelection: null,
         shopPurchased: false,
@@ -631,6 +682,7 @@ export function createGameStore(
       beginDebugSession();
       set({
         ...fresh(),
+        encounter: null,
         overlay: "debug",
         target: null,
         question: null,
@@ -660,6 +712,7 @@ export function createGameStore(
       debugBaseline = null;
       set({
         ...baseline,
+        encounter: null,
         overlay: null,
         target: null,
         question: null,
@@ -720,6 +773,7 @@ export function createGameStore(
         set(
           {
             location: destination,
+            encounter: null,
             shopGreeting: false,
             shopSelection: null,
             shopPurchased: false,
@@ -856,6 +910,21 @@ export function createGameStore(
             true,
             "interact",
           );
+          return;
+        }
+        if (target.kind === "runeStone") {
+          const current = state.encounter;
+          if (state.location?.world !== "volcano" || !current || current.id !== target.boss) return;
+          const encounter = selectRune(current, target.value);
+          if (encounter === current) return;
+          const success = encounter.status === "success";
+          set({
+            encounter,
+            ...(success ? {
+              minibosses: { ...state.minibosses, [current.id]: current.phase + 1 },
+              target: null,
+            } : {}),
+          }, success);
           return;
         }
         if (target.kind === "chest") {
@@ -1155,6 +1224,7 @@ export function createGameStore(
       set(
         {
           ...fresh(),
+          encounter: null,
           dungeonQuiz: null,
           activeChest: null,
           motion: null,
@@ -1190,6 +1260,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    minibosses: { ...state.minibosses },
     puzzles: {
       "royal-symbols": {
         activated: [...state.puzzles["royal-symbols"].activated],

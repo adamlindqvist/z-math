@@ -10,7 +10,7 @@ import {
 
 export function heroModel() {
   const model = character("hero");
-  for (const id of ["green-hat", "royal-crown"] as const) {
+  for (const id of ["green-hat", "royal-crown", "lava_hat"] as const) {
     const hat = itemModel(id);
     hat.position.set(
       0,
@@ -28,6 +28,7 @@ export function applyEquipment(
 ) {
   model.root.getObjectByName("base-hat")!.visible =
     equipment.head === "base-hat";
+  model.root.getObjectByName("lava_hat")!.visible = equipment.head === "lava_hat";
   model.root.getObjectByName("green-hat")!.visible =
     equipment.head === "green-hat";
   model.root.getObjectByName("royal-crown")!.visible =
