@@ -62,7 +62,7 @@ describe("strange rock progression", () => {
     });
     definition.pickupIds.forEach((id) => store.collect(id));
     const saved = JSON.parse(storage.getItem()!);
-    expect(saved.version).toBe(10);
+    expect(saved.version).toBe(12);
     expect(saved.rupees).toBe(5);
     expect(saved.secrets[definition.id].completed).toBe(true);
     store = createGameStore(storage);
@@ -92,7 +92,7 @@ describe("strange rock progression", () => {
       expect(parseSave(JSON.stringify({ ...saved, ...change })).rupees).toBe(0);
   });
 
-  it("gates the southern rock behind the bridge and saves both rewards independently", () => {
+  it("gates the southern rocks behind the bridge and saves every reward independently", () => {
     const storage = memory();
     const store = createGameStore(storage);
     const south = ROCK_SECRETS[1];
@@ -128,9 +128,14 @@ describe("strange rock progression", () => {
     });
     south.pickupIds.forEach((id) => restored.collect(id));
     const completed = createGameStore(storage);
+    for (const rock of ROCK_SECRETS.slice(2)) {
+      completed.setTarget({ kind: "secret", id: rock.id, label: "Flytta" });
+      completed.interact();
+      completed.revealSecret(rock.id);
+    }
     for (const rock of ROCK_SECRETS)
       rock.pickupIds.forEach((id) => completed.collect(id));
-    expect(completed.getState().rupees).toBe(10);
+    expect(completed.getState().rupees).toBe(15);
     for (const rock of ROCK_SECRETS)
       expect(completed.getState().secrets[rock.id].completed).toBe(true);
     const saved = JSON.parse(storage.getItem()!);

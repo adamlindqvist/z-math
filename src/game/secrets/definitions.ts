@@ -75,6 +75,20 @@ export const WORLD_SECRETS = [
       "strange-rock-02-5",
     ],
   },
+  {
+    id: "strange-rock-03",
+    type: "strange-rock",
+    requiresBridge: true,
+    position: gladePosition(6.2, 21.8),
+    offset: { x: 1.6, z: 0 },
+    pickupIds: [
+      "strange-rock-03-1",
+      "strange-rock-03-2",
+      "strange-rock-03-3",
+      "strange-rock-03-4",
+      "strange-rock-03-5",
+    ],
+  },
 ] as const satisfies readonly WorldSecret[];
 export const BUTTERFLY_SECRETS = WORLD_SECRETS.filter(
   (s) => s.type === "butterfly",
