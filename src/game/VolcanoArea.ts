@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { type Area, disposeTree } from "./Area";
+import { type Area, type Interaction, disposeTree } from "./Area";
 import { CollisionSystem } from "./CollisionSystem";
 import { GLADE_SCALE, gladeDistance, gladePosition } from "./gladeLayout";
 import { gladePath } from "./gladeScenery";
@@ -10,6 +10,12 @@ import {
   VOLCANO_RETURN,
 } from "./volcanoPortal";
 
+import { Chest } from "./entities/Chest";
+import { gameStore, type GameState } from "../store/gameStore";
+
+import { Collectible } from "./entities/Collectible";
+import { VOLCANO_CHEST_POSITION, VOLCANO_RUPEES } from "./volcanoLayout";
+export { VOLCANO_CHEST_POSITION } from "./volcanoLayout";
 export const VOLCANO_CLEARINGS = [
   [-5, 0],
   [4, 3],
@@ -25,7 +31,8 @@ export class VolcanoArea implements Area {
   cameraMode = "glade" as const;
   collision = new CollisionSystem(gladeDistance(11.1), gladeDistance(8.1));
   spawn = portalSpawn(VOLCANO_RETURN, -1);
-  rupees = [];
+  rupees = VOLCANO_RUPEES.map(({ id, x, z }) => new Collectible(id, x, z));
+  chest = new Chest(gameStore.getState().chests["volcano-01"]);
   private glow = new THREE.MeshStandardMaterial({
     color: "#ff833d",
     emissive: "#ff4d16",
@@ -41,11 +48,24 @@ export class VolcanoArea implements Area {
   passages() {
     return [{ ...VOLCANO_RETURN, destination: null }];
   }
-  interactions() {
-    return [];
+  interactions(state: GameState): Interaction[] {
+    return [{
+      ...VOLCANO_CHEST_POSITION,
+      target: { kind: "chest", id: "volcano-01", label: state.chests["volcano-01"] ? "Titta i kistan" : "Öppna" },
+    }];
   }
   constructor() {
     this.root.name = "volcano-world";
+    const { x, z } = VOLCANO_CHEST_POSITION;
+    this.chest.root.position.set(x, 0, z);
+    this.chest.root.userData.target = { kind: "chest", id: "volcano-01", label: "Öppna" };
+    this.root.add(this.chest.root);
+    for (const rupee of this.rupees) {
+      rupee.update(0, gameStore.getState().collected.includes(rupee.id));
+      this.root.add(rupee.root);
+    }
+    this.collision.add(x, z, 0.54, 0.4);
+    this.chest.update(0, gameStore.getState().chests["volcano-01"]);
     const ground = material("#716570"),
       ash = material("#cfb8a0"),
       rock = material("#514b5b");
@@ -99,6 +119,11 @@ export class VolcanoArea implements Area {
       [-4, -2],
       [-2, -3],
       [1, -3],
+    ]);
+    trail([
+      [-4, -2],
+      [-4, -4],
+      [-4, -5.6],
     ]);
     trail([
       [4, 3],
@@ -273,7 +298,10 @@ export class VolcanoArea implements Area {
       crack.castShadow = false;
     }
   }
-  update(_dt: number, time: number) {
+  update(dt: number, time: number) {
+    const state = gameStore.getState();
+    this.chest.update(dt, state.chests["volcano-01"] && !(state.activeChest === "volcano-01" && state.overlay === "quiz"));
+    for (const rupee of this.rupees) rupee.update(time, state.collected.includes(rupee.id));
     this.glow.emissiveIntensity = 0.65 + Math.sin(time * 1.4) * 0.12;
     this.portal.update(true, time);
   }

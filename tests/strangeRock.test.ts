@@ -62,7 +62,7 @@ describe("strange rock progression", () => {
     });
     definition.pickupIds.forEach((id) => store.collect(id));
     const saved = JSON.parse(storage.getItem()!);
-    expect(saved.version).toBe(12);
+    expect(saved.version).toBe(14);
     expect(saved.rupees).toBe(5);
     expect(saved.secrets[definition.id].completed).toBe(true);
     store = createGameStore(storage);

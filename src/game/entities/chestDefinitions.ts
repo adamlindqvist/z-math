@@ -1,9 +1,10 @@
 import type { ItemId } from "../../items/definitions";
 import type { Location } from "../dungeons/definitions";
 import type { PuzzleId } from "../puzzles/definitions";
-export type ChestDefinition = { opening: "quiz" | "direct"; reward: number; location: Location; items?: readonly ItemId[]; puzzle?: PuzzleId; barrier?: string };
+export type ChestDefinition = { opening: "quiz" | "direct"; reward: number; location: Location; items?: readonly ItemId[]; pictureQuiz?: "counting" | "addition"; puzzle?: PuzzleId; barrier?: string };
 export const CHESTS = {
   glade: { opening: "quiz", reward: 5, location: null },
+  "volcano-01": { opening: "quiz", reward: 5, location: { world: "volcano" }, pictureQuiz: "addition" },
   south: { opening: "quiz", reward: 5, location: null },
   "butterfly-01": { opening: "direct", reward: 10, location: null },
   "butterfly-02": { opening: "direct", reward: 10, location: null },

@@ -1,3 +1,4 @@
+import { VOLCANO_RUPEES } from "../src/game/volcanoLayout";
 import { disposeTree } from "../src/game/Area";
 import { afterEach, describe, expect, it } from "vitest";
 import { Scene, Vector3 } from "three";
@@ -7,6 +8,7 @@ import { World } from "../src/game/World";
 import {
   VolcanoArea,
   VOLCANO_CLEARINGS,
+  VOLCANO_CHEST_POSITION,
   VOLCANO_LAVA,
 } from "../src/game/VolcanoArea";
 import {
@@ -86,6 +88,122 @@ function reachable(
 }
 afterEach(() => gameStore.reset());
 describe("Vulkanvärlden", () => {
+  it("collects the four trail rupees only in the volcano and keeps them collected after reload", () => {
+    const storage = memory(), s = createGameStore(storage);
+    for (const { id } of VOLCANO_RUPEES) s.collect(id);
+    expect(s.getState().collected).toEqual([]);
+    completeFire(s);
+    s.close();
+    s.travelTo(null);
+    s.travelTo({ world: "volcano" });
+    const before = s.getState().rupees;
+    for (const { id } of VOLCANO_RUPEES) { s.collect(id); s.collect(id); }
+    expect(s.getState().rupees).toBe(before + 4);
+    const restored = createGameStore(storage);
+    for (const { id } of VOLCANO_RUPEES) restored.collect(id);
+    expect(restored.getState().rupees).toBe(before + 4);
+    expect(restored.getState().collected).toEqual(VOLCANO_RUPEES.map(r => r.id));
+  });
+  it("picks up trail rupees by walking over them and hides them on revisits", () => {
+    completeFire(gameStore);
+    gameStore.close();
+    gameStore.travelTo(null);
+    gameStore.travelTo({ world: "volcano" });
+    const area = new VolcanoArea(), interaction = new InteractionSystem(new Scene());
+    try {
+      const before = gameStore.getState().rupees;
+      for (const rupee of area.rupees) {
+        interaction.update(rupee.root.position.clone(), area, 0);
+        area.update(0, 0);
+        expect(rupee.root.visible).toBe(false);
+      }
+      expect(gameStore.getState().rupees).toBe(before + 4);
+      const returned = new VolcanoArea();
+      expect(returned.rupees.every(r => !r.root.visible)).toBe(true);
+      returned.dispose();
+    } finally {
+      area.dispose();
+      disposeTree(interaction.ring);
+      disposeTree(interaction.arrow);
+    }
+  });
+  it("opens the first treasure with three picture sums, allows retries and saves only one reward", () => {
+    const storage = memory(), s = createGameStore(storage);
+    const target = { kind: "chest" as const, id: "volcano-01" as const, label: "Öppna" };
+    s.setTarget(target);
+    s.interact();
+    expect(s.getState().activeChest).toBeNull();
+    completeFire(s);
+    s.close();
+    s.travelTo(null);
+    s.travelTo({ world: "volcano" });
+    const before = s.getState().rupees;
+    const begin = () => { s.setTarget(target); s.interact(); s.beginQuiz(); };
+    begin();
+    s.answer(s.getState().question!.correctAnswer);
+    s.finishQuiz();
+    s.close();
+    expect(s.getState().chests["volcano-01"]).toBe(false);
+    begin();
+    expect(s.getState().quizCorrectAnswers).toBe(0);
+    s.answer(-1);
+    expect(s.getState().feedback).toBe("retry");
+    s.replaceQuestion();
+    const keys = new Set<string>();
+    for (let i = 0; i < 3; i++) {
+      const q = s.getState().question!;
+      expect(q.groups).toHaveLength(2);
+      expect(q.correctAnswer).toBeLessThanOrEqual(5);
+      expect(q.answerDots).toBe(true);
+      expect(q.answers).toHaveLength(3);
+      expect(keys.has(q.key)).toBe(false);
+      keys.add(q.key);
+      s.answer(q.correctAnswer);
+      s.answer(q.correctAnswer);
+      s.finishQuiz();
+    }
+    expect(s.getState().chests["volcano-01"]).toBe(true);
+    expect(s.getState().rupees).toBe(before + 5);
+    const restored = createGameStore(storage);
+    expect(restored.getState().chests["volcano-01"]).toBe(true);
+    expect(restored.getState().rupees).toBe(before + 5);
+    restored.setTarget(target);
+    restored.interact();
+    expect(restored.getState().overlay).toBe("empty");
+    restored.beginQuiz();
+    expect(restored.getState().question).toBeNull();
+    expect(restored.getState().rupees).toBe(before + 5);
+  });
+  it("makes the treasure reachable and animates it after the quiz, including on return", () => {
+    completeFire(gameStore);
+    gameStore.close();
+    gameStore.travelTo(null);
+    gameStore.travelTo({ world: "volcano" });
+    const area = new VolcanoArea(), interaction = new InteractionSystem(new Scene());
+    try {
+      const approach = { x: VOLCANO_CHEST_POSITION.x, z: VOLCANO_CHEST_POSITION.z + 1.1 };
+      reachable(area.collision, area.spawn, [approach]);
+      interaction.update(new Vector3(approach.x, 0, approach.z), area, 0);
+      expect(gameStore.getState().target).toMatchObject({ kind: "chest", id: "volcano-01" });
+      gameStore.interact();
+      gameStore.beginQuiz();
+      for (let i = 0; i < 3; i++) {
+        gameStore.answer(gameStore.getState().question!.correctAnswer);
+        area.update(1, 0);
+        expect(area.chest.openAmount).toBe(0);
+        gameStore.finishQuiz();
+      }
+      area.update(1, 0);
+      expect(area.chest.openAmount).toBe(1);
+      const returned = new VolcanoArea();
+      expect(returned.chest.lid.rotation.x).toBeCloseTo(-1.8);
+      returned.dispose();
+    } finally {
+      area.dispose();
+      disposeTree(interaction.ring);
+      disposeTree(interaction.arrow);
+    }
+  });
   it("unlocks only after the final reward, survives equipment changes and reload, and restricts adjacency", () => {
     const storage = memory(),
       s = createGameStore(storage);
@@ -206,6 +324,7 @@ describe("Vulkanvärlden", () => {
     try {
       reachable(area.collision, area.spawn, [
         VOLCANO_RETURN,
+        ...VOLCANO_RUPEES,
         ...VOLCANO_CLEARINGS.map(([x, z]) => gladePosition(x, z)),
         gladePosition(8, 5),
       ]);
@@ -219,8 +338,9 @@ describe("Vulkanvärlden", () => {
       }
       expect(area.collision.free(0, -7.8)).toBe(false);
       expect(area.collision.free(15, 0)).toBe(false);
-      expect(area.rupees).toEqual([]);
-      expect(area.interactions()).toEqual([]);
+      expect(area.rupees).toHaveLength(4);
+      expect(area.interactions(gameStore.getState())).toHaveLength(1);
+      expect(area.collision.free(VOLCANO_CHEST_POSITION.x, VOLCANO_CHEST_POSITION.z)).toBe(false);
     } finally {
       area.dispose();
       world.dispose();

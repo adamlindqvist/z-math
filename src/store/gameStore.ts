@@ -1,3 +1,4 @@
+import { VOLCANO_RUPEES } from "../game/volcanoLayout";
 import { volcanoUnlocked } from "../game/dungeons/definitions";
 import { freshPuzzles, validPuzzles, puzzleSolved, PUZZLES, type PuzzlesProgress } from "../game/puzzles/definitions";
 import { WORLD_OBJECTS, PICKUP_OBJECTS, sameLocation, validWorldObjects, type WorldObjectId } from "../game/interactables/definitions";
@@ -54,6 +55,7 @@ import {
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const RUPEE_IDS = [
+  ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee", "royal-pot-rupee",
   ...ROCK_SECRETS.flatMap((s) => [...s.pickupIds]),
   "path-1",
@@ -158,7 +160,7 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 12 ||
+      p?.version !== 14 ||
       !validInventory(p) ||
       !validPuzzles(p.puzzles) || !validWorldObjects(p.worldObjects) ||
       !validPurchases(p.purchases, p.items) ||
@@ -190,6 +192,7 @@ export function parseSave(raw: string | null): Progress {
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
+      (p.chests["volcano-01"] && !volcanoUnlocked(p.dungeons)) ||
       typeof p.talkedToNpc !== "boolean" ||
       !Array.isArray(p.collected) ||
       p.collected.some(
@@ -278,7 +281,7 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 12,
+            version: 14,
             puzzles: state.puzzles,
             worldObjects: state.worldObjects,
             purchases: state.purchases,
@@ -308,6 +311,14 @@ export function createGameStore(
     feedback: null,
     askedQuestions: [...state.askedQuestions, question.key],
   });
+  const chestQuestion = (asked: readonly string[] = []): MathQuestion => {
+    const definition: ChestDefinition | undefined = state.activeChest
+      ? CHESTS[state.activeChest]
+      : undefined;
+    return definition?.pictureQuiz
+      ? generateTempleQuestion(definition.pictureQuiz, Math.random, asked)
+      : generateAdditionQuestion(Math.random, asked);
+  };
   const nextQuestion = (): MathQuestion | null => {
     if (state.dungeonQuiz) {
       const c = resolveRoom(state.location)?.room.challenge;
@@ -315,7 +326,7 @@ export function createGameStore(
         ? generateTempleQuestion(c.kind, Math.random, state.askedQuestions)
         : null;
     }
-    return generateAdditionQuestion(Math.random, state.askedQuestions);
+    return chestQuestion(state.askedQuestions);
   };
   // The chest flag, currency and associated discovery are committed together.
   const chestAward = (id: ChestId): Partial<GameState> => {
@@ -876,7 +887,7 @@ export function createGameStore(
         !state.chests[state.activeChest] &&
         CHESTS[state.activeChest].opening === "quiz"
       ) {
-        const question = generateAdditionQuestion();
+        const question = chestQuestion();
         set({
           overlay: "quiz",
           question,
@@ -997,7 +1008,7 @@ export function createGameStore(
       if (state.feedback === "correct")
         set(
           askQuestion(
-            generateAdditionQuestion(Math.random, state.askedQuestions),
+            chestQuestion(state.askedQuestions),
           ),
         );
       else if (state.feedback === "complete")
@@ -1274,6 +1285,7 @@ function pickupAllowed(state: GameState, id: string) {
     if (b.kind === "pickup" && b.pickup === id)
       return sameLocation(state.location, definition.location) && state.worldObjects.includes(objectId);
   }
+  if (VOLCANO_RUPEES.some(rupee => rupee.id === id)) return state.location?.world === "volcano";
   if (id.startsWith("castle-")) return state.location?.castle === "hall";
   return state.location === null;
 }
