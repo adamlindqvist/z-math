@@ -58,10 +58,13 @@ export function CharacterPreview({
       aria-label="Din gubbe"
       className="flex h-full min-h-0 flex-col items-center gap-2 rounded-[28px] border-4 border-white bg-cream p-3 text-center text-ink shadow-lg"
     >
-      <p className="text-lg font-extrabold">
-        {trying ? `Provar: ${trying}` : "Din gubbe"}
-      </p>
-      <div className="relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_center,#fff9e5,#dce8cf)]">
+      {trying && (
+        <p className="text-lg font-extrabold">
+          Provar: {trying}
+        </p>
+      )}
+      <div
+        className="relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_center,#fff9e5,#dce8cf)]">
         <canvas
           ref={canvas}
           aria-label="Dra för att snurra gubben"
