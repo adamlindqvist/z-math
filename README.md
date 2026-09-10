@@ -109,7 +109,7 @@ Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 ×
 
 Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Vattentemplets sista mattelås ger fem rupees, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg Bokoblin vid bron; de behöver inte vara påtagna. Strid ingår inte.
 
-Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder behöver även kopplas till figurens utseende.
+Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder anger `garment` i föremålsregistret.
 
 ### Södra gläntan
 
@@ -132,7 +132,7 @@ Mjuka, magiska ljudeffekter följer insamling, quiz, interaktioner, stenpussel o
 
 Gå fram till slottets ytterdörr för att komma till entréhallen. Butiken ligger till höger; biblioteket och kungssalen är stängda. Hos Handlare Bosse kan du trycka på handlaren eller en utställd vara när du står nära, eller använda handlingsknappen/E. Bosse hälsar kort när du närmar dig.
 
-Sortimentet består av grön äventyrsmössa med fjäder (15 rupees), blå tunika (20), träsvärd (30) och träsköld (25). Köp en gång och välj **Ta på** eller **Fortsätt handla**. Väskan låter dig byta och ta av saker. Grundmössan och de gröna kläderna återkommer när nya kläder tas av. Allt är kosmetiskt; bron kräver fortfarande ägande av tempelsvärdet och tempelskölden. Befintliga engångsbelöningar är oförändrade: spelaren behöver välja hur rupees används.
+Sortimentet består av grön äventyrsmössa med fjäder (15 rupees), Skogsäventyrarens tunika (20), träsvärd (30) och träsköld (25). Köp en gång och välj **Ta på** eller **Fortsätt handla**. Väskan låter dig byta och ta av saker. Grundmössan och de gröna kläderna återkommer när nya kläder tas av. Allt är kosmetiskt; bron kräver fortfarande ägande av tempelsvärdet och tempelskölden. Befintliga engångsbelöningar är oförändrade: spelaren behöver välja hur rupees används.
 
 `src/game/castle/` innehåller entréhallen, `ShopScene` och geometriska varumodeller. `hall.ts` bygger slottshallens inredning: pelare, banér, öppen spis, vaktriddare, långbord och lampor med fladdrande lågor. Båda rummen använder `Area`, samma renderare och rumskamera som templen. `src/items/shop.ts` innehåller fasta priser; föremålsregistret skiljer kategori från utrustningsplats (`head`, `body`, `weapon`, `shield`). Köphistoriken sparas tillsammans med ägande och utrustning, och saldot valideras som intjänade rupees minus köp.
 
@@ -145,3 +145,11 @@ Butiksdialoger och interiör har granskats i Codex inbyggda webbläsare med 1024
 I väskan och butiken visas gubben i ett eget 3D-fönster. Dra direkt i 3D-fönstret åt sidan för att snurra. På smala skärmar ligger fönstret ovanför den rullbara listan. Väskans ändringar syns direkt. I butiken provar gubben vald vara utan köp eller ändring av sparad utrustning. **Ta på** utrustar varan och håller butiken öppen; **Spela vidare** återgår till spelet.
 
 `src/game/heroModel.ts` delar modellbygge och utrustningsutseende mellan spelaren och `CharacterPreview`. Förhandsvisningen har egna grafikresurser och renderas bara vid ändringar.
+
+### Delbaserade plagg
+
+`src/items/garments.ts` definierar plagg som material och en lista visuella delar: grundmodell, ärmar, krage, bälte, dekor och accessoarer. Delarna har namn, materialnyckel, form (box, ellipsoid eller avsmalnande cylinder), position och valfri rotation. Måtten anges relativt kroppens ankare på höjd 0,65; positiv z pekar framåt. Alla delar följer kroppens gångrörelse.
+
+För ett nytt plagg: skapa en `GarmentDefinition`, koppla den via `garment` till ett föremål med `equipSlot: "body"` och lägg vid behov till pris i `shop.ts`. Samma modellbyggare används på spelaren, i förhandsvisningen och på butikens ställ. Inga nya villkor i spelarmodellen behövs. Varje instans äger sina grafikresurser; plaggbyte frigör det gamla plagget och oförändrad utrustning återanvänder modellen.
+
+Skogsäventyrarens tunika har grönt tyg, ljus underskjorta med krage och ärmar samt brunt bälte. Dess interna föremåls-ID är `blue-tunic`; sparformat och pris är oförändrade.

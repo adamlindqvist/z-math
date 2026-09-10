@@ -1,6 +1,12 @@
+import { garmentModel } from "../items/garments";
+import { disposeTree } from "./Area";
 import { character } from "./models";
 import { itemModel } from "../items/models";
-import type { Equipment } from "../items/definitions";
+import {
+  ITEMS,
+  type ItemDefinition,
+  type Equipment,
+} from "../items/definitions";
 
 export function heroModel() {
   const model = character("hero");
@@ -30,7 +36,13 @@ export function applyEquipment(
     equipment.weapon === "wooden-sword";
   model.root.getObjectByName("wood-shield")!.visible =
     equipment.shield === "wooden-shield";
-  model.coat.color.set(equipment.body === "blue-tunic" ? "#3489cb" : "#36964a");
+  const bodyId = equipment.body ?? "green-clothes";
+  if (model.body.userData.itemId !== bodyId) {
+    for (const child of [...model.body.children]) disposeTree(child);
+    const item: ItemDefinition = ITEMS[bodyId];
+    if (item.garment) model.body.add(garmentModel(item.garment));
+    model.body.userData.itemId = bodyId;
+  }
   model.root.getObjectByName("sword")!.visible =
     equipment.weapon === "temple-sword";
   model.root.getObjectByName("shield")!.visible =

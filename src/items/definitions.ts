@@ -1,7 +1,13 @@
+import {
+  forestGarment,
+  starterGarment,
+  type GarmentDefinition,
+} from "./garments";
 export type EquipmentSlot = "head" | "body" | "weapon" | "shield";
 export type ItemCategory =
   "currency" | "cosmetic" | "equipment" | "quest" | "collectible";
 export type ItemDefinition = {
+  garment?: GarmentDefinition;
   name: string;
   category: ItemCategory;
   equipSlot?: EquipmentSlot;
@@ -16,7 +22,13 @@ export const ITEMS = {
     equipSlot: "head",
     icon: "hat",
   },
-  "royal-crown": { name: "Kungakrona", description: "En gyllene krona med kungens märke!", category: "cosmetic", equipSlot: "head", icon: "hat" },
+  "royal-crown": {
+    name: "Kungakrona",
+    description: "En gyllene krona med kungens märke!",
+    category: "cosmetic",
+    equipSlot: "head",
+    icon: "hat",
+  },
   "green-hat": {
     name: "Grön fjädermössa",
     description: "En fin mössa med fjäder!",
@@ -25,8 +37,10 @@ export const ITEMS = {
     icon: "hat",
   },
   "blue-tunic": {
-    name: "Blå tunika",
-    description: "Blå kläder för nya äventyr!",
+    name: "Skogsäventyrarens tunika",
+    garment: forestGarment,
+    description:
+      "En enkel tunika för unga äventyrare. Grönt tyg, ljus underskjorta och ett brunt bälte.",
     category: "cosmetic",
     equipSlot: "body",
     icon: "shirt",
@@ -47,6 +61,7 @@ export const ITEMS = {
   },
   "green-clothes": {
     name: "Gröna kläder",
+    garment: starterGarment,
     category: "cosmetic",
     equipSlot: "body",
     icon: "shirt",
@@ -84,7 +99,12 @@ export interface Inventory {
 }
 export const freshInventory = (): Inventory => ({
   items: ["green-clothes", "base-hat"],
-  equipment: { head: "base-hat", body: "green-clothes", weapon: null, shield: null },
+  equipment: {
+    head: "base-hat",
+    body: "green-clothes",
+    weapon: null,
+    shield: null,
+  },
 });
 export function isItemId(id: unknown): id is ItemId {
   return typeof id === "string" && Object.hasOwn(ITEMS, id);

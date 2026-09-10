@@ -75,18 +75,22 @@ export function character(role: "hero" | "princess") {
     gold = material("#efbd45", 0.4),
     cream = material("#fff1d4"),
     pink = material("#eea18b");
-  const body = mesh(
-    new THREE.CylinderGeometry(
-      princess ? 0.23 : 0.27,
-      princess ? 0.48 : 0.36,
-      princess ? 0.87 : 0.57,
-      12,
-    ),
-    coat,
-    root,
-    0,
-    princess ? 0.49 : 0.65,
-  );
+  const body = new THREE.Group();
+  body.position.y = princess ? 0.49 : 0.65;
+  root.add(body);
+  if (princess)
+    mesh(
+      new THREE.CylinderGeometry(
+        princess ? 0.23 : 0.27,
+        princess ? 0.48 : 0.36,
+        princess ? 0.87 : 0.57,
+        12,
+      ),
+      coat,
+      body,
+      0,
+      0,
+    );
   if (princess) {
     ball(root, hair, 0, 1.13, -0.17, 0.4, 0.51, 0.24);
     mesh(new THREE.CylinderGeometry(0.45, 0.49, 0.09, 12), gold, root, 0, 0.1);
@@ -134,17 +138,8 @@ export function character(role: "hero" | "princess") {
     ball(root, dark, side * 0.135, 1.24, 0.305, 0.055, 0.095, 0.025);
     ball(root, cream, side * 0.135 - 0.012, 1.275, 0.327, 0.014, 0.022, 0.009);
     ball(root, pink, side * 0.22, 1.12, 0.275, 0.054, 0.027, 0.018);
-    ball(root, coat, side * 0.31, 0.82, 0, 0.14, 0.16, 0.15);
-    ball(
-      root,
-      princess ? cream : leather,
-      side * 0.37,
-      0.68,
-      0.02,
-      0.09,
-      0.17,
-      0.1,
-    );
+    if (princess) ball(root, coat, side * 0.31, 0.82, 0, 0.14, 0.16, 0.15);
+    if (princess) ball(root, cream, side * 0.37, 0.68, 0.02, 0.09, 0.17, 0.1);
     ball(root, skin, side * 0.4, 0.57, 0.05, 0.095);
   }
   ball(root, skin, 0, 1.14, 0.335, 0.045);
@@ -196,15 +191,6 @@ export function character(role: "hero" | "princess") {
       -0.4,
     );
     hat.rotation.x = -2.35;
-    mesh(
-      new THREE.CylinderGeometry(0.325, 0.34, 0.115, 12),
-      leather,
-      root,
-      0,
-      0.52,
-    );
-    box(root, gold, 0, 0.52, 0.329, 0.19, 0.15, 0.045);
-    box(root, leather, 0, 0.52, 0.356, 0.115, 0.085, 0.018);
     const shield = new THREE.Group();
     shield.name = "shield";
     shield.position.set(-0.4, 0.62, 0.2);

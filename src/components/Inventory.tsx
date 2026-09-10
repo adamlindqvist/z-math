@@ -73,7 +73,7 @@ export function ItemPicture({ id }: { id: ItemId }) {
   return (
     <span className="relative mx-auto block size-16" aria-hidden="true">
       <Icon
-        className={`size-16 ${fire ? "text-[#b64925]" : id === "blue-tunic" ? "text-[#3489cb]" : id.startsWith("wooden-") ? "text-[#a36c38]" : "text-forest"}`}
+        className={`size-16 ${fire ? "text-[#b64925]" : id === "blue-tunic" ? "text-forest fill-forest" : id.startsWith("wooden-") ? "text-[#a36c38]" : "text-forest"}`}
       />
       {fire && (
         <Flame className="absolute -right-2 -bottom-1 size-8 rounded-full bg-[#fff0b8] text-[#da5d1f]" />
@@ -163,7 +163,7 @@ export function InventoryDialog() {
               className="flex flex-col gap-3 rounded-3xl border-2 border-[#d7dfcd] bg-white/60 p-3"
             >
               <ItemPicture id={id} />
-              <h3 className="text-xl font-extrabold">{item.name}</h3>
+              <h3 className="text-xl font-extrabold wrap-break-word">{item.name}</h3>
               <span className="flex min-h-7 items-center justify-center gap-1 font-bold text-forest">
                 {equipped && (
                   <>

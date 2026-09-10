@@ -109,10 +109,10 @@ it("shares every equipment variant without sharing model resources", () => {
         expect(first.root.getObjectByName(name)!.visible).toBe(item === id);
     }
   applyEquipment(first, { ...freshInventory().equipment, body: "blue-tunic" });
-  expect(first.coat.color.getHexString()).toBe("3489cb");
-  expect(second.coat.color.getHexString()).toBe("36964a");
+  expect(first.body.getObjectByName("undershirt")).toBeDefined();
+  expect(second.body.getObjectByName("undershirt")).toBeUndefined();
   applyEquipment(first, freshInventory().equipment);
-  expect(first.coat.color.getHexString()).toBe("36964a");
+  expect(first.body.getObjectByName("undershirt")).toBeUndefined();
   const resources = (model: ReturnType<typeof heroModel>) => {
     const set = new Set<unknown>();
     model.root.traverse((o) => {
@@ -144,7 +144,7 @@ it("previews shop choices without spending or equipping and keeps Ta på open", 
   expect(gameStore.getState().rupees).toBe(before.rupees);
   click("Alla varor");
   expect(shown().getObjectByName("wood-sword")!.visible).toBe(false);
-  click("Blå tunika");
+  click("Skogsäventyrarens tunika");
   click("Köp");
   expect(gameStore.getState().equipment.body).toBe("green-clothes");
   click("Ta på");

@@ -161,13 +161,13 @@ describe("castle shop", () => {
     player.setEquipment(s.getState().equipment);
     expect(player.root.getObjectByName("base-hat")!.visible).toBe(false);
     expect(player.root.getObjectByName("wood-sword")!.visible).toBe(true);
-    expect(player.model.coat.color.getHexString()).toBe("3489cb");
+    expect(player.model.body.getObjectByName("undershirt")).toBeDefined();
     for (const slot of ["head", "body", "weapon", "shield"] as const)
       s.unequipItem(slot);
     player.setEquipment(s.getState().equipment);
     expect(player.root.getObjectByName("base-hat")!.visible).toBe(false);
     expect(player.root.getObjectByName("wood-shield")!.visible).toBe(false);
-    expect(player.model.coat.color.getHexString()).toBe("36964a");
+    expect(player.model.body.getObjectByName("undershirt")).toBeUndefined();
     disposeTree(player.root);
   });
   it("selects nearby visible 3D goods and rejects distant or occluded taps", () => {
