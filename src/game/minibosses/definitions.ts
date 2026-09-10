@@ -25,8 +25,8 @@ export function validMinibosses(value: unknown): value is MinibossProgress {
 export const minibossDefeated = (progress: MinibossProgress, id: MinibossId) =>
   progress[id] === MINIBOSSES[id].phases.length;
 
-export const STONE_GIANT_CENTER = gladePosition(4.5, 3);
-export const STONE_GIANT_ARENA_RADIUS = 4.1;
+export const STONE_GIANT_CENTER = gladePosition(4.8, 3.3);
+export const STONE_GIANT_ARENA_RADIUS = 4.3;
 export const STONE_GIANT_START_DISTANCE = 4;
 export const STONE_GIANT_EXIT_DISTANCE = 5.6;
 export const RUNE_STONES = MINIBOSSES.stone_giant.puzzle.values.map(
