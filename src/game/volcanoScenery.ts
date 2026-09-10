@@ -9,7 +9,6 @@ function flameTemplate() {
   const template = new THREE.Group();
   for (const turn of [0, Math.PI / 2])
     flame(template, 0, 0, 0, 1).rotation.y = turn;
-  template.traverse((part) => (part.castShadow = false));
   return template;
 }
 
@@ -72,6 +71,7 @@ export function volcanoGround(
             [length, 0.026, 0.011, glow],
           ] as const) {
             const part = box(group, m, cx, y, cz, w, 0.014, d);
+            part.name = "volcano-ground-crack";
             part.rotation.y = turn;
             part.castShadow = false;
           }
@@ -86,17 +86,14 @@ export function volcanoGround(
       case 7: {
         const tuft = mesh(tuftGeometry, soot, group, x, 0.075, z);
         tuft.rotation.set(0, angle, random() < 0.5 ? -0.25 : 0.25);
-        tuft.castShadow = false;
         break;
       }
       case 3:
       case 8: {
         const spark = ball(group, glow, x, 0.11, z, 0.055);
-        spark.castShadow = false;
         const flake = mesh(chipGeometry, basalt, group, x, 0.035, z);
         flake.scale.set(0.12, 0.05, 0.1);
         flake.rotation.y = angle;
-        flake.castShadow = false;
         break;
       }
       default: {
@@ -110,7 +107,6 @@ export function volcanoGround(
         );
         heap.scale.set(0.14, 0.045, 0.12);
         heap.rotation.y = angle;
-        heap.castShadow = false;
       }
     }
   });

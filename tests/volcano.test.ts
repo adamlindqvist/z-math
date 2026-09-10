@@ -1,7 +1,7 @@
 import { VOLCANO_RUPEES } from "../src/game/volcanoLayout";
 import { disposeTree } from "../src/game/Area";
 import { afterEach, describe, expect, it } from "vitest";
-import { Scene, Vector3 } from "three";
+import { Mesh, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import { DUNGEONS, volcanoUnlocked } from "../src/game/dungeons/definitions";
 import { World } from "../src/game/World";
@@ -358,6 +358,18 @@ describe("Vulkanvärlden", () => {
       const twin = twinArea.root.getObjectByName("volcano-ground")!;
       expect(twin.children).toHaveLength(ground!.children.length);
       expect(twin.children[0].position.toArray()).toEqual(ground!.children[0].position.toArray());
+
+      const raisedDetails: Mesh[] = [];
+      ground!.traverse((object) => {
+        if (object instanceof Mesh && object.name !== "volcano-ground-crack")
+          raisedDetails.push(object);
+      });
+      expect(raisedDetails.length).toBeGreaterThan(20);
+      expect(raisedDetails.every((detail) => detail.castShadow)).toBe(true);
+
+      const pebbles = area.root.children.filter((object) => object.name === "volcano-pebble");
+      expect(pebbles.length).toBeGreaterThan(10);
+      expect(pebbles.every((pebble) => pebble.castShadow)).toBe(true);
     } finally {
       area.dispose();
       twinArea.dispose();

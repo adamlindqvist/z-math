@@ -269,8 +269,8 @@ export class VolcanoArea implements Area {
           0.045,
           gladeDistance(z),
         );
+        pebble.name = "volcano-pebble";
         pebble.scale.set(0.11, 0.07, 0.08);
-        pebble.castShadow = false;
       }
     }
     for (const [x, z] of [
