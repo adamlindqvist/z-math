@@ -1,44 +1,20 @@
-import { itemModel } from "../items/models";
 import { freshInventory, type Equipment } from "../items/definitions";
 import { Vector3 } from "three";
-import { character } from "./models";
+import { heroModel, applyEquipment } from "./heroModel";
 import type { Input } from "./Input";
 import type { CollisionSystem } from "./CollisionSystem";
 export class Player {
-  model = character("hero");
+  model = heroModel();
   root = this.model.root;
   private phase = 0;
   constructor() {
-    for (const id of ["green-hat", "royal-crown"] as const) {
-      const hat = itemModel(id);
-      hat.position.set(0, id === "royal-crown" ? 1.6 : 1.55, id === "royal-crown" ? 0 : 0.1);
-      this.root.add(hat);
-    }
     this.reset();
     this.setEquipment(freshInventory().equipment);
   }
   setEquipment(equipment: Equipment) {
-    this.root.getObjectByName("base-hat")!.visible =
-      equipment.head === "base-hat";
-    this.root.getObjectByName("green-hat")!.visible =
-      equipment.head === "green-hat";
-    this.root.getObjectByName("royal-crown")!.visible = equipment.head === "royal-crown";
-    this.root.getObjectByName("wood-sword")!.visible =
-      equipment.weapon === "wooden-sword";
-    this.root.getObjectByName("wood-shield")!.visible =
-      equipment.shield === "wooden-shield";
-    this.model.coat.color.set(
-      equipment.body === "blue-tunic" ? "#3489cb" : "#36964a",
-    );
-    this.root.getObjectByName("sword")!.visible =
-      equipment.weapon === "temple-sword";
-    this.root.getObjectByName("shield")!.visible =
-      equipment.shield === "temple-shield";
-    this.root.getObjectByName("fire-sword")!.visible =
-      equipment.weapon === "fire-sword";
-    this.root.getObjectByName("fire-shield")!.visible =
-      equipment.shield === "fire-shield";
+    applyEquipment(this.model, equipment);
   }
+
   reset() {
     this.root.position.set(-6.2, 0, 2.9);
     this.root.rotation.y = 0.35;

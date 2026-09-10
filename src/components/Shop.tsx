@@ -1,3 +1,4 @@
+import { CharacterPreview } from "./CharacterPreview";
 import { useEffect, useState } from "react";
 import { Gem, Play, ArrowLeft, Check } from "lucide-react";
 import { gameStore, useGameState } from "../store/gameStore";
@@ -44,24 +45,40 @@ export function ShopDialog() {
     ) : null;
   const id = s.shopSelection;
   const owned = id ? s.items.includes(id) : false;
+  const equipped = id ? s.equipment[ITEMS[id].equipSlot] === id : false;
+  const previewEquipment = id
+    ? { ...s.equipment, [ITEMS[id].equipSlot]: id }
+    : s.equipment;
   const wear = () => {
     if (id) {
       gameStore.equipItem(id, ITEMS[id].equipSlot);
-      gameStore.close();
     }
   };
   return (
     <Modal
       label="Bosses butik"
+      sidecar={
+        <CharacterPreview
+          equipment={previewEquipment}
+          trying={id && !equipped ? ITEMS[id].name : undefined}
+        />
+      }
       className="pt-20! max-w-[760px]!"
       actionRows={s.shopPurchased ? 2 : 1}
       action={
         s.shopPurchased ? (
           <>
-            <CornerAction onActivate={wear}>
-              <Check />
-              Ta på
-            </CornerAction>
+            {equipped ? (
+              <CornerAction onActivate={() => gameStore.close()}>
+                <Play />
+                Spela vidare
+              </CornerAction>
+            ) : (
+              <CornerAction onActivate={wear}>
+                <Check />
+                Ta på
+              </CornerAction>
+            )}
             <CornerAction
               className={cornerSecondary}
               onActivate={() => gameStore.selectShopItem(null)}
@@ -89,6 +106,12 @@ export function ShopDialog() {
           {!s.shopPurchased && (
             <h3 className="my-3 text-2xl font-black">{ITEMS[id].name}</h3>
           )}
+          {equipped && (
+            <p className="my-3 flex items-center justify-center gap-2 font-bold text-forest">
+              <Check />
+              På
+            </p>
+          )}
           <p>
             {s.shopPurchased
               ? "Den passar dig perfekt!"
@@ -100,9 +123,11 @@ export function ShopDialog() {
               {owned ? (
                 <>
                   <p>Den där har du ju redan!</p>
-                  <button className={primaryButton} onClick={wear}>
-                    Ta på
-                  </button>
+                  {!equipped && (
+                    <button className={primaryButton} onClick={wear}>
+                      Ta på
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -123,7 +148,7 @@ export function ShopDialog() {
                 onClick={() => gameStore.selectShopItem(null)}
               >
                 <ArrowLeft />
-                Alla varor
+                {equipped ? "Fortsätt handla" : "Alla varor"}
               </button>
             </div>
           )}

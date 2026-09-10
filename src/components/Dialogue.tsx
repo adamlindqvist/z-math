@@ -57,12 +57,14 @@ export function Modal({
   label,
   action,
   actionRows = 1,
+  sidecar,
   className = "",
 }: {
   children: ReactNode;
   label: string;
   action?: ReactNode;
   actionRows?: 1 | 2;
+  sidecar?: ReactNode;
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -114,11 +116,22 @@ export function Modal({
         }`}
       >
         <div
-          data-testid="dialog-panel"
-          className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${className}`}
+          className={
+            sidecar
+              ? "grid h-full min-h-0 w-full max-w-[1120px] grid-rows-[minmax(180px,30%)_minmax(0,1fr)] gap-4 min-[1000px]:max-h-[720px] min-[1000px]:grid-cols-[300px_minmax(0,1fr)] min-[1000px]:grid-rows-[minmax(0,1fr)]"
+              : "contents"
+          }
         >
-          <ReadAloudButton dialog={ref} />
-          {children}
+          {sidecar && (
+            <div className="min-h-0 min-[1000px]:max-h-[460px]">{sidecar}</div>
+          )}
+          <div
+            data-testid="dialog-panel"
+            className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${sidecar ? "min-h-0 min-w-0 max-w-none!" : ""} ${className}`}
+          >
+            <ReadAloudButton dialog={ref} />
+            {children}
+          </div>
         </div>
       </div>
       {action && (

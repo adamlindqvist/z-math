@@ -212,7 +212,17 @@ describe("Eldtemplet", () => {
       shield: "fire-shield",
     });
     const saved = createGameStore(storage);
-    expect(saved.getState().items).toHaveLength(5);
+    expect(saved.getState().items).toEqual(
+      expect.arrayContaining([
+        "green-clothes",
+        "base-hat",
+        "temple-sword",
+        "temple-shield",
+        "fire-sword",
+        "fire-shield",
+      ]),
+    );
+    expect(new Set(saved.getState().items).size).toBe(6);
     expect(saved.getState().rupees).toBe(5);
     saved.equipItem("temple-sword", "weapon");
     saved.equipItem("temple-shield", "shield");
@@ -229,12 +239,23 @@ describe("Eldtemplet", () => {
     quiz(saved, "fire-treasure-lock");
     expect(saved.getState().question).toBeNull();
     expect(saved.getState().rupees).toBe(5);
-    expect(saved.getState().items).toHaveLength(5);
+    expect(saved.getState().items).toEqual(
+      expect.arrayContaining([
+        "green-clothes",
+        "base-hat",
+        "temple-sword",
+        "temple-shield",
+        "fire-sword",
+        "fire-shield",
+      ]),
+    );
+    expect(new Set(saved.getState().items).size).toBe(6);
     expect(saved.getState().bridgeUnlocked).toBe(true);
     expect(pushedPosition(2, 1, 3)).toBeNull();
     saved.reset();
     expect(createGameStore(storage).getState().items).toEqual([
       "green-clothes",
+      "base-hat",
     ]);
   });
 

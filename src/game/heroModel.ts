@@ -1,0 +1,42 @@
+import { character } from "./models";
+import { itemModel } from "../items/models";
+import type { Equipment } from "../items/definitions";
+
+export function heroModel() {
+  const model = character("hero");
+  for (const id of ["green-hat", "royal-crown"] as const) {
+    const hat = itemModel(id);
+    hat.position.set(
+      0,
+      id === "royal-crown" ? 1.6 : 1.55,
+      id === "royal-crown" ? 0 : 0.1,
+    );
+    model.root.add(hat);
+  }
+  return model;
+}
+
+export function applyEquipment(
+  model: ReturnType<typeof heroModel>,
+  equipment: Equipment,
+) {
+  model.root.getObjectByName("base-hat")!.visible =
+    equipment.head === "base-hat";
+  model.root.getObjectByName("green-hat")!.visible =
+    equipment.head === "green-hat";
+  model.root.getObjectByName("royal-crown")!.visible =
+    equipment.head === "royal-crown";
+  model.root.getObjectByName("wood-sword")!.visible =
+    equipment.weapon === "wooden-sword";
+  model.root.getObjectByName("wood-shield")!.visible =
+    equipment.shield === "wooden-shield";
+  model.coat.color.set(equipment.body === "blue-tunic" ? "#3489cb" : "#36964a");
+  model.root.getObjectByName("sword")!.visible =
+    equipment.weapon === "temple-sword";
+  model.root.getObjectByName("shield")!.visible =
+    equipment.shield === "temple-shield";
+  model.root.getObjectByName("fire-sword")!.visible =
+    equipment.weapon === "fire-sword";
+  model.root.getObjectByName("fire-shield")!.visible =
+    equipment.shield === "fire-shield";
+}

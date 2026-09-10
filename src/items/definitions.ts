@@ -18,7 +18,7 @@ export const ITEMS = {
   },
   "royal-crown": { name: "Kungakrona", description: "En gyllene krona med kungens märke!", category: "cosmetic", equipSlot: "head", icon: "hat" },
   "green-hat": {
-    name: "Grön äventyrsmössa",
+    name: "Grön fjädermössa",
     description: "En fin mössa med fjäder!",
     category: "cosmetic",
     equipSlot: "head",

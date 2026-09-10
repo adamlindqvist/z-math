@@ -139,3 +139,9 @@ Sortimentet består av grön äventyrsmössa med fjäder (15 rupees), blå tunik
 Sparversionen är **9**, under nyckeln `glantans-skatt-v1`. Äldre sparningar startar ett nytt spel. Vid lagringsfel går det att fortsätta spela och handla under sessionen. I utvecklingsläget finns hallen och butiken som debugdestinationer samt **Prova butiksköp (100 test-rupees)**. Testpengarna och testköpen sparas inte; avsluta testsessionen för att återgå till ditt riktiga spel.
 
 Butiksdialoger och interiör har granskats i Codex inbyggda webbläsare med 1024 × 768 och 768 × 1024. Automatiska tester täcker köp, sparande, utrustning, passagekollisioner, träfftestning och inmatningsavbrott. Fysisk iPad/Safari och manuell tvåfingerkontroll återstår.
+
+### Förhandsvisa gubben
+
+I väskan och butiken visas gubben i ett eget 3D-fönster. Dra direkt i 3D-fönstret åt sidan för att snurra. På smala skärmar ligger fönstret ovanför den rullbara listan. Väskans ändringar syns direkt. I butiken provar gubben vald vara utan köp eller ändring av sparad utrustning. **Ta på** utrustar varan och håller butiken öppen; **Spela vidare** återgår till spelet.
+
+`src/game/heroModel.ts` delar modellbygge och utrustningsutseende mellan spelaren och `CharacterPreview`. Förhandsvisningen har egna grafikresurser och renderas bara vid ändringar.

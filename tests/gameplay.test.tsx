@@ -16,6 +16,15 @@ import { TouchControls } from "../src/components/TouchControls";
 import { HUD } from "../src/components/HUD";
 import type { Game } from "../src/game/Game";
 
+vi.mock("../src/game/CharacterPreviewScene", () => ({
+  CharacterPreviewScene: class {
+    setEquipment() {}
+    resize() {}
+    rotate() {}
+    dispose() {}
+  },
+}));
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root, host: HTMLDivElement, input: Input;
 const button = (text: string) =>
@@ -470,9 +479,17 @@ describe("inventory interface", () => {
     expect(input.direction()).toEqual({ x: 0, y: 0 });
     expect(host.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(host.textContent).toContain("Gröna kläder");
-    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Ta av grön mössa"]')!.click());
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[aria-label="Ta av grön mössa"]')!
+        .click(),
+    );
     expect(gameStore.getState().equipment.head).toBeNull();
-    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Ta på grön mössa"]')!.click());
+    act(() =>
+      host
+        .querySelector<HTMLButtonElement>('[aria-label="Ta på grön mössa"]')!
+        .click(),
+    );
     expect(gameStore.getState().equipment.head).toBe("base-hat");
     expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
     act(() =>
@@ -611,13 +628,15 @@ describe("shop dialogs", () => {
       gameStore.debugOpenShop();
     });
     expect(host.querySelectorAll('[role="dialog"]')).toHaveLength(1);
-    click("Grön äventyrsmössa");
+    click("Grön fjädermössa");
     const before = gameStore.getState().rupees;
     click("Köp");
     expect(gameStore.getState().rupees).toBe(before - 15);
-    expect(host.textContent).toContain("Du köpte Grön äventyrsmössa!");
+    expect(host.textContent).toContain("Du köpte Grön fjädermössa!");
     click("Ta på");
     expect(gameStore.getState().equipment.head).toBe("green-hat");
+    expect(gameStore.getState().overlay).toBe("shop");
+    click("Spela vidare");
     expect(gameStore.getState().overlay).toBeNull();
     key("ArrowUp");
     expect(input.direction().y).toBe(-1);
