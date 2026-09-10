@@ -50,8 +50,8 @@ npm run preview     # Preview the production build
 
 ## Verification
 
-- Use Codex's built-in browser (`iab`) for visual testing and screenshots through the available browser tools. Do not use the `agent-browser` skill or CLI for visual testing or screenshots. If the built-in browser is unavailable, report that limitation instead of falling back to `agent-browser`.
-- Run relevant tests and `npm run build` after gameplay code changes. Add or adjust tests when game rules or error-prone behavior changes.
-- For UI and input changes, briefly check landscape iPad layout, touch controls, dialogs, pausing, and the gameplay path through receiving the chest reward. Keep it quick and simple.
-- Check persistence after reloading when progress or rewards are affected.
-- Documentation-only changes normally do not require running the game tests.
+- Verify only what the change affects; stop when relevant checks pass. Expand checks only for failures or concrete regression risks.
+- For visible changes, use only Codex's built-in browser (`iab`): inspect the affected view at landscape iPad size and capture one screenshot. Check portrait only for layout changes. If `iab` is unavailable, report the limitation; do not use `agent-browser`.
+- Exercise only affected interactions. Check simultaneous touches and canceled input when controls change; dialogs and pausing when those flows change. Play through the chest reward only when progression or rewards change, and reload when saved state changes.
+- After code changes, run `npm run build` once and relevant existing tests. Add or adjust tests for changed game rules or error-prone behavior.
+- Documentation-only changes need no build, tests, or browser checks. Summarize verification briefly without routine logs or repeated screenshots.
