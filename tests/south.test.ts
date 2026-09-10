@@ -110,6 +110,7 @@ describe("southern glade", () => {
       south: true,
       "butterfly-01": false,
       "butterfly-02": false,
+      "volcano-01": false,
     });
     expect(s.getState().rupees).toBe(5);
     solve(s, "glade");

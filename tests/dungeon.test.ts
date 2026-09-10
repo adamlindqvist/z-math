@@ -431,11 +431,12 @@ describe("temple equipment reward", () => {
     const restored = createGameStore(storage);
     expect(restored.getState().items).toEqual([
       "green-clothes",
+      "base-hat",
       "temple-sword",
       "temple-shield",
     ]);
     expect(restored.getState().equipment).toEqual({
-      head: null,
+      head: "base-hat",
       body: "green-clothes",
       weapon: "temple-sword",
       shield: "temple-shield",
@@ -449,10 +450,11 @@ describe("temple equipment reward", () => {
     expect(s.getState().overlay).toBe("inventory");
     quiz(restored, "treasure-lock");
     expect(restored.getState().question).toBeNull();
-    expect(restored.getState().items).toHaveLength(3);
+    expect(restored.getState().items).toHaveLength(4);
     restored.reset();
     expect(createGameStore(storage).getState().items).toEqual([
       "green-clothes",
+      "base-hat",
     ]);
   });
   it("does not open the bag during a quiz or a moving stone", () => {

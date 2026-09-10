@@ -1,7 +1,19 @@
 import { VOLCANO_RUPEES } from "../game/volcanoLayout";
 import { volcanoUnlocked } from "../game/dungeons/definitions";
-import { freshPuzzles, validPuzzles, puzzleSolved, PUZZLES, type PuzzlesProgress } from "../game/puzzles/definitions";
-import { WORLD_OBJECTS, PICKUP_OBJECTS, sameLocation, validWorldObjects, type WorldObjectId } from "../game/interactables/definitions";
+import {
+  freshPuzzles,
+  validPuzzles,
+  puzzleSolved,
+  PUZZLES,
+  type PuzzlesProgress,
+} from "../game/puzzles/definitions";
+import {
+  WORLD_OBJECTS,
+  PICKUP_OBJECTS,
+  sameLocation,
+  validWorldObjects,
+  type WorldObjectId,
+} from "../game/interactables/definitions";
 import { canOpenChest } from "../game/entities/chestAccess";
 import type { ChestDefinition } from "../game/entities/chestDefinitions";
 import {
@@ -54,9 +66,11 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
+export const SAVE_VERSION = 14;
 export const RUPEE_IDS = [
   ...VOLCANO_RUPEES.map(({ id }) => id),
-  "royal-helmet-rupee", "royal-pot-rupee",
+  "royal-helmet-rupee",
+  "royal-pot-rupee",
   ...ROCK_SECRETS.flatMap((s) => [...s.pickupIds]),
   "path-1",
   "path-2",
@@ -160,9 +174,10 @@ export function parseSave(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
     if (
-      p?.version !== 14 ||
+      p?.version !== SAVE_VERSION ||
       !validInventory(p) ||
-      !validPuzzles(p.puzzles) || !validWorldObjects(p.worldObjects) ||
+      !validPuzzles(p.puzzles) ||
+      !validWorldObjects(p.worldObjects) ||
       !validPurchases(p.purchases, p.items) ||
       !validDungeons(p.dungeons) ||
       !validLocation(p.location, p.dungeons) ||
@@ -187,8 +202,17 @@ export function parseSave(raw: string | null): Progress {
       !CHEST_IDS.every((id) => typeof p.chests[id] === "boolean") ||
       !Array.isArray(p.collected) ||
       !validSecrets(p.secrets, p.chests, p.bridgeUnlocked, p.collected) ||
-      (p.chests["royal-treasure"] && (!puzzleSolved(p.puzzles, "royal-symbols") || !p.items.includes("royal-crown"))) ||
-      PICKUP_OBJECTS.some(id => { const b = WORLD_OBJECTS[id].behavior; return b.kind === "pickup" && p.collected.includes(b.pickup) && !p.worldObjects.includes(id); }) ||
+      (p.chests["royal-treasure"] &&
+        (!puzzleSolved(p.puzzles, "royal-symbols") ||
+          !p.items.includes("royal-crown"))) ||
+      PICKUP_OBJECTS.some((id) => {
+        const b = WORLD_OBJECTS[id].behavior;
+        return (
+          b.kind === "pickup" &&
+          p.collected.includes(b.pickup) &&
+          !p.worldObjects.includes(id)
+        );
+      }) ||
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
@@ -254,8 +278,8 @@ export function createGameStore(
     activeChest: null,
     motion: null,
     activeSecret: null,
-        movingBarriers: [],
-        objectEvent: null,
+    movingBarriers: [],
+    objectEvent: null,
     reward: 0,
     rewardItems: [],
     savingAvailable,
@@ -281,7 +305,7 @@ export function createGameStore(
         storage.setItem(
           SAVE_KEY,
           JSON.stringify({
-            version: 14,
+            version: SAVE_VERSION,
             puzzles: state.puzzles,
             worldObjects: state.worldObjects,
             purchases: state.purchases,
@@ -665,13 +689,19 @@ export function createGameStore(
       const next = resolveRoom(destination);
       if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
       const volcanoAdjacent =
-        (state.location === null && destination?.world === "volcano" && volcanoUnlocked(state.dungeons)) ||
+        (state.location === null &&
+          destination?.world === "volcano" &&
+          volcanoUnlocked(state.dungeons)) ||
         (state.location?.world === "volcano" && destination === null);
       const castleAdjacent =
         (!state.location && destination?.castle === "hall") ||
         (state.location?.castle === "hall" &&
-          (destination === null || destination?.castle === "shop" || destination?.castle === "throne")) ||
-        ((state.location?.castle === "shop" || state.location?.castle === "throne") && destination?.castle === "hall");
+          (destination === null ||
+            destination?.castle === "shop" ||
+            destination?.castle === "throne")) ||
+        ((state.location?.castle === "shop" ||
+          state.location?.castle === "throne") &&
+          destination?.castle === "hall");
       const adjacent = !state.location
         ? !!next && next.dungeon.rooms[0] === next.room
         : (!destination &&
@@ -683,7 +713,10 @@ export function createGameStore(
             next.dungeon === found?.dungeon &&
             Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
               1);
-      if ((volcanoAdjacent || castleAdjacent || adjacent) && canVisit(destination, state.dungeons))
+      if (
+        (volcanoAdjacent || castleAdjacent || adjacent) &&
+        canVisit(destination, state.dungeons)
+      )
         set(
           {
             location: destination,
@@ -693,8 +726,8 @@ export function createGameStore(
             target: null,
             motion: null,
             activeSecret: null,
-        movingBarriers: [],
-        objectEvent: null,
+            movingBarriers: [],
+            objectEvent: null,
             reward: 0,
           },
           true,
@@ -732,7 +765,8 @@ export function createGameStore(
       return true;
     },
     finishBarrier: (id: string) => {
-      if (state.movingBarriers.includes(id)) set({ movingBarriers: state.movingBarriers.filter(b => b !== id) });
+      if (state.movingBarriers.includes(id))
+        set({ movingBarriers: state.movingBarriers.filter((b) => b !== id) });
     },
     interact: () => {
       if (state.overlay || state.motion || !state.target) return;
@@ -740,22 +774,39 @@ export function createGameStore(
         const target = state.target;
         if (target.kind === "worldObject") {
           const definition = WORLD_OBJECTS[target.id];
-          if (!definition || !sameLocation(state.location, definition.location)) return;
+          if (!definition || !sameLocation(state.location, definition.location))
+            return;
           const behavior = definition.behavior;
-          const update: Partial<GameState> = { objectEvent: { id: target.id, sequence: (state.objectEvent?.sequence ?? 0) + 1 } };
+          const update: Partial<GameState> = {
+            objectEvent: {
+              id: target.id,
+              sequence: (state.objectEvent?.sequence ?? 0) + 1,
+            },
+          };
           let persist = false;
           let event: SoundEvent = definition.sound;
           if (behavior.kind === "symbol") {
             const progress = state.puzzles[behavior.puzzle];
             if (!progress.activated.includes(target.id)) {
-              update.puzzles = { ...state.puzzles, [behavior.puzzle]: { activated: [...progress.activated, target.id] } };
+              update.puzzles = {
+                ...state.puzzles,
+                [behavior.puzzle]: {
+                  activated: [...progress.activated, target.id],
+                },
+              };
               persist = true;
               if (puzzleSolved(update.puzzles, behavior.puzzle)) {
-                update.movingBarriers = [...state.movingBarriers, PUZZLES[behavior.puzzle].barrier];
+                update.movingBarriers = [
+                  ...state.movingBarriers,
+                  PUZZLES[behavior.puzzle].barrier,
+                ];
                 event = "mechanism";
               }
             } else event = "interact";
-          } else if (behavior.kind === "pickup" && !state.worldObjects.includes(target.id)) {
+          } else if (
+            behavior.kind === "pickup" &&
+            !state.worldObjects.includes(target.id)
+          ) {
             update.worldObjects = [...state.worldObjects, target.id];
             persist = true;
           } else if (behavior.kind === "clue") update.overlay = "pictureClue";
@@ -817,8 +868,12 @@ export function createGameStore(
               {
                 ...chestAward(target.id),
                 reward: CHESTS[target.id].reward,
-                rewardItems: [...((CHESTS[target.id] as ChestDefinition).items ?? [])],
-                overlay: (CHESTS[target.id] as ChestDefinition).items?.length ? "itemReward" : null,
+                rewardItems: [
+                  ...((CHESTS[target.id] as ChestDefinition).items ?? []),
+                ],
+                overlay: (CHESTS[target.id] as ChestDefinition).items?.length
+                  ? "itemReward"
+                  : null,
                 activeChest: null,
               },
               true,
@@ -967,7 +1022,9 @@ export function createGameStore(
       set(
         {
           ...chestAward(state.activeChest),
-          rewardItems: [...((CHESTS[state.activeChest] as ChestDefinition).items ?? [])],
+          rewardItems: [
+            ...((CHESTS[state.activeChest] as ChestDefinition).items ?? []),
+          ],
           feedback: "complete",
           quizCorrectAnswers,
         },
@@ -1006,11 +1063,7 @@ export function createGameStore(
         return;
       }
       if (state.feedback === "correct")
-        set(
-          askQuestion(
-            chestQuestion(state.askedQuestions),
-          ),
-        );
+        set(askQuestion(chestQuestion(state.askedQuestions)));
       else if (state.feedback === "complete")
         set({
           overlay: state.rewardItems.length ? "itemReward" : null,
@@ -1106,8 +1159,8 @@ export function createGameStore(
           activeChest: null,
           motion: null,
           activeSecret: null,
-        movingBarriers: [],
-        objectEvent: null,
+          movingBarriers: [],
+          objectEvent: null,
           overlay: null,
           target: null,
           question: null,
@@ -1137,7 +1190,11 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
-    puzzles: { "royal-symbols": { activated: [...state.puzzles["royal-symbols"].activated] } },
+    puzzles: {
+      "royal-symbols": {
+        activated: [...state.puzzles["royal-symbols"].activated],
+      },
+    },
     worldObjects: [...state.worldObjects],
     purchases: [...state.purchases],
     items: [...state.items],
@@ -1178,11 +1235,17 @@ function validLocation(
 ): boolean {
   if (value === null) return true;
   if (value && typeof value === "object" && "world" in value)
-    return Object.keys(value).length === 1 && value.world === "volcano" && volcanoUnlocked(progress);
+    return (
+      Object.keys(value).length === 1 &&
+      value.world === "volcano" &&
+      volcanoUnlocked(progress)
+    );
   if (value && typeof value === "object" && "castle" in value)
     return (
       Object.keys(value).length === 1 &&
-      (value.castle === "hall" || value.castle === "shop" || value.castle === "throne")
+      (value.castle === "hall" ||
+        value.castle === "shop" ||
+        value.castle === "throne")
     );
   if (
     !value ||
@@ -1283,9 +1346,13 @@ function pickupAllowed(state: GameState, id: string) {
     const definition = WORLD_OBJECTS[objectId];
     const b = definition.behavior;
     if (b.kind === "pickup" && b.pickup === id)
-      return sameLocation(state.location, definition.location) && state.worldObjects.includes(objectId);
+      return (
+        sameLocation(state.location, definition.location) &&
+        state.worldObjects.includes(objectId)
+      );
   }
-  if (VOLCANO_RUPEES.some(rupee => rupee.id === id)) return state.location?.world === "volcano";
+  if (VOLCANO_RUPEES.some((rupee) => rupee.id === id))
+    return state.location?.world === "volcano";
   if (id.startsWith("castle-")) return state.location?.castle === "hall";
   return state.location === null;
 }

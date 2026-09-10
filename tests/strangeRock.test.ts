@@ -8,7 +8,12 @@ import { StrangeRock } from "../src/game/entities/StrangeRock";
 import { World } from "../src/game/World";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { disposeTree } from "../src/game/Area";
-import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
+import {
+  createGameStore,
+  gameStore,
+  parseSave,
+  SAVE_VERSION,
+} from "../src/store/gameStore";
 
 const definition = ROCK_SECRETS[0];
 const target = { kind: "secret" as const, id: definition.id, label: "Flytta" };
@@ -62,7 +67,7 @@ describe("strange rock progression", () => {
     });
     definition.pickupIds.forEach((id) => store.collect(id));
     const saved = JSON.parse(storage.getItem()!);
-    expect(saved.version).toBe(14);
+    expect(saved.version).toBe(SAVE_VERSION);
     expect(saved.rupees).toBe(5);
     expect(saved.secrets[definition.id].completed).toBe(true);
     store = createGameStore(storage);
@@ -72,7 +77,7 @@ describe("strange rock progression", () => {
     expect(store.getState().activeSecret).toBeNull();
     const progress = { ...saved.secrets[definition.id] };
     for (const change of [
-      { version: 7 },
+      { version: SAVE_VERSION - 1 },
       { rupees: 6 },
       { collected: [...saved.collected, saved.collected[0]], rupees: 6 },
       {
