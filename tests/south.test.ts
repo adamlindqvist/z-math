@@ -5,6 +5,7 @@ import {
   parseSave,
   type ChestId,
 } from "../src/store/gameStore";
+import { CHEST_IDS } from "../src/game/entities/chestDefinitions";
 import { World } from "../src/game/World";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { Scene, Vector3 } from "three";
@@ -104,13 +105,10 @@ describe("southern glade", () => {
       s.finishQuiz();
       s.finishQuiz();
     }
+    // Only the southern chest opened; every other chest stays closed.
     expect(s.getState().chests).toEqual({
-      "royal-treasure": false,
-      glade: false,
+      ...Object.fromEntries(CHEST_IDS.map((id) => [id, false])),
       south: true,
-      "butterfly-01": false,
-      "butterfly-02": false,
-      "volcano-01": false,
     });
     expect(s.getState().rupees).toBe(5);
     solve(s, "glade");
