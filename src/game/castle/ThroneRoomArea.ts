@@ -105,7 +105,16 @@ export class ThroneRoomArea implements Area {
       medal.gold.emissiveIntensity = on ? 0.85 : this.hintId === id && this.hintRemaining > 0 ? 1.4 : activated.length ? 0.13 + (1+Math.sin(this.time*1.8))*0.14 : 0;
     }
     this.decor.indicators.forEach((medal,i) => {
-      medal.gold.emissive.set("#ffca67"); medal.gold.emissiveIntensity = i < activated.length ? 0.9 : this.hintRemaining > 0 ? 0.3 : 0;
+      const on = i < activated.length;
+      medal.gold.color.set(on ? "#fff3a3" : "#705b43");
+      medal.gold.emissive.set(on ? "#ffc928" : "#000000");
+      medal.gold.emissiveIntensity = on ? 2.2 : 0;
+      medal.inset.color.set(on ? "#fffbd1" : "#251c2b");
+      medal.inset.emissive.set(on ? "#ffb817" : "#000000");
+      medal.inset.emissiveIntensity = on ? 2.8 : 0;
+      medal.glow.material.opacity = on ? 0.58 : 0;
+      medal.light.intensity = on ? 1.15 : 0;
+      medal.root.scale.setScalar(medal.size * (on ? 1.12 : 1));
     });
     for (const [i,f] of this.decor.flames.entries()) (f.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.8+Math.sin(this.time*5+i)*0.15;
     if (position) this.decor.eyes.forEach((eye,i) => { eye.position.x = (i ? 0.09 : -0.09)+THREE.MathUtils.clamp((position.x+1.95)*0.004,-0.015,0.015); });

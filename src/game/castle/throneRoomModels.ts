@@ -7,6 +7,11 @@ import { WORLD_OBJECTS, type WorldObjectId } from "../interactables/definitions"
 import { royalMedallion } from "../royalMedallion";
 import { KingRhoam } from "../entities/KingRhoam";
 type Medallion = ReturnType<typeof royalMedallion>;
+type IndicatorLamp = Medallion & {
+  glow: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  light: THREE.PointLight;
+  size: number;
+};
 export function furnishThroneRoom(root: THREE.Group, collision: CollisionSystem, revealed: readonly string[]) {
   const stone = material("#d8c9b0"), trim = material("#a89270"), dark = material("#483b48"), wood = material("#845236"), gold = material("#ecca70", 0.35), red = material("#9e3449"), steel = material("#909da8", 0.4);
   const reactions = new Map<WorldObjectId, ObjectReaction>();
@@ -79,7 +84,32 @@ export function furnishThroneRoom(root: THREE.Group, collision: CollisionSystem,
     ball(throne, gold, x, 1.17, 0.45, 0.12);
   }
   royalMedallion(throne, 0, 1.72, 0.02, 0.75);
-  const indicators = [-0.43, 0, 0.43].map(x => royalMedallion(throne, x, 0.29, 0.69, 0.65));
+  const indicatorSize = 0.78;
+  const indicators: IndicatorLamp[] = [-0.43, 0, 0.43].map(x => {
+    // Put the lamps on top of the front step. Their previous position on the
+    // riser was largely hidden by the seated king's boots from the game camera.
+    const medal = royalMedallion(throne, x, 0.19, 1.02, indicatorSize);
+    medal.root.rotation.x = -Math.PI / 2;
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: "#ffd84f",
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(0.31, 24), glowMaterial);
+    glow.position.z = -0.035;
+    medal.root.add(glow);
+    glow.castShadow = false;
+    glow.receiveShadow = false;
+    glow.renderOrder = 1;
+    // A small pool of warm light makes an activated lamp readable against the
+    // gold throne even when the camera is far away on an iPad screen.
+    const light = new THREE.PointLight("#ffd45a", 0, 1.6, 2);
+    light.position.set(0, 0, 0.35);
+    medal.root.add(light);
+    return { ...medal, glow, light, size: indicatorSize };
+  });
   register("royal-throne", throne);
   // Parent the seated king to the throne so he follows its secret slide.
   throne.add(new KingRhoam().root);

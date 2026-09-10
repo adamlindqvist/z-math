@@ -160,6 +160,25 @@ describe("royal room geometry and animation",()=>{
     }
     room.dispose();
   });
+  it("shows activated throne lamps with a strong persistent light state",()=>{
+    enter(gameStore); const room=new ThroneRoomArea();
+    const [first,second] = room["decor"].indicators;
+    expect(first.root.position.z).toBeGreaterThan(1);
+    expect(first.root.rotation.x).toBeCloseTo(-Math.PI / 2);
+    expect(first.glow.material.opacity).toBe(0);
+    expect(first.light.intensity).toBe(0);
+    expect(first.inset.color.getHexString()).toBe("251c2b");
+    press(gameStore,symbols[0]); room.update(0.1,0);
+    expect(first.glow.material.opacity).toBeGreaterThan(0.5);
+    expect(first.light.intensity).toBeGreaterThan(1);
+    expect(first.gold.emissiveIntensity).toBeGreaterThan(2);
+    expect(first.inset.emissiveIntensity).toBeGreaterThan(2);
+    expect(first.root.scale.x).toBeGreaterThan(second.root.scale.x);
+    expect(second.glow.material.opacity).toBe(0);
+    room.update(10,0);
+    expect(first.glow.material.opacity).toBeGreaterThan(0.5);
+    room.dispose();
+  });
   it("waits safely when the player stands to the right, then leaves a walkable outer aisle",()=>{
     enter(gameStore); const room = new ThroneRoomArea();
     expect(room.collision.free(1.8,-2.8)).toBe(true);
