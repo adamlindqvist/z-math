@@ -4,6 +4,7 @@ type Vector = readonly [number, number, number];
 type Shape =
   | { kind: "box"; size: Vector }
   | { kind: "ellipsoid"; size: Vector }
+  | { kind: "rock"; size: Vector; seed: number }
   | { kind: "taper"; top: number; bottom: number; height: number };
 export interface GarmentPart {
   name: string;
@@ -107,6 +108,25 @@ export const forestGarment: GarmentDefinition = {
   ],
 };
 
+/** A chipped boulder filling `size`, shaped like the stone giant's blocks. */
+function rockGeometry(size: Vector, seed: number) {
+  const geometry = new THREE.DodecahedronGeometry(1, 0);
+  const vertices = geometry.getAttribute("position");
+  // Coordinate-based variation preserves shared corners and flat rock faces.
+  for (let v = 0; v < vertices.count; v++) {
+    const x = vertices.getX(v),
+      y = vertices.getY(v),
+      z = vertices.getZ(v);
+    const uneven = 1 + 0.14 * Math.sin(x * 3.7 + y * 5.1 + z * 2.9 + seed * 1.8);
+    vertices.setXYZ(v, x * uneven, y * uneven, z * uneven);
+  }
+  geometry.rotateX(Math.sin(seed * 2.3) * 0.2);
+  geometry.rotateY(seed * 0.73);
+  geometry.scale(size[0] / 2, size[1] / 2, size[2] / 2);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 /** Each instance owns its resources; dispose with the containing scene. */
 export function garmentModel(definition: GarmentDefinition) {
   const root = new THREE.Group();
@@ -123,14 +143,16 @@ export function garmentModel(definition: GarmentDefinition) {
     const geometry =
       shape.kind === "box"
         ? new THREE.BoxGeometry(...shape.size)
-        : shape.kind === "taper"
-          ? new THREE.CylinderGeometry(
-              shape.top,
-              shape.bottom,
-              shape.height,
-              12,
-            )
-          : new THREE.SphereGeometry(1, 12, 8);
+        : shape.kind === "rock"
+          ? rockGeometry(shape.size, shape.seed)
+          : shape.kind === "taper"
+            ? new THREE.CylinderGeometry(
+                shape.top,
+                shape.bottom,
+                shape.height,
+                12,
+              )
+            : new THREE.SphereGeometry(1, 12, 8);
     const mesh = new THREE.Mesh(geometry, material);
     if (shape.kind === "ellipsoid") mesh.scale.set(...shape.size);
     mesh.name = part.name;
@@ -145,49 +167,68 @@ export function garmentModel(definition: GarmentDefinition) {
 
 export const stoneGarment: GarmentDefinition = {
   materials: {
-    stone: { color: "#737785" },
-    edge: { color: "#434552" },
-    under: { color: "#b6b6b9" },
+    stone: { color: "#737785", roughness: 0.95 },
+    edge: { color: "#434552", roughness: 0.95 },
+    under: { color: "#b6b6b9", roughness: 0.95 },
   },
+  // Loose boulders piled around the torso rather than fitted plates.
   parts: [
     {
       name: "stone-torso",
       section: "base",
       material: "edge",
-      shape: { kind: "box", size: [0.57, 0.55, 0.4] },
+      shape: { kind: "rock", size: [0.58, 0.58, 0.42], seed: 0 },
       position: [0, 0, 0],
+      rotation: [0.05, 0.2, -0.04],
     },
     ...[-1, 1].flatMap((side): GarmentPart[] => [
       {
         name: `stone-plate-${side}`,
         section: "base",
         material: "stone",
-        shape: { kind: "box", size: [0.27, 0.42, 0.1] },
-        position: [side * 0.15, 0.04, 0.24],
-        rotation: [0, side * -0.12, side * 0.07],
+        shape: { kind: "rock", size: [0.3, 0.44, 0.24], seed: side + 2 },
+        position: [side * 0.15, 0.05, 0.18],
+        rotation: [side * 0.08, side * -0.22, side * 0.11],
+      },
+      {
+        name: `stone-chip-${side}`,
+        section: "decoration",
+        material: "edge",
+        shape: { kind: "rock", size: [0.19, 0.17, 0.19], seed: side + 4 },
+        position: [side * 0.27, 0.23, 0.2],
+        rotation: [side * 0.3, side * 0.4, side * -0.25],
       },
       {
         name: `stone-shoulder-${side}`,
         section: "sleeves",
         material: "stone",
-        shape: { kind: "box", size: [0.28, 0.24, 0.34] },
-        position: [side * 0.34, 0.2, 0],
-        rotation: [0, 0, side * -0.15],
+        shape: { kind: "rock", size: [0.32, 0.28, 0.38], seed: side + 6 },
+        position: [side * 0.34, 0.21, 0],
+        rotation: [side * 0.1, side * 0.3, side * -0.22],
       },
       {
         name: `stone-sleeve-${side}`,
         section: "sleeves",
         material: "under",
-        shape: { kind: "ellipsoid", size: [0.1, 0.17, 0.11] },
+        shape: { kind: "rock", size: [0.21, 0.35, 0.23], seed: side + 8 },
         position: [side * 0.37, 0.02, 0.02],
+        rotation: [side * -0.12, side * 0.5, side * 0.14],
       },
       {
         name: `stone-waist-${side}`,
         section: "belt",
         material: "stone",
-        shape: { kind: "box", size: [0.29, 0.16, 0.46] },
+        shape: { kind: "rock", size: [0.32, 0.2, 0.5], seed: side + 10 },
         position: [side * 0.15, -0.23, 0],
-        rotation: [0, 0, side * 0.06],
+        rotation: [side * -0.06, side * 0.18, side * 0.1],
+      },
+      {
+        name: `stone-hip-${side}`,
+        section: "belt",
+        material: "edge",
+        shape: { kind: "rock", size: [0.17, 0.16, 0.18], seed: side + 12 },
+        position: [side * 0.26, -0.31, 0.19],
+        rotation: [side * 0.22, side * -0.35, side * 0.3],
       },
     ]),
   ],

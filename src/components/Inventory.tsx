@@ -27,15 +27,22 @@ export function ItemPicture({ id }: { id: ItemId }) {
   const Icon = icons[ITEMS[id].icon];
   if (id === "lava_hat") return (
     <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
-      <path d="M13 55Q12 20 40 20Q68 20 67 55L72 66H8Z" fill="#383440" stroke="#72606a" strokeWidth="3" />
-      <path d="M25 30L32 44L25 58M53 29L47 46L55 57" fill="none" stroke="#ffad44" strokeWidth="5" />
-      <path d="M35 30L42 14L47 31Z" fill="#ff7626" />
+      <path d="M35 26L41 9L46 27Z" fill="#ffc266" />
+      <path d="M14 56Q13 21 40 21Q67 21 66 56Z" fill="#3a3038" />
+      <path d="M40 22L35 34L45 43L42 56M35 34L23 37L19 52M45 43L57 44L61 54" fill="none" stroke="#ffad44" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="29" cy="27" r="2.4" fill="#ff8b33" />
+      <circle cx="53" cy="33" r="2.2" fill="#ff8b33" />
+      <path d="M7 54H73L71 68H9Z" fill="#3a3038" />
+      <path d="M11 62H69V65H11Z" fill="#ff8b33" />
+      <path d="M15 57H26V64H15ZM33 56H40V64H33ZM47 57H58V64H47Z" fill="#ffc266" />
     </svg>
   );
   if (id === "stone_armor") return (
-    <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
-      <path d="M23 14L8 21L5 38L18 43L18 68H62V43L75 38L72 21L57 14L48 22H32Z" fill="#777783" stroke="#434552" strokeWidth="4" />
-      <path d="M40 25V61M23 50H58M20 18L25 35L8 39M60 18L55 35L73 39" fill="none" stroke="#434552" strokeWidth="4" />
+    <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true" strokeLinejoin="round">
+      <path d="M19 24L30 20L35 32L29 45L15 43L9 32Z" fill="#5f6270" stroke="#434552" strokeWidth="3" />
+      <path d="M61 24L50 20L45 32L51 45L65 43L71 32Z" fill="#5f6270" stroke="#434552" strokeWidth="3" />
+      <path d="M28 22L40 17L53 23L58 40L54 53L57 68L40 72L23 68L26 53L22 40Z" fill="#777783" stroke="#434552" strokeWidth="3" />
+      <path d="M40 17L37 37L48 46L54 53M37 37L25 43L26 53M48 46L45 61L40 72" fill="none" stroke="#434552" strokeWidth="2.5" />
     </svg>
   );
   if (id === "royal-crown")
