@@ -6,6 +6,7 @@ export const CHESTS = {
   "stone-giant-treasure": { opening: "direct", reward: 0, location: { world: "volcano" }, items: ["lava_hat", "stone_armor"] },
   glade: { opening: "quiz", reward: 5, location: null },
   "volcano-01": { opening: "quiz", reward: 5, location: { world: "volcano" }, pictureQuiz: "addition" },
+  "south-fire-shield": { opening: "quiz", reward: 5, location: null, pictureQuiz: "addition", items: ["fire-shield"] },
   south: { opening: "quiz", reward: 5, location: null },
   "butterfly-01": { opening: "direct", reward: 10, location: null },
   "butterfly-02": { opening: "direct", reward: 10, location: null },

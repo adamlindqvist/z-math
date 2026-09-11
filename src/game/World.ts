@@ -24,6 +24,7 @@ import { Chest } from "./entities/Chest";
 import { NPC } from "./entities/NPC";
 import { Collectible } from "./entities/Collectible";
 import { gameStore } from "../store/gameStore";
+export const FIRE_SHIELD_CHEST_POSITION = gladePosition(-5, 18);
 export class World implements Area {
   spawn = gladePosition(-6.2, 2.9);
   cameraMode = "glade" as const;
@@ -74,6 +75,10 @@ export class World implements Area {
               },
               ...gladePosition(3.5, 23),
             },
+            {
+              target: { kind: "chest" as const, id: "south-fire-shield" as const, label: state.chests["south-fire-shield"] ? "Titta i kistan" : "Öppna" },
+              ...FIRE_SHIELD_CHEST_POSITION,
+            },
           ]),
       {
         target: "npc" as const,
@@ -116,6 +121,7 @@ export class World implements Area {
   );
   private volcanoPortal = buildVolcanoPortal(this.root, this.collision, VOLCANO_ENTRANCE);
   bokoblin = new Bokoblin(gameStore.getState().bridgeUnlocked);
+  fireShieldChest = new Chest(gameStore.getState().chests["south-fire-shield"]);
   southChest = new Chest(gameStore.getState().chests.south);
   chest = new Chest(gameStore.getState().chests.glade);
   secrets = BUTTERFLY_SECRETS.map((definition) => ({
@@ -141,6 +147,7 @@ export class World implements Area {
   private chests = [
     { id: "glade" as const, chest: this.chest },
     { id: "south" as const, chest: this.southChest },
+    { id: "south-fire-shield" as const, chest: this.fireShieldChest },
     ...this.secrets.map(({ definition, chest }) => ({
       id: definition.chestId,
       chest,
@@ -194,6 +201,10 @@ export class World implements Area {
     this.chest.root.position.set(gladeDistance(5.6), 0, gladeDistance(-3.7));
     this.npc.root.position.set(gladeDistance(-3.5), 0, gladeDistance(1.3));
     this.root.add(this.southChest.root, this.bokoblin.root);
+    this.fireShieldChest.root.name = "south-fire-shield-chest";
+    this.fireShieldChest.root.position.set(FIRE_SHIELD_CHEST_POSITION.x, 0, FIRE_SHIELD_CHEST_POSITION.z);
+    this.root.add(this.fireShieldChest.root);
+    this.collision.add(FIRE_SHIELD_CHEST_POSITION.x, FIRE_SHIELD_CHEST_POSITION.z, 0.56, 0.41);
     this.collision.dynamic = [
       ...this.rocks.flatMap((rock) => rock.obstacle()),
       ...(!gameStore.getState().bridgeUnlocked
@@ -677,6 +688,7 @@ export class World implements Area {
         })),
     ];
     this.bokoblin.update(dt, state.bridgeUnlocked, !!state.overlay);
+    this.fireShieldChest.update(dt, state.chests["south-fire-shield"] && !(state.activeChest === "south-fire-shield" && state.overlay === "quiz"));
     this.southChest.update(
       dt,
       state.chests.south &&

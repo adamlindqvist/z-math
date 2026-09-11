@@ -73,7 +73,7 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 export const RUPEE_IDS = [
   ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee",
@@ -236,6 +236,7 @@ export function parseSave(raw: string | null): Progress {
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
+      (p.chests["south-fire-shield"] && (!p.bridgeUnlocked || !p.items.includes("fire-shield"))) ||
       typeof p.talkedToNpc !== "boolean" ||
       !Array.isArray(p.collected) ||
       p.collected.some(
