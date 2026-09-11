@@ -45,6 +45,71 @@ export function ItemPicture({ id }: { id: ItemId }) {
       <path d="M40 17L37 37L48 46L54 53M37 37L25 43L26 53M48 46L45 61L40 72" fill="none" stroke="#434552" strokeWidth="2.5" />
     </svg>
   );
+  if (id === "green-clothes" || id === "blue-tunic")
+    return (
+      <svg
+        viewBox="0 0 80 80"
+        className="mx-auto size-16"
+        aria-hidden="true"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path
+          d="M27 16L18 21L8 36L18 43L23 36L20 68H60L57 36L62 43L72 36L62 21L53 16L47 21H33Z"
+          fill={id === "blue-tunic" ? "#487344" : "#36964a"}
+          stroke="#225f38"
+          strokeWidth="3"
+        />
+        <path
+          d="M18 22L8 36L18 43L25 32L24 20ZM62 22L72 36L62 43L55 32L56 20Z"
+          fill="#fff1d4"
+          stroke="#d7b98c"
+          strokeWidth="3"
+        />
+        <path
+          d="M27 16L33 21L40 31L47 21L53 16L48 13L40 18L32 13Z"
+          fill="#fff1d4"
+          stroke="#225f38"
+          strokeWidth="2.5"
+        />
+        <path
+          d="M22 50H58L59 59H21Z"
+          fill="#805033"
+          stroke="#5d3826"
+          strokeWidth="2.5"
+        />
+        <path
+          d="M35 49H45V60H35Z"
+          fill="#efbd45"
+          stroke="#8a6224"
+          strokeWidth="2.5"
+        />
+        <path d="M38 52H42V57H38Z" fill="#805033" />
+        <path
+          d="M29 27V46M51 27V46"
+          fill="none"
+          stroke="#54ae63"
+          strokeWidth="2"
+        />
+        <path
+          d="M25 64H55"
+          fill="none"
+          stroke="#267347"
+          strokeWidth="2"
+          strokeDasharray="3 3"
+        />
+        {id === "blue-tunic" && (
+          <>
+            <path d="M30 13Q40 19 50 13Q65 17 73 32L63 40L55 35L47 41L40 28L33 41L25 35L17 40L7 32Q15 17 30 13Z" fill="#244d35" stroke="#183d2b" strokeWidth="2.5" />
+            <path d="M40 20Q28 28 40 35Q51 25 40 20Z" fill="#efbd45" stroke="#8a6224" strokeWidth="1.5" />
+            <path d="M39 31L41 24" stroke="#8a6224" strokeWidth="1.5" />
+            <rect x="48" y="51" width="17" height="20" rx="5" fill="#71452c" stroke="#513321" strokeWidth="2" />
+            <path d="M48 52H65V57Q57 64 48 57Z" fill="#97623d" stroke="#513321" strokeWidth="2" />
+            <circle cx="56.5" cy="59" r="2" fill="#efbd45" />
+          </>
+        )}
+      </svg>
+    );
   if (id === "royal-crown")
     return (
       <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
@@ -93,7 +158,7 @@ export function ItemPicture({ id }: { id: ItemId }) {
   return (
     <span className="relative mx-auto block size-16" aria-hidden="true">
       <Icon
-        className={`size-16 ${fire ? "text-[#b64925]" : id === "blue-tunic" ? "text-forest fill-forest" : id.startsWith("wooden-") ? "text-[#a36c38]" : "text-forest"}`}
+        className={`size-16 ${fire ? "text-[#b64925]" : id.startsWith("wooden-") ? "text-[#a36c38]" : "text-forest"}`}
       />
       {fire && (
         <Flame className="absolute -right-2 -bottom-1 size-8 rounded-full bg-[#fff0b8] text-[#da5d1f]" />

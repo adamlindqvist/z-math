@@ -5,6 +5,9 @@ type Shape =
   | { kind: "box"; size: Vector }
   | { kind: "ellipsoid"; size: Vector }
   | { kind: "rock"; size: Vector; seed: number }
+  | { kind: "collar"; side: number }
+  | { kind: "cape" }
+  | { kind: "leaf" }
   | { kind: "taper"; top: number; bottom: number; height: number };
 export interface GarmentPart {
   name: string;
@@ -47,12 +50,28 @@ const base: GarmentPart = {
   shape: { kind: "taper", top: 0.27, bottom: 0.36, height: 0.57 },
   position: [0, 0, 0],
 };
+const shirtAndCollar: GarmentPart[] = [
+  {
+    name: "undershirt",
+    section: "base",
+    material: "under",
+    shape: { kind: "ellipsoid", size: [0.07, 0.065, 0.018] },
+    position: [0, 0.225, 0.285],
+  },
+  ...[-1, 1].map((side): GarmentPart => ({
+    name: `collar-${side}`,
+    section: "collar",
+    material: "under",
+    shape: { kind: "collar", side },
+    position: [0, 0, 0],
+  })),
+];
 const belt: GarmentPart[] = [
   {
     name: "belt",
     section: "belt",
     material: "leather",
-    shape: { kind: "taper", top: 0.325, bottom: 0.34, height: 0.115 },
+    shape: { kind: "taper", top: 0.37, bottom: 0.38, height: 0.115 },
     position: [0, -0.13, 0],
   },
   {
@@ -73,15 +92,17 @@ const belt: GarmentPart[] = [
 export const starterGarment: GarmentDefinition = {
   materials: {
     cloth: { color: "#36964a" },
-    under: { color: "#805033" },
+    under: { color: "#fff1d4" },
     leather: { color: "#805033" },
     gold: { color: "#efbd45", roughness: 0.4 },
   },
-  parts: [base, ...sleeves("cloth"), ...belt],
+  parts: [base, ...sleeves("cloth"), ...shirtAndCollar, ...belt],
 };
 export const forestGarment: GarmentDefinition = {
   materials: {
     cloth: { color: "#487344" },
+    cape: { color: "#244d35" },
+    flap: { color: "#97623d" },
     under: { color: "#fff1d4" },
     leather: { color: "#71452c" },
     gold: { color: "#cda65a", roughness: 0.5, metalness: 0.25 },
@@ -89,24 +110,105 @@ export const forestGarment: GarmentDefinition = {
   parts: [
     base,
     ...sleeves("cloth"),
-    {
-      name: "undershirt",
-      section: "base",
-      material: "under",
-      shape: { kind: "box", size: [0.19, 0.27, 0.055] },
-      position: [0, 0.155, 0.25],
-    },
-    ...[-1, 1].map((side): GarmentPart => ({
-      name: `collar-${side}`,
-      section: "collar",
-      material: "under",
-      shape: { kind: "box", size: [0.115, 0.19, 0.065] },
-      position: [side * 0.105, 0.205, 0.255],
-      rotation: [0, 0, side * -0.4],
-    })),
+    ...shirtAndCollar,
     ...belt,
+    {
+      name: "leaf-cape",
+      section: "accessories",
+      material: "cape",
+      shape: { kind: "cape" },
+      position: [0, 0, 0],
+    },
+    {
+      name: "leaf-clasp",
+      section: "decoration",
+      material: "gold",
+      shape: { kind: "leaf" },
+      position: [0, 0.21, 0.335],
+      rotation: [0, 0, -0.4],
+    },
+    {
+      name: "belt-pouch",
+      section: "accessories",
+      material: "leather",
+      shape: { kind: "ellipsoid", size: [0.105, 0.12, 0.07] },
+      position: [0.27, -0.23, 0.29],
+    },
+    {
+      name: "pouch-flap",
+      section: "accessories",
+      material: "flap",
+      shape: { kind: "ellipsoid", size: [0.108, 0.055, 0.025] },
+      position: [0.27, -0.17, 0.348],
+    },
+    {
+      name: "pouch-button",
+      section: "decoration",
+      material: "gold",
+      shape: { kind: "ellipsoid", size: [0.016, 0.016, 0.009] },
+      position: [0.27, -0.192, 0.373],
+    },
   ],
 };
+
+/** A short shoulder cape with seven leaf tips and an opening at the throat. */
+function capeGeometry() {
+  const positions: number[] = [], indices: number[] = [];
+  const segments = 56;
+  for (let row = 0; row < 3; row++) {
+    for (let i = 0; i <= segments; i++) {
+      const angle = 0.23 + (i / segments) * (Math.PI * 2 - 0.46);
+      const tip = Math.sin((i / segments) * Math.PI * 7) ** 2;
+      const radius = row === 0 ? 0.205 : row === 1 ? 0.35 : 0.46 + tip * 0.025;
+      const y = row === 0 ? 0.33 : row === 1 ? 0.34 : 0.15 - tip * 0.07;
+      positions.push(Math.sin(angle) * radius, y, Math.cos(angle) * radius);
+      if (row < 2 && i < segments) {
+        const a = row * (segments + 1) + i, b = a + segments + 1;
+        indices.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function leafGeometry() {
+  const outline = new THREE.Shape();
+  outline.moveTo(0, -0.06);
+  outline.quadraticCurveTo(-0.065, 0, 0, 0.075);
+  outline.quadraticCurveTo(0.065, 0, 0, -0.06);
+  return new THREE.ExtrudeGeometry(outline, {
+    depth: 0.012, bevelEnabled: true, bevelSize: 0.003,
+    bevelThickness: 0.003, bevelSegments: 1, curveSegments: 6, steps: 1,
+  });
+}
+
+/** Thin, rounded collar tips draped over the tapered tunic. */
+function collarGeometry(side: number) {
+  const outline = new THREE.Shape();
+  outline.moveTo(side * 0.012, 0.275);
+  outline.quadraticCurveTo(side * 0.07, 0.288, side * 0.14, 0.264);
+  outline.quadraticCurveTo(side * 0.13, 0.215, side * 0.095, 0.172);
+  outline.quadraticCurveTo(side * 0.085, 0.161, side * 0.075, 0.177);
+  outline.quadraticCurveTo(side * 0.035, 0.235, side * 0.012, 0.275);
+  const geometry = new THREE.ExtrudeGeometry(outline, {
+    depth: 0.009,
+    bevelEnabled: false,
+    steps: 1,
+    curveSegments: 4,
+  });
+  const vertices = geometry.getAttribute("position");
+  for (let i = 0; i < vertices.count; i++) {
+    const x = vertices.getX(i), y = vertices.getY(i);
+    const radius = 0.27 + ((0.285 - y) / 0.57) * 0.09;
+    vertices.setZ(i, vertices.getZ(i) + Math.sqrt(radius * radius - x * x) + 0.025);
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 /** A chipped boulder filling `size`, shaped like the stone giant's blocks. */
 function rockGeometry(size: Vector, seed: number) {
@@ -136,13 +238,22 @@ export function garmentModel(definition: GarmentDefinition) {
     if (!material) {
       const spec = definition.materials[part.material];
       if (!spec) throw new Error(`Unknown garment material: ${part.material}`);
-      material = new THREE.MeshStandardMaterial({ roughness: 0.8, ...spec });
+      material = new THREE.MeshStandardMaterial({
+        roughness: 0.8, ...spec,
+        side: part.shape.kind === "cape" ? THREE.DoubleSide : THREE.FrontSide,
+      });
       materials.set(part.material, material);
     }
     const shape = part.shape;
     const geometry =
       shape.kind === "box"
         ? new THREE.BoxGeometry(...shape.size)
+        : shape.kind === "cape"
+          ? capeGeometry()
+        : shape.kind === "leaf"
+          ? leafGeometry()
+        : shape.kind === "collar"
+          ? collarGeometry(shape.side)
         : shape.kind === "rock"
           ? rockGeometry(shape.size, shape.seed)
           : shape.kind === "taper"

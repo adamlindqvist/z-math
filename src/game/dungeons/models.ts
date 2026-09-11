@@ -63,6 +63,19 @@ export function symbol(
 }
 // Palette shared by the entrance and every room. No textures or extra lights.
 export const THEMES = {
+  stone: {
+    stone: "#c2b69e",
+    floor: "#c9bea7",
+    tiles: ["#e0d6bf", "#d5cab2"],
+    band: "#a69678",
+    water: "#c9bea7",
+    foam: "#efe4cb",
+    gate: "#88785f",
+    track: "#9e9078",
+    block: "#766e5f",
+    accent: "#ffe0a0",
+    opening: "#493e32",
+  },
   fire: {
     stone: "#635052",
     floor: "#403b43",
@@ -113,7 +126,7 @@ export function wave(
   ribbon.castShadow = false;
   return ribbon;
 }
-export function waterDecoration(parent: THREE.Group, theme: DungeonTheme) {
+export function waterDecoration(parent: THREE.Group, theme: "water") {
   const palette = THEMES[theme];
   const water = material(palette.water, 0.35),
     foam = material(palette.foam);
@@ -145,8 +158,74 @@ export function waterDecoration(parent: THREE.Group, theme: DungeonTheme) {
     }
   return decoration;
 }
+// A carved diamond rosette, deliberately distinct from the three puzzle symbols.
+function stoneRosette(parent: THREE.Group, trim: THREE.Material, inset: THREE.Material) {
+  box(parent, trim, 0, 0, 0, 0.46, 0.46, 0.045).rotation.z = Math.PI / 4;
+  box(parent, inset, 0, 0, 0.03, 0.28, 0.28, 0.035).rotation.z = Math.PI / 4;
+  ball(parent, trim, 0, 0, 0.065, 0.065, 0.065, 0.025);
+}
+
+// Low relief stays along the existing walls, clear of doors and puzzle tracks.
+function stoneDecoration(parent: THREE.Group) {
+  const group = new THREE.Group();
+  group.name = "stone-decoration";
+  parent.add(group);
+  const stone = material(THEMES.stone.stone);
+  const trim = material(THEMES.stone.band);
+  const pale = material(THEMES.stone.tiles[0]);
+  const green = material("#879576");
+  const moss = material("#7d8962");
+  const glow = material("#ffe0a0");
+  glow.emissive.set("#ffd28a");
+  glow.emissiveIntensity = 0.45;
+  for (const side of [-1, 1]) {
+    // A contrasting mosaic border frames the floor without crossing the tracks.
+    box(group, trim, side * 5.62, 0.027, 0, 0.32, 0.025, 10.6);
+    for (let z = -4.8; z <= 4.8; z += 0.8) {
+      const tile = box(group, green, side * 5.62, 0.047, z, 0.16, 0.018, 0.16);
+      tile.rotation.y = Math.PI / 4;
+    }
+    for (const z of [-3.8, 0, 3.8]) {
+      box(group, stone, side * 5.83, 0.51, z, 0.2, 1.02, 0.42);
+      box(group, trim, side * 5.8, 1.02, z, 0.26, 0.14, 0.58);
+      box(group, pale, side * 5.8, 0.12, z, 0.26, 0.2, 0.56);
+    }
+    for (const z of [-2, 2]) {
+      const panel = new THREE.Group();
+      panel.position.set(side * 5.78, 0.52, z);
+      panel.rotation.y = -side * Math.PI / 2;
+      group.add(panel);
+      box(panel, trim, 0, 0, 0, 1.18, 0.66, 0.045);
+      box(panel, pale, 0, 0, 0.035, 1.04, 0.54, 0.025);
+      const relief = new THREE.Group();
+      relief.position.z = 0.075;
+      panel.add(relief);
+      stoneRosette(relief, trim, green);
+      // Small enclosed amber lamps, without additional lights or flame motifs.
+      box(panel, trim, 0, 0.47, 0.04, 0.3, 0.08, 0.2);
+      ball(panel, glow, 0, 0.65, 0.06, 0.11, 0.16, 0.1);
+      box(panel, trim, 0, 0.82, 0.04, 0.26, 0.07, 0.2);
+    }
+    for (const z of [-4.8, 2.9]) {
+      ball(group, moss, side * 5.77, 0.08, z, 0.13, 0.045, 0.3);
+      ball(group, moss, side * 5.8, 0.18, z + 0.12, 0.04, 0.15, 0.16);
+    }
+    // Masonry joints and alternating inlays on the end walls leave both exits clear.
+    for (const x of [-4.5, -3, 3, 4.5]) {
+      box(group, trim, x, 0.34, side * 5.6, 0.035, 0.52, 0.025);
+      box(group, green, x + 0.35, 0.53, side * 5.58, 0.42, 0.11, 0.035);
+      box(group, trim, x, 0.029, side * 5.5, 1.3, 0.03, 0.26);
+      box(group, pale, x, 0.049, side * 5.5, 0.2, 0.015, 0.16);
+    }
+  }
+  return group;
+}
 export function roomDecoration(parent: THREE.Group, theme: DungeonTheme, leftOpening = false, roomId = "light") {
+  if (theme === "stone") return stoneDecoration(parent);
   if (theme === "water") return waterDecoration(parent, theme);
+  return fireDecoration(parent, leftOpening, roomId);
+}
+function fireDecoration(parent: THREE.Group, leftOpening: boolean, roomId: string) {
   const group = new THREE.Group();
   group.name = "fire-decoration";
   parent.add(group);
@@ -321,7 +400,53 @@ export function portal(
   }
   box(g, stone, 0, 1.93, 0, 2.45, 0.45, 0.65);
   if (theme === "water") wave(g, foam, 0, 1.96, 0.36, 0.8);
-  else flame(g, 0, 1.73, 0.36, 0.42);
+  else if (theme === "fire") flame(g, 0, 1.73, 0.36, 0.42);
+  else {
+    const details = new THREE.Group();
+    details.name = "stone-portal-decoration";
+    g.add(details);
+    box(details, band, 0, 2.18, 0, 2.6, 0.12, 0.72);
+    const moss = material("#7d8962");
+    const green = material("#879576");
+    for (const side of [-1, 1]) {
+      // Recessed column fluting and stacked masonry add depth to the plain frame.
+      for (const offset of [-0.12, 0.12])
+        box(details, band, side * 0.95 + offset, 1.02, 0.282, 0.035, 1.08, 0.025);
+      for (const y of [0.55, 1.25])
+        box(details, foam, side * 0.95, y, 0.3, 0.45, 0.045, 0.035);
+    }
+    if (filled) {
+      const facade = new THREE.Group();
+      facade.name = "stone-entrance-pediment";
+      details.add(facade);
+      const triangle = new THREE.Shape();
+      triangle.moveTo(-1.3, 0);
+      triangle.lineTo(0, 0.78);
+      triangle.lineTo(1.3, 0);
+      triangle.closePath();
+      mesh(new THREE.ExtrudeGeometry(triangle, { depth: 0.55, bevelEnabled: false }), stone, facade, 0, 2.24, -0.27);
+      for (const side of [-1, 1]) {
+        const coping = box(facade, band, side * 0.65, 2.66, 0, 1.55, 0.12, 0.65);
+        coping.rotation.z = -side * Math.atan2(0.78, 1.3);
+        // Ivy hugs the outer face of each existing pillar.
+        for (let i = 0; i < 4; i++) {
+          const leaf = ball(facade, moss, side * (1.1 + (i % 2) * 0.045), 0.42 + i * 0.22, 0.32, 0.09, 0.15, 0.035);
+          leaf.rotation.z = side * (i % 2 ? 0.5 : -0.4);
+        }
+      }
+      const crest = new THREE.Group();
+      crest.position.set(0, 2.55, 0.32);
+      crest.scale.setScalar(0.75);
+      facade.add(crest);
+      stoneRosette(crest, band, green);
+      for (const x of [-0.72, -0.36, 0, 0.36, 0.72])
+        box(facade, foam, x, 1.97, 0.34, 0.13, 0.13, 0.035).rotation.z = Math.PI / 4;
+    }
+    for (const side of [-1, 1]) {
+      box(details, band, side * 0.95, 0.1, 0, 0.6, 0.2, 0.65);
+      ball(details, moss, side * 1.09, 0.23, 0.29, 0.09, 0.14, 0.035);
+    }
+  }
   box(g, material(palette.tiles[0]), 0, 0.04, 0.3, 1.4, 0.08, 0.9);
   if (filled) {
     const surface = new THREE.Mesh(
@@ -338,6 +463,53 @@ export function portal(
       for (const side of [-1, 1]) flame(g, side * 0.95, 1.76, 0, 0.42);
       return g;
     }
+    if (theme === "stone") {
+      const shimmer = new THREE.Group();
+      shimmer.name = "stone-portal-shimmer";
+      g.add(shimmer);
+      // A soft radial glow reads as a portal, without textures or extra lights.
+      const glow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.68), new THREE.ShaderMaterial({
+        vertexShader: `varying vec2 portalUv;
+          void main() {
+            portalUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }`,
+        fragmentShader: `varying vec2 portalUv;
+          void main() {
+            float radius = length((portalUv - vec2(0.5, 0.47)) * vec2(2.1, 1.7));
+            float light = 1.0 - smoothstep(0.05, 0.95, radius);
+            vec3 color = mix(vec3(0.12, 0.105, 0.07), vec3(0.92, 0.69, 0.29), light);
+            gl_FragColor = vec4(color, 1.0);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }`,
+        side: THREE.DoubleSide,
+      }));
+      glow.position.set(0, 0.89, 0.055);
+      glow.castShadow = false;
+      shimmer.add(glow);
+      const light = new THREE.MeshBasicMaterial({ color: "#fff1bd" });
+      const gold = new THREE.MeshBasicMaterial({ color: "#e8c778" });
+      const crest = new THREE.Group();
+      crest.position.set(0, 0.97, 0.12);
+      shimmer.add(crest);
+      // An open diamond echoes the facade rosette without resembling a solid door.
+      for (const side of [-1, 1]) {
+        for (const top of [-1, 1]) {
+          const edge = box(crest, light, side * 0.16, top * 0.16, 0, 0.45, 0.025, 0.018);
+          edge.rotation.z = -side * top * Math.PI / 4;
+        }
+      }
+      box(crest, gold, 0, 0, 0.01, 0.15, 0.15, 0.02).rotation.z = Math.PI / 4;
+      for (const [sx, sy, size] of [[-0.43, 1.43, 0.055], [0.38, 1.27, 0.04], [-0.36, 0.53, 0.04], [0.4, 0.36, 0.06], [0.12, 1.58, 0.035]]) {
+        box(shimmer, light, sx, sy, 0.1, size * 0.45, size * 2, 0.01);
+        box(shimmer, light, sx, sy, 0.1, size * 1.5, size * 0.45, 0.01);
+      }
+      return g;
+    }
+    const waterDetails = new THREE.Group();
+    waterDetails.name = "water-portal-decoration";
+    g.add(waterDetails);
     const bubbleGeometry = new THREE.TorusGeometry(1, 0.16, 4, 12);
     const bubbleMaterial = new THREE.MeshBasicMaterial({ color: palette.foam });
     for (const [bx, by, radius] of [
@@ -347,11 +519,11 @@ export function portal(
       [0.43, 0.53, 0.08],
       [-0.4, 0.35, 0.12],
     ]) {
-      const bubble = mesh(bubbleGeometry, bubbleMaterial, g, bx, by, 0.07);
+      const bubble = mesh(bubbleGeometry, bubbleMaterial, waterDetails, bx, by, 0.07);
       bubble.scale.setScalar(radius);
       bubble.castShadow = false;
     }
-    wave(g, foam, 0, 0.18, 0.08, 1);
+    wave(waterDetails, foam, 0, 0.18, 0.08, 1);
   }
   return g;
 }

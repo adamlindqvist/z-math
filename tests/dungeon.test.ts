@@ -2,7 +2,7 @@ import { World } from "../src/game/World";
 import { Player } from "../src/game/Player";
 import type { Input } from "../src/game/Input";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Box3, Mesh, Scene, Vector3 } from "three";
+import { Box3, Group, Mesh, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import {
   DUNGEONS,
@@ -10,6 +10,8 @@ import {
   pushedPosition,
   TRACK_X,
 } from "../src/game/dungeons/definitions";
+import { portal } from "../src/game/dungeons/models";
+import { disposeTree } from "../src/game/Area";
 import { DungeonArea } from "../src/game/dungeons/DungeonArea";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { generateTempleQuestion } from "../src/math/questionGenerators";
@@ -61,12 +63,12 @@ function reachStones(s: Store) {
 }
 
 beforeEach(() => gameStore.reset());
-describe("Vattentemplet rules and persistence", () => {
-  it("keeps the saved dungeon identity with its public water theme", () => {
+describe("Gläntans tempel rules and persistence", () => {
+  it("keeps the saved dungeon identity with its neutral stone theme", () => {
     expect(DUNGEONS[0]).toMatchObject({
       id: "moss",
-      name: "Vattentemplet",
-      theme: "water",
+      name: "Gläntans tempel",
+      theme: "stone",
     });
     expect(DUNGEONS[0].rooms.map((room) => room.name)).toEqual([
       "Låsta porten",
@@ -231,11 +233,13 @@ describe("Vattentemplet rules and persistence", () => {
 });
 
 describe("temple world integration", () => {
-  it("keeps water decorations outside the playable center in every room", () => {
+  it.each(["stone", "water"] as const)("keeps %s decorations outside the playable center in every room", (theme) => {
     for (const definition of DUNGEONS[0].rooms) {
-      const area = new DungeonArea(DUNGEONS[0], definition);
-      const decoration = area.root.getObjectByName("water-decoration")!;
+      const area = new DungeonArea({ ...DUNGEONS[0], theme }, definition);
+      const decoration = area.root.getObjectByName(`${theme}-decoration`)!;
       expect(decoration).toBeDefined();
+      expect(area.root.getObjectByName("fire-decoration")).toBeUndefined();
+      expect(area.root.getObjectByName(`${theme === "stone" ? "water" : "stone"}-decoration`)).toBeUndefined();
       decoration.updateWorldMatrix(true, true);
       decoration.traverse((object) => {
         if (!(object instanceof Mesh)) return;
@@ -251,6 +255,35 @@ describe("temple world integration", () => {
       expect(area.collision.free(-5.3, 0)).toBe(true);
       expect(area.collision.free(0, 4.7)).toBe(true);
       area.dispose();
+    }
+  });
+
+  it("keeps the water entrance reusable without adding water to the stone entrance", () => {
+    for (const theme of ["stone", "water"] as const) {
+      const root = new Group();
+      const entrance = portal(root, 0, 0, theme, true);
+      expect(entrance.getObjectByName(`${theme}-portal-decoration`)).toBeDefined();
+      expect(entrance.getObjectByName(`${theme === "stone" ? "water" : "stone"}-portal-decoration`)).toBeUndefined();
+      let bubbles = 0;
+      entrance.traverse((object) => {
+        if (object instanceof Mesh && object.geometry.type === "TorusGeometry") bubbles++;
+      });
+      expect(bubbles).toBe(theme === "water" ? 5 : 0);
+      expect(!!entrance.getObjectByName("stone-portal-shimmer")).toBe(theme === "stone");
+      const pediment = entrance.getObjectByName("stone-entrance-pediment");
+      expect(!!pediment).toBe(theme === "stone");
+      if (pediment) {
+        pediment.updateWorldMatrix(true, true);
+        pediment.traverse((object) => {
+          if (!(object instanceof Mesh)) return;
+          const bounds = new Box3().setFromObject(object);
+          expect(bounds.min.y > 1.7 || bounds.max.x < -0.7 || bounds.min.x > 0.7).toBe(true);
+        });
+      }
+      const roomDoor = portal(root, 0, 0, theme);
+      expect(roomDoor.getObjectByName("stone-entrance-pediment")).toBeUndefined();
+      expect(roomDoor.getObjectByName("stone-portal-shimmer")).toBeUndefined();
+      disposeTree(root);
     }
   });
 

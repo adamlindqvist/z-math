@@ -167,7 +167,7 @@ describe("castle shop", () => {
     player.setEquipment(s.getState().equipment);
     expect(player.root.getObjectByName("base-hat")!.visible).toBe(false);
     expect(player.root.getObjectByName("wood-shield")!.visible).toBe(false);
-    expect(player.model.body.getObjectByName("undershirt")).toBeUndefined();
+    expect(player.model.body.getObjectByName("undershirt")).toBeDefined();
     disposeTree(player.root);
   });
   it("selects nearby visible 3D goods and rejects distant or occluded taps", () => {

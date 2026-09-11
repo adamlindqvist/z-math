@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { Mesh } from "three";
-import { forestGarment, garmentModel } from "../src/items/garments";
+import { Mesh, MeshStandardMaterial } from "three";
+import {
+  forestGarment,
+  garmentModel,
+  starterGarment,
+} from "../src/items/garments";
 import { freshInventory } from "../src/items/definitions";
 import { itemModel } from "../src/items/models";
 import { heroModel, applyEquipment } from "../src/game/heroModel";
@@ -27,9 +31,20 @@ describe("garment composition", () => {
     applyEquipment(hero, freshInventory().equipment);
     expect(disposed).toHaveBeenCalledOnce();
     expect(worn.parent).toBeNull();
-    expect(hero.body.getObjectByName("undershirt")).toBeUndefined();
+    expect(hero.body.getObjectByName("undershirt")).toBeDefined();
     disposeTree(hero.root);
     disposeTree(display);
+  });
+  it("gives the starter clothes a shirt, collar and visible brown belt", () => {
+    const garment = garmentModel(starterGarment);
+    expect(garment.getObjectByName("undershirt")).toBeDefined();
+    expect(garment.getObjectByName("collar--1")).toBeDefined();
+    expect(garment.getObjectByName("collar-1")).toBeDefined();
+    const belt = garment.getObjectByName("belt") as Mesh;
+    expect((belt.material as MeshStandardMaterial).color.getHexString()).toBe(
+      "805033",
+    );
+    disposeTree(garment);
   });
   it("accepts extra accessory geometry without changing the hero and owns independent resources", () => {
     const custom = garmentModel({

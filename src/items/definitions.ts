@@ -59,7 +59,7 @@ export const ITEMS = {
     name: "Skogsäventyrarens tunika",
     garment: forestGarment,
     description:
-      "En enkel tunika för unga äventyrare. Grönt tyg, ljus underskjorta och ett brunt bälte.",
+      "En tunika för skogsäventyr! Lövkappa, gyllene lövspänne och en liten väska på bältet.",
     category: "cosmetic",
     equipSlot: "body",
     icon: "shirt",

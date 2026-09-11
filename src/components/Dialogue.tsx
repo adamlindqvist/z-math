@@ -169,7 +169,7 @@ export function Dialogue() {
           <Shield size={64} />
         </div>
         <h2>Bokoblinen vaktar bron</h2>
-        <p>Hitta svärdet och skölden i Vattentemplet!</p>
+        <p>Hitta svärdet och skölden i Gläntans tempel!</p>
       </Modal>
     );
   if (overlay === "pause" || overlay === "reset")

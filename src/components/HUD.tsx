@@ -49,7 +49,7 @@ export function HUD() {
             : hasBridgeEquipment(state)
               ? "Gå till bron. Skräm iväg Bokoblin!"
               : state.chests.glade
-                ? "Hitta svärd och sköld i Vattentemplet!"
+                ? "Hitta svärd och sköld i Gläntans tempel!"
                 : state.talkedToNpc
                   ? "Leta efter kistan!"
                   : "Prata med Zelda!";

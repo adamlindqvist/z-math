@@ -112,7 +112,7 @@ it("shares every equipment variant without sharing model resources", () => {
   expect(first.body.getObjectByName("undershirt")).toBeDefined();
   expect(second.body.getObjectByName("undershirt")).toBeUndefined();
   applyEquipment(first, freshInventory().equipment);
-  expect(first.body.getObjectByName("undershirt")).toBeUndefined();
+  expect(first.body.getObjectByName("undershirt")).toBeDefined();
   const resources = (model: ReturnType<typeof heroModel>) => {
     const set = new Set<unknown>();
     model.root.traverse((o) => {
