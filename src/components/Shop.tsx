@@ -63,7 +63,7 @@ export function ShopDialog() {
           trying={id && !equipped ? ITEMS[id].name : undefined}
         />
       }
-      className="pt-20! max-w-[760px]!"
+      className="max-w-[760px]!"
       actionRows={s.shopPurchased ? 2 : 1}
       action={
         s.shopPurchased ? (
