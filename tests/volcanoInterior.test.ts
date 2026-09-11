@@ -1,3 +1,4 @@
+import { completeRabbitQuest } from "./helpers/rabbits";
 import { afterEach, expect, it } from "vitest";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import { VolcanoArea } from "../src/game/VolcanoArea";
@@ -9,6 +10,7 @@ import { DungeonArea } from "../src/game/dungeons/DungeonArea";
 
 afterEach(() => gameStore.reset());
 it("requires the giant, opens the physical entrance, and saves the interior independently of temple rewards", () => {
+  completeRabbitQuest(gameStore);
   gameStore.travelTo({ world: "volcano" });
   const area = new VolcanoArea();
   area.update(0, 0);
@@ -33,6 +35,7 @@ it("requires the giant, opens the physical entrance, and saves the interior inde
 
   let raw = "";
   const s = createGameStore({ getItem: () => raw, setItem: (_k, v) => { raw = v; } });
+  completeRabbitQuest(s);
   s.travelTo({ world: "volcano" }); defeatGiant(s);
   s.travelTo({ world: "volcano-interior" });
   expect(parseSave(raw).location).toEqual({ world: "volcano-interior" });
@@ -40,6 +43,7 @@ it("requires the giant, opens the physical entrance, and saves the interior inde
   expect(parseSave(JSON.stringify(invalid)).location).toBeNull();
 });
 it("connects the hub paths and opens the great gate only after the temple reward", () => {
+  completeRabbitQuest(gameStore);
   gameStore.travelTo({ world: "volcano" }); defeatGiant(gameStore);
   gameStore.travelTo({ world: "volcano-interior" });
   const hub = new VolcanoInteriorArea();

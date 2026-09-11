@@ -1,3 +1,4 @@
+import { completeRabbitQuest } from "./helpers/rabbits";
 import { VOLCANO_ROCK_SECRET } from "../src/game/secrets/definitions";
 import { GameCamera } from "../src/game/Camera";
 import { VOLCANO_RUPEES } from "../src/game/volcanoLayout";
@@ -32,6 +33,7 @@ function quiz(s: Store, id: string) {
   }
 }
 function prepareVolcano(s: Store) {
+  completeRabbitQuest(s);
   s.grantItems(["temple-sword", "temple-shield"]);
   s.setTarget("bokoblin"); s.interact();
 }
@@ -192,8 +194,11 @@ describe("Vulkanvärlden", () => {
       disposeTree(interaction.arrow);
     }
   });
-  it("is available immediately and restricts adjacency", () => {
+  it("requires the rabbits and restricts adjacency", () => {
     const storage = memory(), s = createGameStore(storage);
+    s.travelTo({ world: "volcano" });
+    expect(s.getState().location).toBeNull();
+    prepareVolcano(s);
     s.travelTo({ world: "volcano" });
     expect(s.getState().location).toEqual({ world: "volcano" });
     const restored = createGameStore(storage);
@@ -237,7 +242,7 @@ describe("Vulkanvärlden", () => {
       volcano = new VolcanoArea(),
       interaction = new InteractionSystem(new Scene());
     try {
-      expect(world.passages().some((p) => p.destination?.world)).toBe(true);
+      expect(world.passages().some((p) => p.destination?.world)).toBe(false);
       prepareVolcano(gameStore);
       gameStore.close();
       gameStore.travelTo(null);

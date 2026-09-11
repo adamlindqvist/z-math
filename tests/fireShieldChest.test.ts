@@ -1,3 +1,4 @@
+import { completeRabbitQuest } from "./helpers/rabbits";
 import { afterEach, expect, it } from "vitest";
 import { Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
@@ -21,12 +22,13 @@ it("requires the bridge, allows retries and gives the shield and five rupees exa
   const s = createGameStore(storage);
   begin(s); expect(s.getState().overlay).toBeNull();
   unlock(s);
-  // Visiting the volcano never requires the new reward.
+  // The rabbit quest opens the volcano without requiring the shield chest.
+  completeRabbitQuest(s);
   s.travelTo({ world: "volcano" }); expect(s.getState().location?.world).toBe("volcano");
   begin(s); expect(s.getState().overlay).toBeNull();
   s.travelTo(null); begin(s);
   s.answer(-1); expect(s.getState().feedback).toBe("retry");
-  expect(s.getState().rupees).toBe(0);
+  expect(s.getState().rupees).toBe(10);
   s.replaceQuestion();
   s.answer(s.getState().question!.correctAnswer); s.finishQuiz();
   s.close();
@@ -41,7 +43,7 @@ it("requires the bridge, allows retries and gives the shield and five rupees exa
     if (i < 2) expect(s.getState().chests[id]).toBe(false);
   }
   expect(s.getState()).toMatchObject({
-    rupees: 5, chests: { [id]: true, south: false },
+    rupees: 15, chests: { [id]: true, south: false },
     equipment: { shield: "fire-shield" }, rewardItems: ["fire-shield"], overlay: "itemReward",
   });
   const good = raw;
@@ -49,7 +51,7 @@ it("requires the bridge, allows retries and gives the shield and five rupees exa
   expect(restored.getState().chests[id]).toBe(true);
   expect(restored.getState().equipment.shield).toBe("fire-shield");
   begin(restored); expect(restored.getState().overlay).toBe("empty");
-  expect(restored.getState().rupees).toBe(5);
+  expect(restored.getState().rupees).toBe(15);
   expect(restored.getState().items.filter(i => i === "fire-shield")).toHaveLength(1);
   restored.close(); restored.equipItem("temple-shield", "shield");
   expect(createGameStore(storage).getState().equipment.shield).toBe("temple-shield");
@@ -68,7 +70,7 @@ it("puts a reachable chest on the former temple site and exposes its interaction
     const p = FIRE_SHIELD_CHEST_POSITION;
     expect(world.fireShieldChest.root.position.toArray()).toEqual([-6.25, 0, 22.5]);
     expect(world.collision.free(p.x, p.z)).toBe(false);
-    expect(world.interactions().some(o => typeof o.target === "object" && o.target.id === id)).toBe(false);
+    expect(world.interactions().some(o => typeof o.target === "object" && o.target?.kind === "chest" && o.target.id === id)).toBe(false);
     unlock(gameStore); world.update(0, 0);
     // Walk from the main path to the front of the chest with player-sized clearance.
     const approach = { x: p.x, z: p.z + 1.2 };
@@ -79,7 +81,9 @@ it("puts a reachable chest on the former temple site and exposes its interaction
     begin(gameStore);
     for (let i = 0; i < 3; i++) { gameStore.answer(gameStore.getState().question!.correctAnswer); gameStore.finishQuiz(); }
     gameStore.close(); world.update(1, 1);
-    expect(world.interactions().find(o => typeof o.target === "object" && o.target.id === id)?.target).toMatchObject({ label: "Titta i kistan" });
+    expect(world.interactions().find(o => typeof o.target === "object" && o.target?.kind === "chest" && o.target.id === id)?.target).toMatchObject({ label: "Titta i kistan" });
+    expect(world.passages().some(p => p.destination?.world === "volcano")).toBe(false);
+    completeRabbitQuest(gameStore);
     expect(world.passages().some(p => p.destination?.world === "volcano")).toBe(true);
   } finally { world.dispose(); disposeTree(interaction.ring); disposeTree(interaction.arrow); }
 });

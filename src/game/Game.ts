@@ -269,7 +269,7 @@ export class Game {
       this.mountArea();
     }
     this.world.update(dt, this.time, this.player.position);
-    if (!state.overlay && !state.motion)
+    if (!gameStore.getState().overlay && !gameStore.getState().motion)
       this.player.update(
         dt,
         this.input,

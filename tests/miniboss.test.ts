@@ -1,3 +1,4 @@
+import { completeRabbitQuest } from "./helpers/rabbits";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Mesh, Raycaster, Scene, Vector2, Vector3 } from "three";
 import {
@@ -42,6 +43,7 @@ function memory() {
   };
 }
 function enterVolcano(s: Store) {
+  completeRabbitQuest(s);
   s.grantItems(["temple-sword", "temple-shield"]);
   s.setTarget("bokoblin");
   s.interact();

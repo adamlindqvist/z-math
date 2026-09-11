@@ -1,3 +1,5 @@
+import { RabbitFarm } from "./rabbits/RabbitFarm";
+import { rabbitsHome } from "./rabbits/definitions";
 import { buildVolcanoPortal, VOLCANO_ENTRANCE } from "./volcanoPortal";
 import { CASTLE_ENTRANCE } from "./castle/CastleArea";
 import type { Passage } from "./Area";
@@ -31,6 +33,7 @@ export class World implements Area {
   interactions() {
     const state = gameStore.getState();
     return [
+      ...this.farm.interactions(),
       ...this.rocks
         .filter(
           (rock) =>
@@ -98,7 +101,8 @@ export class World implements Area {
   }
   passages(): Passage[] {
     return [
-      { ...VOLCANO_ENTRANCE, destination: { world: "volcano" } },
+      ...(gameStore.getState().bridgeUnlocked && rabbitsHome(gameStore.getState().rabbits)
+        ? [{ ...VOLCANO_ENTRANCE, destination: { world: "volcano" as const } }] : []),
       { ...CASTLE_ENTRANCE, destination: { castle: "hall" } },
       ...DUNGEONS.filter(
         (d) => !d.entranceWorld && (!d.requiresBridge || gameStore.getState().bridgeUnlocked),
@@ -178,6 +182,7 @@ export class World implements Area {
     new Collectible("south-path-3", gladeDistance(-0.6), gladeDistance(19.8)),
     new Collectible("south-path-4", gladeDistance(0.8), gladeDistance(22)),
   ];
+  farm: RabbitFarm;
   water: THREE.Mesh;
   private sparkles: {
     object: THREE.Group;
@@ -186,8 +191,9 @@ export class World implements Area {
   }[] = [];
   private burstShown = { ...gameStore.getState().chests };
   constructor() {
+    this.farm = new RabbitFarm(this.root, this.collision);
     buildSouthGlade(this.root, this.collision);
-    this.volcanoPortal.update(true, 0);
+    this.volcanoPortal.update(rabbitsHome(gameStore.getState().rabbits), 0);
     this.root.add(...this.rocks.map((rock) => rock.root));
     for (const { definition, chest, butterfly } of this.secrets) {
       chest.root.position.set(
@@ -616,7 +622,8 @@ export class World implements Area {
     this.collision.add(gladeDistance(-3.5), gladeDistance(1.3), 0.3);
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
-    this.volcanoPortal.update(true, time);
+    this.farm.update(dt, time, playerPosition);
+    this.volcanoPortal.update(rabbitsHome(gameStore.getState().rabbits), time);
     const state = gameStore.getState();
     if (this.secretResetId !== state.resetId) {
       this.secretResetId = state.resetId;

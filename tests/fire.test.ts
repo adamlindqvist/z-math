@@ -1,3 +1,4 @@
+import { completeRabbitQuest } from "./helpers/rabbits";
 import { defeatGiant } from "./helpers/volcano";
 import { VolcanoInteriorArea } from "../src/game/VolcanoInteriorArea";
 import { afterEach, describe, expect, it } from "vitest";
@@ -21,6 +22,7 @@ type Store = ReturnType<typeof createGameStore>;
 const travel = (s: Store, room: string | null) =>
   s.travelTo(room ? { dungeon: "fire", room } : { world: "volcano-interior" });
 function unlock(s: Store) {
+  completeRabbitQuest(s);
   s.grantItems(["temple-sword", "temple-shield"]);
   s.equipItem("temple-shield", "shield");
   s.setTarget("bokoblin");
@@ -181,7 +183,7 @@ describe("Eldtemplet", () => {
       ]),
     );
     expect(new Set(saved.getState().items).size).toBe(5);
-    expect(saved.getState().rupees).toBe(5);
+    expect(saved.getState().rupees).toBe(15);
     saved.equipItem("temple-sword", "weapon");
     saved.equipItem("temple-shield", "shield");
     expect(saved.getState().equipment).toMatchObject({
@@ -196,7 +198,7 @@ describe("Eldtemplet", () => {
     travel(saved, "treasure");
     quiz(saved, "fire-treasure-lock");
     expect(saved.getState().question).toBeNull();
-    expect(saved.getState().rupees).toBe(5);
+    expect(saved.getState().rupees).toBe(15);
     expect(saved.getState().items).toEqual(
       expect.arrayContaining([
         "green-clothes",

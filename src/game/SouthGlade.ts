@@ -1,3 +1,4 @@
+import { FARM_YARD } from "./rabbits/definitions";
 import { GLADE_SCALE, gladeDistance } from "./gladeLayout";
 import {
   gladePath,
@@ -70,6 +71,11 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
     new THREE.Vector3(6, 0.08, 25.5),
     new THREE.Vector3(6, 0.08, 24),
   ]), path);
+  const farmPath = gladePath(root, new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.6, 0.081, 20.2),
+    new THREE.Vector3(-2, 0.081, 21.8),
+    new THREE.Vector3(FARM_YARD.x / GLADE_SCALE, 0.081, FARM_YARD.z / GLADE_SCALE),
+  ]), path);
   const wood = material("#b68b59"),
     rail = material("#ead5a6");
   for (let i = 0; i < 15; i++)
@@ -137,13 +143,13 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
   gladeRocks(root, collision, [
     [-7.3, 16.7, 0.45],
     [5.2, 17.4, 0.5],
-    [-5.5, 22.8, 0.4],
+    [-7.6, 23.6, 0.4],
     [7.4, 23.6, 0.45],
   ]);
   gladeBushes(root, collision, [
     [-4.2, 15.4],
     [7, 17.3],
-    [-5.4, 19.7],
+    [-7.7, 21.2],
     [4.7, 20.3],
     [-3.2, 25.3],
   ]);
@@ -157,7 +163,7 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
   );
   clearing.castShadow = false;
   collision.add(gladeDistance(3.5), gladeDistance(23), 0.56, 0.41);
-  gladeFlowers(root, collision, points, {
+  gladeFlowers(root, collision, [...points, ...farmPath], {
     seed: 37,
     count: 110,
     minX: -8,

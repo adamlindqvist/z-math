@@ -1,3 +1,4 @@
+import { RABBITS, freshRabbits, rabbitsHome, validRabbits, type RabbitId, type RabbitProgress } from "../game/rabbits/definitions";
 import {
   freshMinibosses, validMinibosses, minibossDefeated,
   STONE_GIANT_START_DISTANCE, STONE_GIANT_EXIT_DISTANCE,
@@ -73,7 +74,7 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 export const RUPEE_IDS = [
   ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee",
@@ -98,6 +99,8 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "farmer"; label: string }
+  | { kind: "rabbit"; id: RabbitId; label: string }
   | { kind: "runeStone"; boss: MinibossId; value: number; label: string }
   | { kind: "worldObject"; id: WorldObjectId; label: string }
   | { kind: "shop"; itemId?: ShopItemId; label: string }
@@ -109,6 +112,8 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "farmer"
+  | "rabbitReward"
   | "pictureClue"
   | "shop"
   | "castleDoor"
@@ -124,6 +129,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  rabbits: RabbitProgress;
   minibosses: MinibossProgress;
   puzzles: PuzzlesProgress;
   worldObjects: WorldObjectId[];
@@ -138,6 +144,9 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  followingRabbits: RabbitId[];
+  rabbitCare: { id: RabbitId; action: "feed" | "pet"; sequence: number } | null;
+  rabbitNextCare: Record<RabbitId, "feed" | "pet">;
   encounter: MinibossEncounter | null;
   objectEvent: { id: WorldObjectId; sequence: number } | null;
   movingBarriers: string[];
@@ -165,6 +174,7 @@ export interface GameState extends Progress {
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
+  rabbits: freshRabbits(),
   minibosses: freshMinibosses(),
   puzzles: freshPuzzles(),
   worldObjects: [],
@@ -187,6 +197,9 @@ export function parseSave(raw: string | null): Progress {
     if (
       p?.version !== SAVE_VERSION ||
       !validInventory(p) ||
+      !validRabbits(p.rabbits) ||
+      (RABBITS.some(({ id }) => p.rabbits[id]) && !p.bridgeUnlocked) ||
+      ((p.location?.world || p.location?.dungeon === "fire") && !rabbitsHome(p.rabbits)) ||
       !validMinibosses(p.minibosses) ||
       !validPuzzles(p.puzzles) ||
       !validWorldObjects(p.worldObjects) ||
@@ -249,11 +262,12 @@ export function parseSave(raw: string | null): Progress {
             (sum, id) => sum + (p.chests[id] ? CHESTS[id].reward : 0),
             0,
           ) +
-          dungeonRewardTotal(p.dungeons) -
+          dungeonRewardTotal(p.dungeons) + (rabbitsHome(p.rabbits) ? 10 : 0) -
           purchaseTotal(p.purchases)
     )
       return fresh();
     return {
+      rabbits: p.rabbits,
       minibosses: p.minibosses,
       puzzles: p.puzzles,
       worldObjects: p.worldObjects,
@@ -284,6 +298,9 @@ export function createGameStore(
     savingAvailable = false;
   }
   let state: GameState = {
+    followingRabbits: [],
+    rabbitCare: null,
+    rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" },
     shopSelection: null,
     shopPurchased: false,
     castleMessage: "",
@@ -309,6 +326,7 @@ export function createGameStore(
     debugActive: false,
     debugNoclip: false,
   };
+  let rabbitCareSequence = 0;
   let debugBaseline: Progress | null = null;
   const soundListeners = new Set<(event: SoundEvent) => void>();
   const emitSound = (event: SoundEvent) => {
@@ -321,6 +339,9 @@ export function createGameStore(
     persist = false,
     sound?: SoundEvent,
   ) => {
+    if (("location" in update && JSON.stringify(update.location) !== JSON.stringify(state.location)) || "resetId" in update) {
+      update = { ...update, followingRabbits: [], rabbitCare: null, rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" } };
+    }
     state = { ...state, ...update };
     if (persist && storage && !state.debugActive) {
       try {
@@ -328,6 +349,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            rabbits: state.rabbits,
             minibosses: state.minibosses,
             puzzles: state.puzzles,
             worldObjects: state.worldObjects,
@@ -617,6 +639,14 @@ export function createGameStore(
           update = { ...update, ...inventory, bridgeUnlocked: true };
         }
       }
+      if (destination?.world || found?.dungeon.id === "fire") {
+        update = { ...update,
+          ...receiveItems({ ...state, ...update }, ["temple-sword", "temple-shield"]),
+          bridgeUnlocked: true,
+          rabbits: { cream: true, brown: true, gray: true },
+          rupees: (update.rupees ?? state.rupees) + (rabbitsHome(state.rabbits) ? 0 : 10),
+        };
+      }
       if (destination?.world === "volcano-interior" || found?.dungeon.id === "fire")
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
       set({
@@ -752,7 +782,7 @@ export function createGameStore(
         (found?.dungeon.id === "fire" && destination?.world === "volcano-interior" && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons.fire))));
       const volcanoAdjacent =
         (state.location === null &&
-          destination?.world === "volcano") ||
+          destination?.world === "volcano" && state.bridgeUnlocked && rabbitsHome(state.rabbits)) ||
         (state.location?.world === "volcano" && destination === null);
       const castleAdjacent =
         (!state.location && destination?.castle === "hall") ||
@@ -830,6 +860,18 @@ export function createGameStore(
       if (state.movingBarriers.includes(id))
         set({ movingBarriers: state.movingBarriers.filter((b) => b !== id) });
     },
+    bringRabbitHome: (id: RabbitId) => {
+      if (state.location || !state.bridgeUnlocked || state.overlay || state.motion ||
+          !state.followingRabbits.includes(id) || state.rabbits[id]) return;
+      const rabbits = { ...state.rabbits, [id]: true };
+      const completed = rabbitsHome(rabbits);
+      set({ rabbits, followingRabbits: state.followingRabbits.filter(r => r !== id),
+        ...(completed ? { rupees: state.rupees + 10, overlay: "rabbitReward" as const, target: null } : {}),
+      }, true, completed ? "reward" : "discovery");
+    },
+    finishRabbitCare: (sequence: number) => {
+      if (state.rabbitCare?.sequence === sequence) set({ rabbitCare: null });
+    },
     interact: () => {
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
@@ -873,6 +915,24 @@ export function createGameStore(
             persist = true;
           } else if (behavior.kind === "clue") update.overlay = "pictureClue";
           set(update, persist, event);
+          return;
+        }
+        if (target.kind === "farmer") {
+          if (!state.location && state.bridgeUnlocked) set({ overlay: "farmer" }, false, "interact");
+          return;
+        }
+        if (target.kind === "rabbit") {
+          if (state.location || !state.bridgeUnlocked || !RABBITS.some(r => r.id === target.id)) return;
+          if (!state.rabbits[target.id]) {
+            if (!state.followingRabbits.includes(target.id))
+              set({ followingRabbits: [...state.followingRabbits, target.id], target: null }, false, "interact");
+          } else if (rabbitsHome(state.rabbits) && !state.rabbitCare) {
+            const action = state.rabbitNextCare[target.id];
+            set({ rabbitCare: { id: target.id, action, sequence: ++rabbitCareSequence },
+              rabbitNextCare: { ...state.rabbitNextCare, [target.id]: action === "feed" ? "pet" : "feed" },
+              target: null,
+            }, false, "interact");
+          }
           return;
         }
         if (target.kind === "shop") {
@@ -1268,6 +1328,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    rabbits: { ...state.rabbits },
     minibosses: { ...state.minibosses },
     puzzles: {
       "royal-symbols": {

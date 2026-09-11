@@ -286,7 +286,7 @@ describe("strange rock in the world", () => {
           .some(
             (i) =>
               typeof i.target === "object" &&
-              i.target?.id === ROCK_SECRETS[1].id,
+              i.target?.kind === "secret" && i.target.id === ROCK_SECRETS[1].id,
           ),
       ).toBe(false);
       gameStore.grantItems(["temple-sword", "temple-shield"]);

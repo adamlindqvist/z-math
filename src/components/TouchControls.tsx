@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject, PointerEvent } from "react";
-import { Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
+import { Carrot, Rabbit, Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
 import type { Game } from "../game/Game";
 import {
   gameStore,
@@ -133,7 +133,9 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           disabled={!state.target || !!state.motion}
         >
           <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
-            {state.target === "npc" ? (
+            {typeof state.target === "object" && state.target?.kind === "rabbit" ? (
+              state.target.label === "Mata" ? <Carrot /> : state.target.label === "Följ med" ? <Rabbit /> : <Hand />
+            ) : state.target === "npc" ? (
               <MessageCircle size={23} />
             ) : typeof state.target === "object" &&
               state.target?.kind === "chest" ? (

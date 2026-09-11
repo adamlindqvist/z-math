@@ -1,3 +1,6 @@
+import { RabbitPictures } from "./RabbitPictures";
+import { rabbitsHome } from "../game/rabbits/definitions";
+import { Gem, DoorOpen } from "lucide-react";
 import { SoundButton } from "./SoundButton";
 import { Sword, Shield } from "lucide-react";
 import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
@@ -141,7 +144,7 @@ export function Modal({
   );
 }
 export function Dialogue() {
-  const { overlay } = useGameState();
+  const { overlay, rabbits } = useGameState();
   if (
     !overlay ||
     overlay === "pictureClue" ||
@@ -153,6 +156,16 @@ export function Dialogue() {
     overlay === "debug"
   )
     return null;
+  if (overlay === "farmer" || overlay === "rabbitReward")
+    return <Modal label={overlay === "farmer" ? "Bonden" : "Alla kaniner är hemma!"}
+      action={<CornerAction onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
+      <RabbitPictures rabbits={rabbits} />
+      <h2>{overlay === "rabbitReward" || rabbitsHome(rabbits) ? "Alla kaniner är hemma!" : "Hjälp mina kaniner!"}</h2>
+      <p>{overlay === "rabbitReward" ? "Du får 10 rupees. Vulkanportalen är öppen!" : rabbitsHome(rabbits)
+        ? "Tack för hjälpen! Du kan mata och klappa kaninerna."
+        : "Hitta mina tre kaniner. Följ dem hem till mig!"}</p>
+      {overlay === "rabbitReward" && <div className="flex items-center justify-center gap-5 text-forest"><Gem className="size-10" /><strong className="text-3xl">10</strong><DoorOpen className="size-10" /></div>}
+    </Modal>;
   if (overlay === "bokoblin")
     return (
       <Modal

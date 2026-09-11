@@ -1,3 +1,6 @@
+import { RabbitPictures } from "./RabbitPictures";
+import { rabbitsHome } from "../game/rabbits/definitions";
+import { Rabbit } from "lucide-react";
 import { MinibossHUD } from "./MinibossHUD";
 import { resolveRoom, roomSolved, volcanoGateOpen } from "../game/dungeons/definitions";
 import {
@@ -29,7 +32,7 @@ export function HUD() {
   const hint =
     state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? "Den stora porten är öppen!" : "Eldtemplet ligger till höger!") :
     state.location?.world === "volcano" ? (state.minibosses.stone_giant === 3 ? "Vulkanens ingång är öppen!" : "Besegra Stenjätten. Öppna vulkanen!") :
-    state.location === null && state.bridgeUnlocked ? "Gå till den lysande portalen!" :
+    state.location === null && state.bridgeUnlocked ? (rabbitsHome(state.rabbits) ? "Gå till den lysande portalen!" : state.followingRabbits.length ? "Gå tillbaka till bonden!" : "Hitta kaninerna!") :
     state.location?.castle === "throne"
       ? "Vad finns här?"
       : state.location?.castle === "hall"
@@ -61,7 +64,7 @@ export function HUD() {
             className="grid size-16 shrink-0 place-items-center rounded-[20px] bg-[#ffedab] text-forest [&_svg]:size-11! max-[600px]:hidden"
             aria-hidden="true"
           >
-            {state.location?.world === "volcano" || (state.location === null && state.bridgeUnlocked) ? <DoorOpen /> : state.location?.castle === "throne" ? <Crown /> : current ? (
+            {state.location === null && state.bridgeUnlocked && !rabbitsHome(state.rabbits) ? <Rabbit /> : state.location?.world === "volcano" || (state.location === null && state.bridgeUnlocked) ? <DoorOpen /> : state.location?.castle === "throne" ? <Crown /> : current ? (
               solved ? (
                 <DoorOpen />
               ) : (
@@ -94,6 +97,7 @@ export function HUD() {
                   : "Matteäventyret"}
             </p>
             <h2>{hint}</h2>
+            {state.location === null && state.bridgeUnlocked && !rabbitsHome(state.rabbits) && <div className="mt-2"><RabbitPictures rabbits={state.rabbits} /></div>}
           </div>
         </section>}
         {current?.room.stones && !state.overlay && (

@@ -774,3 +774,30 @@ describe("shop dialogs", () => {
     expect(gameStore.getState().equipment.shield).toBe("wooden-shield");
   });
 });
+
+it("shows rabbit picture progress, farmer help and the one-time portal reward", () => {
+  act(() => {
+    gameStore.grantItems(["temple-sword", "temple-shield"]);
+    gameStore.setTarget("bokoblin"); gameStore.interact();
+  });
+  expect(host.textContent).toContain("Hitta kaninerna!");
+  expect(host.querySelector('[aria-label="0 av 3 kaniner hemma"]')).not.toBeNull();
+  act(() => { gameStore.setTarget({ kind: "farmer", label: "Prata" }); });
+  click("Prata");
+  expect(host.textContent).toContain("Hitta mina tre kaniner.");
+  click("Spela vidare");
+  for (const id of ["cream", "brown", "gray"] as const) {
+    act(() => { gameStore.setTarget({ kind: "rabbit", id, label: "Följ med" }); });
+    click("Följ med");
+    expect(host.textContent).toContain("Gå tillbaka till bonden!");
+    act(() => gameStore.bringRabbitHome(id));
+  }
+  expect(host.querySelector('[aria-label="3 av 3 kaniner hemma"]')).not.toBeNull();
+  expect(host.textContent).toContain("Du får 10 rupees. Vulkanportalen är öppen!");
+  click("Spela vidare");
+  expect(host.textContent).toContain("Gå till den lysande portalen!");
+  act(() => gameStore.setTarget({ kind: "rabbit", id: "cream", label: "Mata" }));
+  click("Mata");
+  expect(gameStore.getState().rabbitCare?.action).toBe("feed");
+  expect(gameStore.getState().rupees).toBe(10);
+});
