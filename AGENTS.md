@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Legend of Matte is a Swedish math adventure set in a three-dimensional game world. The game runs in the browser without a login or backend.
+Matteäventyret is a Swedish math adventure set in a three-dimensional game world. The game runs in the browser without a login or backend.
 
 ## Audience and platform
 

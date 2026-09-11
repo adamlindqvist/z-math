@@ -1,4 +1,4 @@
-# Legend of Matte
+# Matteäventyret
 
 Ett svenskt vibe-kodat matteäventyr för barn, byggt med React, TypeScript, Three.js, Tailwind CSS och Vite. Alla modeller är egna geometriska former.
 

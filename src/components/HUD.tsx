@@ -91,7 +91,7 @@ export function HUD() {
                   : state.location.castle === "throne" ? "Kungasalen" : "Bosses butik"
                 : current
                   ? `${current.dungeon.name} · ${current.room.name}`
-                  : "Legend of Matte"}
+                  : "Matteäventyret"}
             </p>
             <h2>{hint}</h2>
           </div>
