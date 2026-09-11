@@ -126,9 +126,11 @@ export function Modal({
           {sidecar && (
             <div className="min-h-0">{sidecar}</div>
           )}
+          {/* Keep headings 88px from each panel edge: 12px inset,
+              64px corner button and 12px clearance. */}
           <div
             data-testid="dialog-panel"
-            className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${sidecar ? "min-h-0 min-w-0 max-w-none!" : ""} ${className}`}
+            className={`relative max-h-full w-full max-w-[600px] overflow-auto rounded-[36px] border-4 border-white bg-cream px-8 pt-[26px] pb-[30px] text-center text-ink shadow-[0_16px_0_#233b3620,0_24px_80px_#20393344] [&>h2]:mx-14 [&>h2]:wrap-anywhere [&>h2]:my-3.5 [&>h2]:text-[38px] [&>h2]:leading-[1.15] [&>h2]:font-black [&>p]:mt-3 [&>p]:mb-[22px] [&>p]:text-[23px] [&>p]:leading-[1.45] max-[600px]:rounded-[28px] max-[600px]:px-[18px] max-[600px]:py-[22px] max-[600px]:[&>h2]:mx-[70px] max-[600px]:[&>h2]:text-[32px] max-[600px]:[&>p]:text-[21px] ${sidecar ? "min-h-0 min-w-0 max-w-none!" : ""} ${className}`}
           >
             <ReadAloudButton dialog={ref} />
             {children}
