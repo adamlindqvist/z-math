@@ -6,6 +6,7 @@ import DebugMenu from "../src/components/DebugMenu";
 import { CollisionSystem } from "../src/game/CollisionSystem";
 import { DUNGEONS, roomSolved } from "../src/game/dungeons/definitions";
 import { Input } from "../src/game/Input";
+import { Player } from "../src/game/Player";
 import { createGameStore, gameStore, SAVE_KEY } from "../src/store/gameStore";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -83,6 +84,21 @@ describe("temporary debug sessions", () => {
 });
 
 describe("debug movement", () => {
+  it("moves twice as fast while noclip is enabled", () => {
+    const collision = new CollisionSystem(20, 20, 1);
+    const input = { direction: () => ({ x: 1, y: 0 }) } as Input;
+    const normalPlayer = new Player();
+    const noclipPlayer = new Player();
+    const startX = normalPlayer.position.x;
+
+    normalPlayer.update(0.1, input, collision, true);
+    noclipPlayer.update(0.1, input, collision, true, undefined, true);
+
+    expect(noclipPlayer.position.x - startX).toBeCloseTo(
+      2 * (normalPlayer.position.x - startX),
+    );
+  });
+
   it("ignores obstacles but keeps the player inside the area bounds", () => {
     const collision = new CollisionSystem(2, 3, 1);
     collision.add(0.5, 1, 0.4);

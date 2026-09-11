@@ -28,8 +28,9 @@ export class Player {
     noclip = false,
   ) {
     const { x, y } = input.direction();
-    const dx = (room ? x : x * 0.864 + y * 0.504) * dt * 3.5;
-    const dz = (room ? y : -x * 0.504 + y * 0.864) * dt * 3.5;
+    const speed = 3.5 * (noclip ? 2 : 1);
+    const dx = (room ? x : x * 0.864 + y * 0.504) * dt * speed;
+    const dz = (room ? y : -x * 0.504 + y * 0.864) * dt * speed;
     const before = this.root.position.clone();
     if (noclip) collision.moveWithinBounds(this.root.position, dx, dz);
     else if (!tryPush?.(this.root.position, dx, dz))
