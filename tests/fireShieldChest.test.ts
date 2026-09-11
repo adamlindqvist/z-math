@@ -5,7 +5,7 @@ import { FIRE_SHIELD_CHEST_POSITION, World } from "../src/game/World";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { disposeTree } from "../src/game/Area";
 
-const id = "south-fire-shield";
+const id = "south-fire-shield" as const;
 const target = { kind: "chest" as const, id, label: "Öppna" };
 const unlock = (s: ReturnType<typeof createGameStore>) => {
   s.grantItems(["temple-sword", "temple-shield"]);
@@ -35,7 +35,7 @@ it("requires the bridge, allows retries and gives the shield and five rupees exa
   begin(s); expect(s.getState().quizCorrectAnswers).toBe(0);
   for (let i = 0; i < 3; i++) {
     const q = s.getState().question!;
-    expect(q.kind).toBe("addition");
+    expect(q.category).toBe("addition");
     expect(q.correctAnswer).toBeLessThanOrEqual(5);
     s.answer(q.correctAnswer); s.answer(q.correctAnswer); s.finishQuiz();
     if (i < 2) expect(s.getState().chests[id]).toBe(false);
