@@ -21,18 +21,39 @@ export class StrangeRock {
     this.root.name = definition.id;
     this.root.position.set(definition.position.x, 0, definition.position.z);
     this.root.add(this.stone, this.pit);
+    const volcanic = definition.world === "volcano";
+    const rune = volcanic
+      ? new THREE.MeshStandardMaterial({ color: "#ffb45c", emissive: "#ff651f", emissiveIntensity: 1.1, roughness: 1 })
+      : material("#798778");
     const rock = mesh(
       new THREE.DodecahedronGeometry(0.67, 1),
-      material("#a5aea2"),
+      material(volcanic ? "#403b49" : "#a5aea2"),
       this.stone,
       0,
       0.4,
     );
     rock.scale.set(1.05, 0.78, 0.95);
     rock.rotation.y = 0.3;
-    const moss = material("#75865c");
-    ball(this.stone, moss, -0.38, 0.56, 0.12, 0.23, 0.085, 0.23);
-    ball(this.stone, moss, -0.28, 0.7, -0.08, 0.16, 0.04, 0.17);
+    if (volcanic) {
+      // Follow the faceted surface so the warm seams stay attached while moving.
+      rock.updateMatrixWorld();
+      for (const coordinates of [
+        [[-0.34, 0.72, 0.30], [-0.38, 0.48, 0.50], [-0.23, 0.26, 0.56], [-0.29, 0.10, 0.44]],
+        [[0.33, 0.70, 0.25], [0.48, 0.49, 0.32], [0.51, 0.25, 0.19]],
+      ]) {
+        const points = coordinates.map(([x, y, z]) => {
+          const direction = new THREE.Vector3(x, y - 0.4, z).normalize();
+          const origin = new THREE.Vector3(0, 0.4, 0).addScaledVector(direction, 2);
+          const hit = new THREE.Raycaster(origin, direction.clone().negate()).intersectObject(rock)[0];
+          return hit ? hit.point.addScaledVector(direction, 0.012) : new THREE.Vector3(x, y, z);
+        });
+        mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 12, 0.018, 4, false), rune, this.stone);
+      }
+    } else {
+      const moss = material("#75865c");
+      ball(this.stone, moss, -0.38, 0.56, 0.12, 0.23, 0.085, 0.23);
+      ball(this.stone, moss, -0.28, 0.7, -0.08, 0.16, 0.04, 0.17);
+    }
     const points = Array.from({ length: 41 }, (_, i) => {
       const t = i / 40,
         angle = t * Math.PI * 3;
@@ -50,10 +71,10 @@ export class StrangeRock {
         4,
         false,
       ),
-      material("#798778"),
+      rune,
       this.stone,
     );
-    const soil = material("#927352");
+    const soil = material(volcanic ? "#76616a" : "#927352");
     mesh(
       new THREE.CylinderGeometry(0.58, 0.62, 0.04, 24),
       soil,
@@ -63,7 +84,7 @@ export class StrangeRock {
     );
     mesh(
       new THREE.CylinderGeometry(0.47, 0.47, 0.012, 24),
-      material("#453c2c"),
+      material(volcanic ? "#29232e" : "#453c2c"),
       this.pit,
       0,
       0.068,

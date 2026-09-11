@@ -1,3 +1,4 @@
+import { VOLCANO_ROCK_SECRET } from "../src/game/secrets/definitions";
 import { GameCamera } from "../src/game/Camera";
 import { VOLCANO_RUPEES } from "../src/game/volcanoLayout";
 import { disposeTree } from "../src/game/Area";
@@ -301,8 +302,8 @@ describe("Vulkanvärlden", () => {
       }
       expect(area.collision.free(0, -7.8)).toBe(false);
       expect(area.collision.free(15, 0)).toBe(false);
-      expect(area.rupees).toHaveLength(VOLCANO_RUPEES.length);
-      expect(area.interactions(gameStore.getState())).toHaveLength(1);
+      expect(area.rupees).toHaveLength(VOLCANO_RUPEES.length + VOLCANO_ROCK_SECRET.pickupIds.length);
+      expect(area.interactions(gameStore.getState())).toHaveLength(2);
       expect(area.collision.free(VOLCANO_CHEST_POSITION.x, VOLCANO_CHEST_POSITION.z)).toBe(false);
     } finally {
       area.dispose();
@@ -382,4 +383,80 @@ it("keeps the crater inside the camera view when approaching the entrance", () =
       }
     }
   } finally { area.dispose(); }
+});
+
+it("moves the lava rock, pauses, restores rewards, and keeps its approach accessible", () => {
+  prepareVolcano(gameStore);
+  gameStore.close();
+  gameStore.travelTo({ world: "volcano" });
+  const area = new VolcanoArea(), scene = new Scene(), interactions = new InteractionSystem(scene);
+  const definition = VOLCANO_ROCK_SECRET;
+  const center = new Vector3(definition.position.x, 0, definition.position.z);
+  const near = center.clone().add(new Vector3(0, 0, -1.4));
+  const landing = center.clone().add(new Vector3(definition.offset.x, 0, definition.offset.z));
+  const pickups = () => area.rupees.filter((p) => definition.pickupIds.some((id) => id === p.id));
+  const before = gameStore.getState().rupees;
+  try {
+    reachable(area.collision, area.spawn, [near, landing]);
+    expect(area.collision.free(center.x, center.z)).toBe(false);
+    expect(pickups().every((p) => !p.root.visible)).toBe(true);
+    interactions.update(near, area, 0);
+    expect(gameStore.getState().target).toEqual({ kind: "secret", id: definition.id, label: "Flytta" });
+    gameStore.interact();
+    area.update(0.6, 0, near);
+    gameStore.pause();
+    const paused = area.rock.stone.position.clone();
+    area.update(10, 0, near);
+    expect(area.rock.stone.position.equals(paused)).toBe(true);
+    gameStore.close();
+    area.update(0.6, 0, landing);
+    expect(gameStore.getState().secrets[definition.id].revealed).toBe(true);
+    expect(area.collision.free(landing.x, landing.z)).toBe(true);
+    interactions.update(center, area, 0);
+    expect(gameStore.getState().rupees).toBe(before + 5);
+    area.update(0, 0, center);
+    expect(area.collision.free(landing.x, landing.z)).toBe(false);
+    expect(pickups().every((p) => !p.root.visible)).toBe(true);
+    const restored = new VolcanoArea();
+    expect(restored.rock.phase).toBe("revealed");
+    expect(restored.rock.stone.position.x).toBe(definition.offset.x);
+    expect(restored.rock.stone.position.z).toBe(definition.offset.z);
+    restored.dispose();
+    definition.pickupIds.forEach((id) => gameStore.collect(id));
+    expect(gameStore.getState().rupees).toBe(before + 5);
+    gameStore.reset();
+    area.update(0, 0, near);
+    expect(area.rock.phase).toBe("waiting");
+    expect(pickups().every((p) => !p.root.visible)).toBe(true);
+  } finally {
+    area.dispose();
+    disposeTree(scene);
+  }
+});
+
+it("persists partial lava-rock treasure and rejects interaction in another world", () => {
+  const storage = memory(), s = createGameStore(storage);
+  const definition = VOLCANO_ROCK_SECRET;
+  const target = { kind: "secret" as const, id: definition.id, label: "Flytta" };
+  prepareVolcano(s);
+  s.close();
+  s.setTarget(target);
+  s.interact();
+  expect(s.getState().activeSecret).toBeNull();
+  s.travelTo({ world: "volcano" });
+  definition.pickupIds.forEach((id) => s.collect(id));
+  const before = s.getState().rupees;
+  s.setTarget(target);
+  s.interact();
+  s.revealSecret(definition.id);
+  s.collect(definition.pickupIds[0]);
+  const restored = createGameStore(storage);
+  expect(restored.getState().secrets[definition.id]).toEqual({ discovered: true, revealed: true, completed: false });
+  restored.travelTo(null);
+  definition.pickupIds.forEach((id) => restored.collect(id));
+  expect(restored.getState().rupees).toBe(before + 1);
+  restored.travelTo({ world: "volcano" });
+  definition.pickupIds.forEach((id) => { restored.collect(id); restored.collect(id); });
+  expect(restored.getState().rupees).toBe(before + 5);
+  expect(createGameStore(storage).getState().secrets[definition.id].completed).toBe(true);
 });

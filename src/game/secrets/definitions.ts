@@ -12,6 +12,7 @@ export type ButterflySecret = {
 export type StrangeRockSecret = {
   id: string;
   type: "strange-rock";
+  world: "glade" | "volcano";
   requiresBridge: boolean;
   position: { x: number; z: number };
   offset: { x: number; z: number };
@@ -50,6 +51,7 @@ export const WORLD_SECRETS = [
   {
     id: "strange-rock-01",
     type: "strange-rock",
+    world: "glade",
     requiresBridge: false,
     position: gladePosition(5, 5.2),
     offset: { x: 1.6, z: 0 },
@@ -64,6 +66,7 @@ export const WORLD_SECRETS = [
   {
     id: "strange-rock-02",
     type: "strange-rock",
+    world: "glade",
     requiresBridge: true,
     position: gladePosition(-6.8, 26),
     offset: { x: 1.6, z: 0 },
@@ -78,6 +81,7 @@ export const WORLD_SECRETS = [
   {
     id: "strange-rock-03",
     type: "strange-rock",
+    world: "glade",
     requiresBridge: true,
     position: gladePosition(6.2, 21.8),
     offset: { x: 1.6, z: 0 },
@@ -89,6 +93,21 @@ export const WORLD_SECRETS = [
       "strange-rock-03-5",
     ],
   },
+  {
+    id: "strange-rock-volcano",
+    type: "strange-rock",
+    world: "volcano",
+    requiresBridge: false,
+    position: gladePosition(9.2, -2.5),
+    offset: { x: 1.6, z: 0 },
+    pickupIds: [
+      "strange-rock-volcano-1",
+      "strange-rock-volcano-2",
+      "strange-rock-volcano-3",
+      "strange-rock-volcano-4",
+      "strange-rock-volcano-5",
+    ],
+  },
 ] as const satisfies readonly WorldSecret[];
 export const BUTTERFLY_SECRETS = WORLD_SECRETS.filter(
   (s) => s.type === "butterfly",
@@ -96,6 +115,8 @@ export const BUTTERFLY_SECRETS = WORLD_SECRETS.filter(
 export const ROCK_SECRETS = WORLD_SECRETS.filter(
   (s) => s.type === "strange-rock",
 );
+export const GLADE_ROCK_SECRETS = ROCK_SECRETS.filter((s) => s.world === "glade");
+export const VOLCANO_ROCK_SECRET = ROCK_SECRETS.find((s) => s.world === "volcano")!;
 export type SecretId = (typeof WORLD_SECRETS)[number]["id"];
 export type SecretProgress = {
   discovered: boolean;

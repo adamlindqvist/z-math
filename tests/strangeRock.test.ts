@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Scene, Vector3, Mesh } from "three";
 import {
-  ROCK_SECRETS,
+  GLADE_ROCK_SECRETS as ROCK_SECRETS,
   BUTTERFLY_SECRETS,
 } from "../src/game/secrets/definitions";
 import { StrangeRock } from "../src/game/entities/StrangeRock";

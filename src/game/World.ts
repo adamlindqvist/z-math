@@ -4,7 +4,7 @@ import type { Passage } from "./Area";
 import { StrangeRock } from "./entities/StrangeRock";
 import { GLADE_SCALE, gladeDistance, gladePosition } from "./gladeLayout";
 import { Butterfly } from "./entities/Butterfly";
-import { BUTTERFLY_SECRETS, ROCK_SECRETS } from "./secrets/definitions";
+import { BUTTERFLY_SECRETS, GLADE_ROCK_SECRETS } from "./secrets/definitions";
 import {
   gladePath,
   gladeTrees,
@@ -136,7 +136,7 @@ export class World implements Area {
       gameStore.getState().secrets[definition.id].revealed,
     ),
   }));
-  rocks = ROCK_SECRETS.map(
+  rocks = GLADE_ROCK_SECRETS.map(
     (definition) =>
       new StrangeRock(
         definition,
@@ -155,7 +155,7 @@ export class World implements Area {
   ];
   npc = new NPC();
   rupees = [
-    ...ROCK_SECRETS.flatMap((definition) =>
+    ...GLADE_ROCK_SECRETS.flatMap((definition) =>
       definition.pickupIds.map((id, i) => {
         const angle = (i * Math.PI * 2) / definition.pickupIds.length;
         const pickup = new Collectible(
@@ -697,7 +697,7 @@ export class World implements Area {
     this.chest.update(dt, state.chests.glade && state.feedback !== "correct");
     this.npc.update(time);
     this.rupees.forEach((rupee) => {
-      const secret = ROCK_SECRETS.find((s) =>
+      const secret = GLADE_ROCK_SECRETS.find((s) =>
         s.pickupIds.some((id) => id === rupee.id),
       );
       rupee.update(

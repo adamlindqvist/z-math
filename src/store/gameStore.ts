@@ -73,7 +73,7 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 export const RUPEE_IDS = [
   ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee",
@@ -476,7 +476,7 @@ export function createGameStore(
       if (
         !definition ||
         (definition.requiresBridge && !state.bridgeUnlocked) ||
-        state.location ||
+        !secretInLocation(definition, state.location) ||
         state.overlay ||
         state.motion ||
         !state.secrets[id] ||
@@ -499,7 +499,7 @@ export function createGameStore(
       if (
         !definition ||
         (definition.requiresBridge && !state.bridgeUnlocked) ||
-        state.location ||
+        !secretInLocation(definition, state.location) ||
         state.overlay ||
         state.motion ||
         !progress?.discovered ||
@@ -900,7 +900,7 @@ export function createGameStore(
           const definition = ROCK_SECRETS.find((s) => s.id === target.id);
           if (
             !definition ||
-            state.location ||
+            !secretInLocation(definition, state.location) ||
             state.activeSecret ||
             state.secrets[target.id].revealed ||
             (definition.requiresBridge && !state.bridgeUnlocked)
@@ -1420,6 +1420,8 @@ function validDungeons(
 }
 
 function pickupAllowed(state: GameState, id: string) {
+  const secret = ROCK_SECRETS.find((rock) => rock.pickupIds.some((pickup) => pickup === id));
+  if (secret) return secretInLocation(secret, state.location);
   for (const objectId of PICKUP_OBJECTS) {
     const definition = WORLD_OBJECTS[objectId];
     const b = definition.behavior;
@@ -1433,4 +1435,10 @@ function pickupAllowed(state: GameState, id: string) {
     return state.location?.world === "volcano";
   if (id.startsWith("castle-")) return state.location?.castle === "hall";
   return state.location === null;
+}
+
+function secretInLocation(definition: (typeof WORLD_SECRETS)[number], location: GameState["location"]) {
+  return definition.type === "strange-rock" && definition.world === "volcano"
+    ? location?.world === "volcano"
+    : location === null;
 }

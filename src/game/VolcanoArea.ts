@@ -1,3 +1,5 @@
+import { StrangeRock } from "./entities/StrangeRock";
+import { VOLCANO_ROCK_SECRET } from "./secrets/definitions";
 import { caveMouth } from "./caveScenery";
 import { StoneGiantEncounter } from "./minibosses/StoneGiantEncounter";
 import { RUNE_STONES, STONE_GIANT_CENTER, inStoneGiantArena, minibossDefeated } from "./minibosses/definitions";
@@ -36,7 +38,14 @@ export class VolcanoArea implements Area {
   cameraMode = "glade" as const;
   collision = new CollisionSystem(gladeDistance(11.1), gladeDistance(8.1));
   spawn = portalSpawn(VOLCANO_RETURN, -1);
-  rupees = VOLCANO_RUPEES.map(({ id, x, z }) => new Collectible(id, x, z));
+  rock = new StrangeRock(VOLCANO_ROCK_SECRET, gameStore.getState().secrets[VOLCANO_ROCK_SECRET.id].revealed);
+  private secretResetId = gameStore.getState().resetId;
+  private rockRupees = VOLCANO_ROCK_SECRET.pickupIds.map((id, i) => {
+    const angle = i * Math.PI * 2 / VOLCANO_ROCK_SECRET.pickupIds.length;
+    return new Collectible(id, VOLCANO_ROCK_SECRET.position.x + Math.cos(angle) * 0.28,
+      VOLCANO_ROCK_SECRET.position.z + Math.sin(angle) * 0.28);
+  });
+  rupees = [...VOLCANO_RUPEES.map(({ id, x, z }) => new Collectible(id, x, z)), ...this.rockRupees];
   miniboss = new StoneGiantEncounter();
   chest = new Chest(gameStore.getState().chests["volcano-01"]);
   private glow = new THREE.MeshStandardMaterial({
@@ -57,14 +66,18 @@ export class VolcanoArea implements Area {
       ...(minibossDefeated(state.minibosses, "stone_giant") ? [{ ...VOLCANO_INNER_ENTRANCE, destination: { world: "volcano-interior" as const } }] : [])];
   }
   interactions(state: GameState): Interaction[] {
-    return [...this.miniboss.interactions(state), {
+    const rockInteractions: Interaction[] = this.rock.phase === "waiting" &&
+      !state.activeSecret && !state.encounter && !state.secrets[VOLCANO_ROCK_SECRET.id].revealed
+      ? [{ ...VOLCANO_ROCK_SECRET.position, target: { kind: "secret", id: VOLCANO_ROCK_SECRET.id, label: "Flytta" } }] : [];
+    return [...rockInteractions, ...this.miniboss.interactions(state), {
       ...VOLCANO_CHEST_POSITION,
       target: { kind: "chest", id: "volcano-01", label: state.chests["volcano-01"] ? "Titta i kistan" : "Öppna" },
     }];
   }
   constructor() {
     this.root.name = "volcano-world";
-    this.root.add(this.miniboss.root);
+    this.root.add(this.miniboss.root, this.rock.root);
+    this.collision.dynamic = this.rock.obstacle();
     for (const stone of RUNE_STONES) this.collision.add(stone.x, stone.z, 0.57);
 
     const { x, z } = VOLCANO_CHEST_POSITION;
@@ -75,6 +88,7 @@ export class VolcanoArea implements Area {
       rupee.update(0, gameStore.getState().collected.includes(rupee.id));
       this.root.add(rupee.root);
     }
+    this.updateRockRupees(0);
     this.collision.add(x, z, 0.54, 0.4);
     this.chest.update(0, gameStore.getState().chests["volcano-01"]);
     const ground = material("#716570"),
@@ -346,6 +360,13 @@ export class VolcanoArea implements Area {
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
     this.miniboss.update(dt, playerPosition);
     const state = gameStore.getState();
+    if (this.secretResetId !== state.resetId) {
+      this.secretResetId = state.resetId;
+      this.rock.reset(state.secrets[VOLCANO_ROCK_SECRET.id].revealed);
+    }
+    if (state.activeSecret === VOLCANO_ROCK_SECRET.id) this.rock.start();
+    if (this.rock.update(dt, !!state.overlay || !!state.motion || !!state.encounter))
+      gameStore.revealSecret(VOLCANO_ROCK_SECRET.id);
     // A chest can appear under the player after the collapse. Let them walk
     // out before making it solid; never trap them inside a new obstacle.
     const clearOfChest = !playerPosition || Math.hypot(
@@ -354,13 +375,20 @@ export class VolcanoArea implements Area {
     ) >= 0.32;
     this.collision.dynamic = clearOfChest && minibossDefeated(state.minibosses, "stone_giant") && !state.encounter
       ? [{ ...STONE_GIANT_CENTER, halfX: 0.54, halfZ: 0.4 }] : [];
+    this.collision.dynamic.push(...this.rock.obstacle(playerPosition));
     this.chest.update(dt, state.chests["volcano-01"] && !(state.activeChest === "volcano-01" && state.overlay === "quiz"));
     for (const rupee of this.rupees) rupee.update(time, state.collected.includes(rupee.id));
+    this.updateRockRupees(time);
     this.glow.emissiveIntensity = 0.65 + Math.sin(time * 1.4) * 0.12;
     const opened = minibossDefeated(state.minibosses, "stone_giant");
     if (!opened) this.collision.dynamic.push({ ...VOLCANO_INNER_ENTRANCE, halfX: 0.7, halfZ: 0.2 });
     this.innerPortal.update(opened, time);
     this.portal.update(true, time);
+  }
+  private updateRockRupees(time: number) {
+    const state = gameStore.getState();
+    for (const rupee of this.rockRupees)
+      rupee.update(time, !state.secrets[VOLCANO_ROCK_SECRET.id].revealed || state.collected.includes(rupee.id));
   }
   dispose() {
     disposeTree(this.root);
