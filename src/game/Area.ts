@@ -23,6 +23,7 @@ export interface PushHint {
   dz: number;
 }
 export interface Area {
+  environment?: import("./environment").AreaEnvironment;
   root: THREE.Group;
   collision: CollisionSystem;
   spawn: { x: number; z: number };

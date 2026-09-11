@@ -45,31 +45,9 @@ function enterVolcano(s: Store) {
   s.grantItems(["temple-sword", "temple-shield"]);
   s.setTarget("bokoblin");
   s.interact();
-  const quiz = (id: string) => {
-    s.setTarget({ kind: "challenge", id, label: "Räkna" });
-    s.interact();
-    while (s.getState().question) {
-      s.answer(s.getState().question!.correctAnswer);
-      s.finishQuiz();
-    }
-  };
-  s.travelTo({ dungeon: "fire", room: "light" });
-  quiz("fire-light-lock");
-  s.travelTo({ dungeon: "fire", room: "stones" });
-  DUNGEONS.find((d) => d.id === "fire")!.rooms[1].stones!.forEach(
-    (stone, i) => {
-      while (s.getState().dungeons.fire.stones.stones[i] < stone.goal) {
-        s.pushStone(i, 1);
-        s.finishMotion();
-      }
-    },
-  );
-  s.travelTo({ dungeon: "fire", room: "treasure" });
-  quiz("fire-treasure-lock");
-  s.close();
-  s.travelTo(null);
   s.travelTo({ world: "volcano" });
 }
+
 function choose(s: Store, value: number) {
   s.setTarget({ kind: "runeStone", boss: id, value, label: `Välj ${value}` });
   s.interact();

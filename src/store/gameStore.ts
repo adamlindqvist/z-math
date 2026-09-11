@@ -7,7 +7,6 @@ import {
   startEncounter, selectRune, finishFeedback, type MinibossEncounter,
 } from "../game/minibosses/state";
 import { VOLCANO_RUPEES } from "../game/volcanoLayout";
-import { volcanoUnlocked } from "../game/dungeons/definitions";
 import {
   freshPuzzles,
   validPuzzles,
@@ -74,7 +73,7 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 export const RUPEE_IDS = [
   ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee",
@@ -193,7 +192,10 @@ export function parseSave(raw: string | null): Progress {
       !validWorldObjects(p.worldObjects) ||
       !validPurchases(p.purchases, p.items) ||
       !validDungeons(p.dungeons) ||
-      (p.minibosses.stone_giant > 0 && !volcanoUnlocked(p.dungeons)) ||
+      ((p.location?.world === "volcano-interior" || p.location?.dungeon === "fire" ||
+        Object.values(p.dungeons.fire.answers).some((n) => n !== 0) ||
+        p.dungeons.fire.stones.stones.some((n: number) => n !== 0)) &&
+        !minibossDefeated(p.minibosses, "stone_giant")) ||
       !validLocation(p.location, p.dungeons) ||
       (!p.bridgeUnlocked &&
         DUNGEONS.some(
@@ -234,7 +236,6 @@ export function parseSave(raw: string | null): Progress {
       typeof p.bridgeUnlocked !== "boolean" ||
       (p.bridgeUnlocked && !hasBridgeEquipment(p)) ||
       (p.chests.south && !p.bridgeUnlocked) ||
-      (p.chests["volcano-01"] && !volcanoUnlocked(p.dungeons)) ||
       typeof p.talkedToNpc !== "boolean" ||
       !Array.isArray(p.collected) ||
       p.collected.some(
@@ -604,7 +605,7 @@ export function createGameStore(
       if (found) {
         const roomIndex = found.dungeon.rooms.indexOf(found.room);
         update = solveThrough(found.dungeon.id, roomIndex - 1);
-        if (found.dungeon.requiresBridge) {
+        if (found.dungeon.requiresBridge || found.dungeon.entranceWorld) {
           const inventory = receiveItems(
             {
               items: update.items ?? state.items,
@@ -615,6 +616,8 @@ export function createGameStore(
           update = { ...update, ...inventory, bridgeUnlocked: true };
         }
       }
+      if (destination?.world === "volcano-interior" || found?.dungeon.id === "fire")
+        update.minibosses = { ...state.minibosses, stone_giant: 3 };
       set({
         ...update,
         location: destination,
@@ -741,10 +744,14 @@ export function createGameStore(
       const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
       const next = resolveRoom(destination);
       if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
+      const interiorAdjacent =
+        (state.location?.world === "volcano" && destination?.world === "volcano-interior" && minibossDefeated(state.minibosses, "stone_giant")) ||
+        (state.location?.world === "volcano-interior" && destination?.world === "volcano") ||
+        (state.location?.world === "volcano-interior" && next?.dungeon.id === "fire" && currentIndex === -1 && next.room === next.dungeon.rooms[0]) ||
+        (found?.dungeon.id === "fire" && destination?.world === "volcano-interior" && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons.fire))));
       const volcanoAdjacent =
         (state.location === null &&
-          destination?.world === "volcano" &&
-          volcanoUnlocked(state.dungeons)) ||
+          destination?.world === "volcano") ||
         (state.location?.world === "volcano" && destination === null);
       const castleAdjacent =
         (!state.location && destination?.castle === "hall") ||
@@ -756,8 +763,8 @@ export function createGameStore(
           state.location?.castle === "throne") &&
           destination?.castle === "hall");
       const adjacent = !state.location
-        ? !!next && next.dungeon.rooms[0] === next.room
-        : (!destination &&
+        ? !!next && !next.dungeon.entranceWorld && next.dungeon.rooms[0] === next.room
+        : (!destination && !found?.dungeon.entranceWorld &&
             (currentIndex === 0 ||
               (!!found &&
                 currentIndex === found.dungeon.rooms.length - 1 &&
@@ -767,7 +774,7 @@ export function createGameStore(
             Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
               1);
       if (
-        (volcanoAdjacent || castleAdjacent || adjacent) &&
+        (interiorAdjacent || volcanoAdjacent || castleAdjacent || adjacent) &&
         canVisit(destination, state.dungeons)
       )
         set(
@@ -1308,8 +1315,7 @@ function validLocation(
   if (value && typeof value === "object" && "world" in value)
     return (
       Object.keys(value).length === 1 &&
-      value.world === "volcano" &&
-      volcanoUnlocked(progress)
+      (value.world === "volcano" || value.world === "volcano-interior")
     );
   if (value && typeof value === "object" && "castle" in value)
     return (

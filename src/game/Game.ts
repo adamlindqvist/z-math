@@ -1,5 +1,7 @@
+import { applyAreaEnvironment } from "./environment";
 import { VolcanoArea } from "./VolcanoArea";
-import { portalSpawn, VOLCANO_ENTRANCE } from "./volcanoPortal";
+import { VolcanoInteriorArea } from "./VolcanoInteriorArea";
+import { portalSpawn, VOLCANO_ENTRANCE, VOLCANO_INNER_ENTRANCE } from "./volcanoPortal";
 import { ThroneRoomArea } from "./castle/ThroneRoomArea";
 import { CastleArea, ShopScene, CASTLE_ENTRANCE } from "./castle/CastleArea";
 import type { Location } from "./dungeons/definitions";
@@ -85,6 +87,7 @@ export class Game {
   private resetId = gameStore.getState().resetId;
   // The sun follows the player so its shadow frustum covers whichever area is
   // in view; a fixed frustum clipped shadows off in the distant south glade.
+  private ambient = new THREE.HemisphereLight("#ffefd8", "#9da981", 2.2);
   private sun = new THREE.DirectionalLight("#fff0d2", 2.8);
   private sunOffset = new THREE.Vector3(-8, 17, 9).setLength(40);
   private contextLost = (event: Event) => {
@@ -129,7 +132,7 @@ export class Game {
       "webglcontextlost",
       this.contextLost,
     );
-    this.scene.add(new THREE.HemisphereLight("#ffefd8", "#9da981", 2.2));
+    this.scene.add(this.ambient);
     const sun = this.sun;
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -177,6 +180,7 @@ export class Game {
   private createArea(): Area {
     const location = gameStore.getState().location;
     this.areaKey = JSON.stringify(location);
+    if (location?.world === "volcano-interior") return new VolcanoInteriorArea();
     if (location?.world === "volcano") return new VolcanoArea();
     if (location?.castle === "throne") return new ThroneRoomArea();
     if (location?.castle === "hall") return new CastleArea();
@@ -187,6 +191,7 @@ export class Game {
   private mountArea() {
     this.cancelTap();
     this.scene.add(this.world.root);
+    applyAreaEnvironment(this.scene, this.sun, this.ambient, this.world.environment);
     const entrance = DUNGEONS.find(
       (d) => d.id === this.previousDungeon,
     )?.entrance;
@@ -199,6 +204,9 @@ export class Game {
           : gameStore.getState().location?.castle === "hall" && this.previousLocation?.castle === "throne"
             ? { x: 0, z: -2.5 } : null;
     const spawn =
+      (gameStore.getState().location?.dungeon === "fire" && gameStore.getState().location?.room === "light" && this.previousLocation?.dungeon === "fire" && this.previousLocation?.room === "stones" ? { x: 0, z: -3.95 } : null) ??
+      (gameStore.getState().location?.world === "volcano" && this.previousLocation?.world === "volcano-interior" ? portalSpawn(VOLCANO_INNER_ENTRANCE, 1) : null) ??
+      (gameStore.getState().location?.world === "volcano-interior" && this.previousLocation?.dungeon === "fire" ? { x: 3.95, z: 0 } : null) ??
       (!gameStore.getState().location && this.previousLocation?.world === "volcano" ? portalSpawn(VOLCANO_ENTRANCE, 1) : null) ??
       castleSpawn ??
       (!gameStore.getState().location && entrance
@@ -209,17 +217,21 @@ export class Game {
         : this.world.spawn);
     this.player.reset();
     this.player.position.set(spawn.x, 0, spawn.z);
+    if (gameStore.getState().location?.dungeon === "fire" && gameStore.getState().location?.room === "light" && spawn.x < 0)
+      this.player.root.rotation.y = Math.PI / 2;
+    if (gameStore.getState().location?.world === "volcano-interior" && this.previousLocation?.dungeon === "fire")
+      this.player.root.rotation.y = -Math.PI / 2;
     this.input.reset();
     this.camera.setMode(this.world.cameraMode, this.player.position);
     this.renderer.domElement.setAttribute(
       "aria-label",
-      (gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
+      (gameStore.getState().location?.world === "volcano-interior" ? "Vulkanens inre med Eldtemplet till höger och en stor port framåt" : gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
         ? "Slottets entréhall"
         : gameStore.getState().location?.castle === "shop"
           ? "Bosses butik"
           : gameStore.getState().location?.castle === "throne" ? "Kungasalen" : undefined) ??
         resolveRoom(gameStore.getState().location)?.room.name ??
-        "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan med Eldtemplet",
+        "Gläntan med slottet, Zelda, Vattentemplet och Bokoblins bro till södra gläntan och vägen till Vulkanvärlden",
     );
   }
   // Snapped to whole units so the shadow map does not crawl while walking.

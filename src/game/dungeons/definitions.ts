@@ -31,6 +31,7 @@ export interface DungeonDefinition {
   name: string;
   entrance: { x: number; z: number; rotation?: number };
   requiresBridge?: boolean;
+  entranceWorld?: "volcano-interior";
   rooms: RoomDefinition[];
 }
 export const TRACK_X = [-3.2, -1.6, 0, 1.6, 3.2];
@@ -103,8 +104,8 @@ export const DUNGEONS: DungeonDefinition[] = [
     id: "fire",
     name: "Eldtemplet",
     theme: "fire",
-    entrance: { ...gladePosition(-5, 18), rotation: Math.PI / 2 },
-    requiresBridge: true,
+    entrance: { x: 5.35, z: 0, rotation: -Math.PI / 2 },
+    entranceWorld: "volcano-interior",
     rooms: [
       {
         id: "light",
@@ -172,7 +173,7 @@ export const DUNGEONS: DungeonDefinition[] = [
           kind: "addition",
           required: 5,
           reward: 5,
-          items: ["fire-sword", "fire-shield"],
+          items: ["fire-sword"],
         },
       },
     ],
@@ -181,7 +182,7 @@ export const DUNGEONS: DungeonDefinition[] = [
 export type Location =
   | { dungeon: string; room: string; castle?: never; world?: never }
   | { castle: "hall" | "shop" | "throne"; dungeon?: never; room?: never; world?: never }
-  | { world: "volcano"; dungeon?: never; room?: never; castle?: never }
+  | { world: "volcano" | "volcano-interior"; dungeon?: never; room?: never; castle?: never }
   | null;
 export interface DungeonProgress {
   answers: Record<string, number>;
@@ -216,7 +217,7 @@ export function roomSolved(room: RoomDefinition, progress: DungeonProgress) {
     return progress.answers[room.challenge.id] === room.challenge.required;
   return !!room.stones?.every((s, i) => progress.stones[room.id][i] === s.goal);
 }
-export const volcanoUnlocked = (progress: Record<string, DungeonProgress>) =>
+export const volcanoGateOpen = (progress: Record<string, DungeonProgress>) =>
   progress.fire.rewards.includes("fire-treasure-lock");
 
 export function canVisit(
@@ -225,7 +226,7 @@ export function canVisit(
 ) {
   if (!location || location.castle === "hall" || location.castle === "shop" || location.castle === "throne")
     return true;
-  if (location.world === "volcano") return volcanoUnlocked(progress);
+  if (location.world === "volcano" || location.world === "volcano-interior") return true;
   const found = resolveRoom(location);
   if (!found) return false;
   const { dungeon, room } = found;

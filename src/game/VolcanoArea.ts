@@ -1,3 +1,4 @@
+import { caveMouth } from "./caveScenery";
 import { StoneGiantEncounter } from "./minibosses/StoneGiantEncounter";
 import { RUNE_STONES, STONE_GIANT_CENTER, inStoneGiantArena, minibossDefeated } from "./minibosses/definitions";
 import * as THREE from "three";
@@ -11,6 +12,7 @@ import {
   buildVolcanoPortal,
   portalSpawn,
   VOLCANO_RETURN,
+  VOLCANO_INNER_ENTRANCE,
 } from "./volcanoPortal";
 
 import { Chest } from "./entities/Chest";
@@ -49,8 +51,10 @@ export class VolcanoArea implements Area {
     VOLCANO_RETURN,
     true,
   );
-  passages() {
-    return [{ ...VOLCANO_RETURN, destination: null }];
+  private innerPortal = caveMouth(this.root, this.collision, VOLCANO_INNER_ENTRANCE);
+  passages(state = gameStore.getState()) {
+    return [{ ...VOLCANO_RETURN, destination: null },
+      ...(minibossDefeated(state.minibosses, "stone_giant") ? [{ ...VOLCANO_INNER_ENTRANCE, destination: { world: "volcano-interior" as const } }] : [])];
   }
   interactions(state: GameState): Interaction[] {
     return [...this.miniboss.interactions(state), {
@@ -124,6 +128,7 @@ export class VolcanoArea implements Area {
       [3, -1],
       [1, -3],
     ]);
+    trail([[1, -3], [0, -3.84]]);
     trail([
       [-5, 0],
       [-4, -2],
@@ -184,10 +189,21 @@ export class VolcanoArea implements Area {
     // A hollow, low-poly crater makes the volcano readable from the overhead camera.
     const volcano = new THREE.Group();
     volcano.name = "volcano";
-    volcano.position.set(gladeDistance(0), 0, gladeDistance(-6.3));
+    // Grow upward and sideways while keeping the entrance and front slope in place.
+    volcano.scale.set(1.2, 1.15, 1);
+    volcano.position.set(gladeDistance(0), 0, gladeDistance(-6.9));
     this.root.add(volcano);
+    const mountainGeometry = new THREE.CylinderGeometry(1.05, 3.2, 3.4, 12, 3, true);
+    const vertices = mountainGeometry.attributes.position;
+    for (let i = 0; i < vertices.count; i++) {
+      const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
+      const angle = Math.atan2(z, x);
+      const variation = y > 1.6 ? 1 : 0.92 + Math.sin(angle * 3 + y) * 0.07;
+      vertices.setXYZ(i, x * variation, y, z * variation);
+    }
+    mountainGeometry.computeVertexNormals();
     mesh(
-      new THREE.CylinderGeometry(1.05, 3.2, 3.4, 12, 1, true),
+      mountainGeometry,
       rock,
       volcano,
       0,
@@ -206,15 +222,23 @@ export class VolcanoArea implements Area {
       this.glow,
       volcano,
       0,
-      2.85,
+      3.05,
     );
     this.collision.addEllipse(
       volcano.position.x,
       volcano.position.z,
-      3.25,
-      3.25,
+      3.25 * volcano.scale.x,
+      3.25 * volcano.scale.z,
     );
     const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        const shoulder = mesh(rockGeometry, rock, this.root, side * (1.2 + i * 0.28), 0.8 + i * 0.25, -6.45 - i * 0.8);
+        shoulder.scale.set(0.8, 1.3 + i * 0.3, 1.1);
+        shoulder.name = "volcano-rock-shoulder";
+        this.collision.addEllipse(shoulder.position.x, shoulder.position.z, 0.8, 1.1);
+      }
+    }
     for (const [x, z, s] of [
       [-9, 5, 0.65],
       [-9, 0, 0.6],
@@ -316,7 +340,7 @@ export class VolcanoArea implements Area {
       minZ: -7.35,
       width: 21,
       depth: 14.7,
-      exclude: (x, z) => inStoneGiantArena(x, z),
+      exclude: (x, z) => inStoneGiantArena(x, z) || Math.hypot(x - VOLCANO_INNER_ENTRANCE.x, z - VOLCANO_INNER_ENTRANCE.z) < 2,
     });
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
@@ -333,6 +357,9 @@ export class VolcanoArea implements Area {
     this.chest.update(dt, state.chests["volcano-01"] && !(state.activeChest === "volcano-01" && state.overlay === "quiz"));
     for (const rupee of this.rupees) rupee.update(time, state.collected.includes(rupee.id));
     this.glow.emissiveIntensity = 0.65 + Math.sin(time * 1.4) * 0.12;
+    const opened = minibossDefeated(state.minibosses, "stone_giant");
+    if (!opened) this.collision.dynamic.push({ ...VOLCANO_INNER_ENTRANCE, halfX: 0.7, halfZ: 0.2 });
+    this.innerPortal.update(opened, time);
     this.portal.update(true, time);
   }
   dispose() {

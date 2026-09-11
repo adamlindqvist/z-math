@@ -1,9 +1,10 @@
+import { GameCamera } from "../src/game/Camera";
 import { VOLCANO_RUPEES } from "../src/game/volcanoLayout";
 import { disposeTree } from "../src/game/Area";
 import { afterEach, describe, expect, it } from "vitest";
-import { Mesh, Scene, Vector3 } from "three";
+import { Box3, Mesh, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
-import { DUNGEONS, volcanoUnlocked } from "../src/game/dungeons/definitions";
+import { DUNGEONS } from "../src/game/dungeons/definitions";
 import { World } from "../src/game/World";
 import {
   VolcanoArea,
@@ -29,23 +30,9 @@ function quiz(s: Store, id: string) {
     s.finishQuiz();
   }
 }
-function completeFire(s: Store) {
+function prepareVolcano(s: Store) {
   s.grantItems(["temple-sword", "temple-shield"]);
-  s.setTarget("bokoblin");
-  s.interact();
-  s.travelTo({ dungeon: "fire", room: "light" });
-  quiz(s, "fire-light-lock");
-  s.travelTo({ dungeon: "fire", room: "stones" });
-  DUNGEONS.find((d) => d.id === "fire")!.rooms[1].stones!.forEach(
-    (stone, i) => {
-      while (s.getState().dungeons.fire.stones.stones[i] < stone.goal) {
-        s.pushStone(i, 1);
-        s.finishMotion();
-      }
-    },
-  );
-  s.travelTo({ dungeon: "fire", room: "treasure" });
-  quiz(s, "fire-treasure-lock");
+  s.setTarget("bokoblin"); s.interact();
 }
 function memory() {
   let raw = "";
@@ -92,7 +79,7 @@ describe("Vulkanvärlden", () => {
     const storage = memory(), s = createGameStore(storage);
     for (const { id } of VOLCANO_RUPEES) s.collect(id);
     expect(s.getState().collected).toEqual([]);
-    completeFire(s);
+    prepareVolcano(s);
     s.close();
     s.travelTo(null);
     s.travelTo({ world: "volcano" });
@@ -105,7 +92,7 @@ describe("Vulkanvärlden", () => {
     expect(restored.getState().collected).toEqual(VOLCANO_RUPEES.map(r => r.id));
   });
   it("picks up trail rupees by walking over them and hides them on revisits", () => {
-    completeFire(gameStore);
+    prepareVolcano(gameStore);
     gameStore.close();
     gameStore.travelTo(null);
     gameStore.travelTo({ world: "volcano" });
@@ -133,7 +120,7 @@ describe("Vulkanvärlden", () => {
     s.setTarget(target);
     s.interact();
     expect(s.getState().activeChest).toBeNull();
-    completeFire(s);
+    prepareVolcano(s);
     s.close();
     s.travelTo(null);
     s.travelTo({ world: "volcano" });
@@ -175,7 +162,7 @@ describe("Vulkanvärlden", () => {
     expect(restored.getState().rupees).toBe(before + 5);
   });
   it("makes the treasure reachable and animates it after the quiz, including on return", () => {
-    completeFire(gameStore);
+    prepareVolcano(gameStore);
     gameStore.close();
     gameStore.travelTo(null);
     gameStore.travelTo({ world: "volcano" });
@@ -204,42 +191,18 @@ describe("Vulkanvärlden", () => {
       disposeTree(interaction.arrow);
     }
   });
-  it("unlocks only after the final reward, survives equipment changes and reload, and restricts adjacency", () => {
-    const storage = memory(),
-      s = createGameStore(storage);
-    s.grantItems(["fire-sword", "fire-shield"]);
-    s.travelTo({ world: "volcano" });
-    expect(s.getState().location).toBeNull();
-    completeFire(s);
-    expect(volcanoUnlocked(s.getState().dungeons)).toBe(true);
-    s.travelTo({ world: "volcano" });
-    expect(s.getState().location).toEqual({
-      dungeon: "fire",
-      room: "treasure",
-    });
-    s.close();
-    s.travelTo({ world: "volcano" });
-    expect(s.getState().location?.dungeon).toBe("fire");
-    s.travelTo(null);
-    s.equipItem("temple-sword", "weapon");
-    s.equipItem("temple-shield", "shield");
-    s.pause();
-    s.travelTo({ world: "volcano" });
-    expect(s.getState().location).toBeNull();
-    s.close();
+  it("is available immediately and restricts adjacency", () => {
+    const storage = memory(), s = createGameStore(storage);
     s.travelTo({ world: "volcano" });
     expect(s.getState().location).toEqual({ world: "volcano" });
     const restored = createGameStore(storage);
     expect(restored.getState().location).toEqual({ world: "volcano" });
-    restored.travelTo({ castle: "hall" });
-    expect(restored.getState().location).toEqual({ world: "volcano" });
-    restored.travelTo({ dungeon: "fire", room: "light" });
-    expect(restored.getState().location).toEqual({ world: "volcano" });
+    for (const destination of [{ castle: "hall" as const }, { dungeon: "fire", room: "light" }, { world: "volcano-interior" as const }]) {
+      restored.travelTo(destination);
+      expect(restored.getState().location).toEqual({ world: "volcano" });
+    }
     restored.travelTo(null);
     expect(restored.getState().location).toBeNull();
-    restored.travelTo({ castle: "hall" });
-    restored.travelTo({ world: "volcano" });
-    expect(restored.getState().location).toEqual({ castle: "hall" });
   });
   it("rejects a locked or malformed saved world and remains playable without storage", () => {
     const storage = memory(),
@@ -248,9 +211,9 @@ describe("Vulkanvärlden", () => {
     s.close();
     s.collect("path-1");
     const saved = JSON.parse(storage.getItem());
-    saved.location = { world: "volcano" };
+    saved.location = { world: "volcano-interior" };
     expect(parseSave(JSON.stringify(saved)).location).toBeNull();
-    completeFire(s);
+    prepareVolcano(s);
     const unlocked = JSON.parse(storage.getItem());
     unlocked.location = { world: "volcano", castle: "hall" };
     expect(parseSave(JSON.stringify(unlocked)).location).toBeNull();
@@ -262,7 +225,7 @@ describe("Vulkanvärlden", () => {
         throw Error();
       },
     });
-    completeFire(broken);
+    prepareVolcano(broken);
     broken.close();
     broken.travelTo(null);
     broken.travelTo({ world: "volcano" });
@@ -273,8 +236,8 @@ describe("Vulkanvärlden", () => {
       volcano = new VolcanoArea(),
       interaction = new InteractionSystem(new Scene());
     try {
-      expect(world.passages().some((p) => p.destination?.world)).toBe(false);
-      completeFire(gameStore);
+      expect(world.passages().some((p) => p.destination?.world)).toBe(true);
+      prepareVolcano(gameStore);
       gameStore.close();
       gameStore.travelTo(null);
       world.update(0, 0);
@@ -375,4 +338,48 @@ describe("Vulkanvärlden", () => {
       twinArea.dispose();
     }
   });
+});
+
+
+it("makes the mountain taller than its cave entrance without obstructing the approach", () => {
+  const area = new VolcanoArea();
+  try {
+    area.root.updateWorldMatrix(true, true);
+    const mountain = new Box3().setFromObject(area.root.getObjectByName("volcano")!);
+    const entrance = new Box3().setFromObject(area.root.getObjectByName("volcano-cave-mouth")!);
+    expect(mountain.max.y - mountain.min.y).toBeGreaterThan(3.8);
+    expect(mountain.max.y).toBeGreaterThan(entrance.max.y * 1.25);
+    for (let z = -3.4; z >= -4.8; z -= 0.05)
+      expect(area.collision.free(0, z), `mountain approach ${z}`).toBe(true);
+  } finally { area.dispose(); }
+});
+
+
+it("keeps the crater inside the camera view when approaching the entrance", () => {
+  const area = new VolcanoArea();
+  try {
+    area.root.updateWorldMatrix(true, true);
+    const mountain = area.root.getObjectByName("volcano")!;
+    const camera = new GameCamera();
+    for (const [w, h] of [[1758, 1210], [1180, 820], [820, 1180]]) {
+      camera.resize(w, h);
+      for (const x of [-1, 0, 1]) for (const z of [-3.4, -4.8]) {
+        camera.setMode("glade", new Vector3(x, 0, z));
+        camera.camera.updateMatrixWorld();
+        mountain.traverse((object) => {
+          if (!(object instanceof Mesh)) return;
+          const positions = object.geometry.attributes.position;
+          for (let i = 0; i < positions.count; i++) {
+            const vertex = new Vector3().fromBufferAttribute(positions, i);
+            object.localToWorld(vertex);
+            // Only the summit and lava need to fit; the broad base may extend beyond portrait view.
+            if (vertex.y < 3.2) continue;
+            vertex.project(camera.camera);
+            expect(vertex.y, `top at ${w}x${h}, player ${x},${z}`).toBeLessThan(0.98);
+            expect(Math.abs(vertex.x)).toBeLessThan(0.98);
+          }
+        });
+      }
+    }
+  } finally { area.dispose(); }
 });

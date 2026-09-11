@@ -1,3 +1,5 @@
+import { defeatGiant } from "./helpers/volcano";
+import { VolcanoInteriorArea } from "../src/game/VolcanoInteriorArea";
 import { afterEach, describe, expect, it } from "vitest";
 import { Box3, Mesh, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
@@ -17,11 +19,15 @@ import type { CollisionSystem } from "../src/game/CollisionSystem";
 const fire = DUNGEONS.find((d) => d.id === "fire")!;
 type Store = ReturnType<typeof createGameStore>;
 const travel = (s: Store, room: string | null) =>
-  s.travelTo(room ? { dungeon: "fire", room } : null);
+  s.travelTo(room ? { dungeon: "fire", room } : { world: "volcano-interior" });
 function unlock(s: Store) {
   s.grantItems(["temple-sword", "temple-shield"]);
+  s.equipItem("temple-shield", "shield");
   s.setTarget("bokoblin");
   s.interact();
+  s.travelTo({ world: "volcano" });
+  defeatGiant(s);
+  s.travelTo({ world: "volcano-interior" });
 }
 function quiz(s: Store, id: string) {
   s.setTarget({ kind: "challenge", id, label: "Räkna" });
@@ -122,65 +128,18 @@ function walk(
 afterEach(() => gameStore.reset());
 
 describe("Eldtemplet", () => {
-  it("requires the bridge both at the portal and in restored progress", () => {
-    const storage = memory(),
-      s = createGameStore(storage);
+  it("moves the entrance out of the glade and requires the giant on reload", () => {
+    const storage = memory(), s = createGameStore(storage);
     travel(s, "light");
     expect(s.getState().location).toBeNull();
     const world = new World();
-    expect(
-      world.passages().some((p) => p.destination?.dungeon === "fire"),
-    ).toBe(false);
-    unlock(gameStore);
-    expect(
-      world.passages().some((p) => p.destination?.dungeon === "fire"),
-    ).toBe(true);
-    const player = new Player();
-    player.position.set(0, 0, 16.75);
-    walk(player, world.collision, -2, 22.5);
-    expect(world.root.getObjectByName("fire-entrance")!.rotation.y).toBeCloseTo(
-      Math.PI / 2,
-    );
-    const interactions = new InteractionSystem(new Scene());
-    interactions.update(player.position, world, 0);
-    expect(gameStore.getState().location).toBeNull();
-    walk(player, world.collision, -5.85, 22.5);
-    interactions.update(player.position, world, 0);
-    expect(gameStore.getState().location).toBeNull();
-    walk(player, world.collision, -6.05, 22.5);
-    interactions.update(player.position, world, 0);
-    expect(gameStore.getState().location).toEqual({
-      dungeon: "fire",
-      room: "light",
-    });
+    expect(world.passages().some((p) => p.destination?.dungeon === "fire")).toBe(false);
+    expect(world.root.getObjectByName("fire-entrance")).toBeUndefined();
     world.dispose();
-    disposeTree(player.root);
     enterStones(s);
-    const good = JSON.parse(storage.getItem());
-    for (const mutate of [
-      (p: typeof good) => {
-        p.bridgeUnlocked = false;
-      },
-      (p: typeof good) => {
-        p.bridgeUnlocked = false;
-        p.location = null;
-      },
-      (p: typeof good) => {
-        p.version = 5;
-      },
-      (p: typeof good) => {
-        p.dungeons.fire.stones.stones[0] = 3;
-      },
-      (p: typeof good) => {
-        p.dungeons.fire.stones.stones[2] = 4;
-      },
-    ]) {
-      const bad = structuredClone(good);
-      mutate(bad);
-      expect(parseSave(JSON.stringify(bad)).location).toBeNull();
-      expect(parseSave(JSON.stringify(bad)).bridgeUnlocked).toBe(false);
-    }
     expect(parseSave(storage.getItem()).location?.room).toBe("stones");
+    const bad = JSON.parse(storage.getItem()); bad.minibosses.stone_giant = 2;
+    expect(parseSave(JSON.stringify(bad)).location).toBeNull();
   });
 
   it("saves at a bend, resets only this puzzle, and grants distinct equipment once", () => {
@@ -209,7 +168,7 @@ describe("Eldtemplet", () => {
     expect(restored.getState().overlay).toBe("itemReward");
     expect(restored.getState().equipment).toMatchObject({
       weapon: "fire-sword",
-      shield: "fire-shield",
+      shield: "temple-shield",
     });
     const saved = createGameStore(storage);
     expect(saved.getState().items).toEqual(
@@ -219,10 +178,9 @@ describe("Eldtemplet", () => {
         "temple-sword",
         "temple-shield",
         "fire-sword",
-        "fire-shield",
       ]),
     );
-    expect(new Set(saved.getState().items).size).toBe(6);
+    expect(new Set(saved.getState().items).size).toBe(5);
     expect(saved.getState().rupees).toBe(5);
     saved.equipItem("temple-sword", "weapon");
     saved.equipItem("temple-shield", "shield");
@@ -231,7 +189,7 @@ describe("Eldtemplet", () => {
       shield: "temple-shield",
     });
     saved.equipItem("fire-sword", "weapon");
-    saved.equipItem("fire-shield", "shield");
+    expect(saved.getState().items).not.toContain("fire-shield");
     travel(saved, null);
     travel(saved, "light");
     travel(saved, "stones");
@@ -246,10 +204,9 @@ describe("Eldtemplet", () => {
         "temple-sword",
         "temple-shield",
         "fire-sword",
-        "fire-shield",
       ]),
     );
-    expect(new Set(saved.getState().items).size).toBe(6);
+    expect(new Set(saved.getState().items).size).toBe(5);
     expect(saved.getState().bridgeUnlocked).toBe(true);
     expect(pushedPosition(2, 1, 3)).toBeNull();
     saved.reset();
@@ -326,9 +283,9 @@ describe("Eldtemplet", () => {
     quiz(gameStore, "fire-treasure-lock");
     gameStore.close();
     treasure.update(0, 0);
-    walk(player, treasure.collision, 0, -5.2);
+    walk(player, treasure.collision, -5.2, 0);
     interactions.update(player.position, treasure, 0);
-    expect(gameStore.getState().location).toBeNull();
+    expect(gameStore.getState().location).toEqual({ world: "volcano-interior" });
     treasure.dispose();
     disposeTree(player.root);
   });
@@ -364,8 +321,11 @@ describe("Eldtemplet", () => {
         if (!(object instanceof Mesh)) return;
         const b = new Box3().setFromObject(object);
         expect(
-          b.max.x < -5.3 || b.min.x > 5.3 || b.max.z < -5.3 || b.min.z > 5.3,
+          b.max.x < -4.6 || b.min.x > 4.6 || b.max.z < -4.6 || b.min.z > 4.6,
         ).toBe(true);
+        // Edge fissures and wider channels must leave the side doorway clear.
+        if (definition.id !== "stones" && b.min.x < -4.6)
+          expect(b.max.z < -1.25 || b.min.z > 1.25).toBe(true);
       });
       expect(area.collision.free(0, 4.7)).toBe(true);
       area.dispose();
@@ -393,4 +353,37 @@ describe("Eldtemplet", () => {
     }
     disposeTree(player.root);
   });
+});
+
+
+it("puts only the fire temple's hub exits on the left and keeps the final exit locked", () => {
+  unlock(gameStore);
+  travel(gameStore, "light");
+  const first = new DungeonArea(fire, fire.rooms[0]);
+  const interaction = new InteractionSystem(new Scene());
+  try {
+    expect(first.spawn).toEqual({ x: -3.95, z: 0 });
+    expect(first.collision.free(first.spawn.x, first.spawn.z)).toBe(true);
+    expect(first.passages(gameStore.getState())[0]).toMatchObject({
+      x: -5.35, z: 0, rotation: Math.PI / 2, destination: { world: "volcano-interior" },
+    });
+    expect(first.collision.free(0, 5.65)).toBe(false);
+    interaction.update(new Vector3(first.spawn.x, 0, first.spawn.z), first, 0);
+    expect(gameStore.getState().location?.room).toBe("light");
+    for (let x = -3.95; x >= -5.35; x -= 0.05) expect(first.collision.free(x, 0)).toBe(true);
+    interaction.update(new Vector3(-5.35, 0, 0), first, 0);
+    expect(gameStore.getState().location).toEqual({ world: "volcano-interior" });
+  } finally {
+    first.dispose(); disposeTree(interaction.ring); disposeTree(interaction.arrow);
+  }
+  const last = new DungeonArea(fire, fire.rooms[2]);
+  try {
+    expect(last.spawn).toEqual({ x: 0, z: 4.7 });
+    expect(last.collision.free(-5.35, 0)).toBe(false);
+    expect(last.collision.free(0, -5.65)).toBe(false);
+    expect(last.passages(gameStore.getState())).toEqual([
+      expect.objectContaining({ x: 0, z: 5.35, destination: { dungeon: "fire", room: "stones" } }),
+    ]);
+    expect(last.root.getObjectByName("room-forward-door")!.rotation.y).toBeCloseTo(Math.PI / 2);
+  } finally { last.dispose(); }
 });

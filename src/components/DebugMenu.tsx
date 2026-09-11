@@ -99,6 +99,9 @@ export default function DebugMenu() {
           >
             <DoorOpen aria-hidden="true" /> Vulkanvärlden
           </button>
+          <button className={actionClass} onClick={() => gameStore.debugTravelTo({ world: "volcano-interior" })}>
+            <DoorOpen aria-hidden="true" /> Vulkanens inre
+          </button>
           {(["hall", "shop", "throne"] as const).map((castle) => (
             <button
               key={castle}

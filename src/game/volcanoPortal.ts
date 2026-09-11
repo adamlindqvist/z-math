@@ -4,6 +4,7 @@ import { gladePosition } from "./gladeLayout";
 import type { CollisionSystem } from "./CollisionSystem";
 
 export const VOLCANO_ENTRANCE = gladePosition(6, 24);
+export const VOLCANO_INNER_ENTRANCE = { x: 0, z: -4.8 };
 export const VOLCANO_RETURN = gladePosition(-7, 5);
 // Exit toward the destination world so continuing forward leads away from the portal.
 export const portalSpawn = (p: { x: number; z: number }, side: -1 | 1) => ({

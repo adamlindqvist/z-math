@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { type Area, type Interaction, disposeTree } from "../Area";
+import { type Area, type Interaction, type Passage, disposeTree } from "../Area";
 import { CollisionSystem } from "../CollisionSystem";
 import { Chest } from "../entities/Chest";
 import { box, material, ball } from "../models";
@@ -20,6 +20,8 @@ export class DungeonArea implements Area {
   private stones: THREE.Group[] = [];
   private tiles: { mesh: THREE.Mesh; stone: number }[] = [];
   private gate: THREE.Mesh;
+  private back = { x: 0, z: 5.35, rotation: 0 };
+  private forward = { x: 0, z: -5.35, rotation: 0 };
   private lamps: THREE.Mesh[] = [];
   private chest?: Chest;
   private motionTime = 0;
@@ -28,6 +30,15 @@ export class DungeonArea implements Area {
     readonly dungeon: DungeonDefinition,
     readonly room: RoomDefinition,
   ) {
+    const index = dungeon.rooms.indexOf(room);
+    const leftExit = dungeon.id === "fire" && (index === 0 || index === dungeon.rooms.length - 1);
+    if (leftExit) {
+      const left = { x: -5.35, z: 0, rotation: Math.PI / 2 };
+      if (index === 0) {
+        this.back = left;
+        this.spawn = { x: -3.95, z: 0 };
+      } else this.forward = left;
+    }
     const palette = THEMES[dungeon.theme];
     const stone = material(palette.stone),
       floor = material(palette.floor),
@@ -50,9 +61,12 @@ export class DungeonArea implements Area {
           1.94,
         );
     for (const x of [-6, 6]) {
-      box(this.root, stone, x, 0.45, 0, 0.35, 0.9, 12);
-      box(this.root, band, x, 0.92, 0, 0.4, 0.08, 12);
-      this.collision.add(x, 0, 0.18, 6);
+      const segments = x < 0 && leftExit ? [{ z: -3.65, length: 4.7 }, { z: 3.65, length: 4.7 }] : [{ z: 0, length: 12 }];
+      for (const { z, length } of segments) {
+        box(this.root, stone, x, 0.45, z, 0.35, 0.9, length);
+        box(this.root, band, x, 0.92, z, 0.4, 0.08, length);
+        this.collision.add(x, z, 0.18, length / 2);
+      }
     }
     for (const z of [-5.8, 5.8])
       for (const x of [-3.6, 3.6]) {
@@ -60,21 +74,37 @@ export class DungeonArea implements Area {
         box(this.root, band, x, 0.72, z, 4.7, 0.08, 0.4);
         this.collision.add(x, z, 2.35, 0.18);
       }
-    roomDecoration(this.root, dungeon.theme);
-    portal(this.root, 0, -5.35, dungeon.theme);
-    portal(this.root, 0, 5.35, dungeon.theme).scale.y = 0.22;
-    for (const z of [-5.35, 5.35])
-      for (const x of [-0.95, 0.95]) this.collision.add(x, z, 0.25, 0.28);
+    // Close the old opening when a hub exit moves to the left wall.
+    if (leftExit) {
+      const z = index === 0 ? 5.8 : -5.8;
+      box(this.root, stone, 0, 0.35, z, 2.5, 0.7, 0.35);
+      box(this.root, band, 0, 0.72, z, 2.5, 0.08, 0.4);
+      this.collision.add(0, z, 1.25, 0.18);
+    }
+    roomDecoration(this.root, dungeon.theme, leftExit, room.id);
+    for (const [i, pose] of [this.back, this.forward].entries()) {
+      const doorway = portal(this.root, pose.x, pose.z, dungeon.theme);
+      doorway.name = i === 0 ? "room-back-door" : "room-forward-door";
+      doorway.rotation.y = pose.rotation;
+      if (i === 0 && pose.rotation === 0) doorway.scale.y = 0.22;
+      for (const side of [-1, 1]) this.collision.add(
+        pose.x + Math.cos(pose.rotation) * side * 0.95,
+        pose.z - Math.sin(pose.rotation) * side * 0.95,
+        pose.rotation ? 0.28 : 0.25,
+        pose.rotation ? 0.25 : 0.28,
+      );
+    }
     this.gate = box(
       this.root,
       material(palette.gate),
-      0,
+      this.forward.x,
       0.8,
-      -5.35,
+      this.forward.z,
       1.4,
       1.6,
       0.18,
     );
+    this.gate.rotation.y = this.forward.rotation;
     for (const x of [-5.2, 5.2])
       for (const z of [-4.4, 4.4]) {
         box(this.root, stone, x, 0.5, z, 0.65, 1, 0.65);
@@ -98,9 +128,9 @@ export class DungeonArea implements Area {
           ball(
             this.root,
             material("#979d87"),
-            (i - (room.challenge.required - 1) / 2) * 0.4,
+            this.forward.x + Math.cos(this.forward.rotation) * (i - (room.challenge.required - 1) / 2) * 0.4,
             2.3,
-            -5.35,
+            this.forward.z - Math.sin(this.forward.rotation) * (i - (room.challenge.required - 1) / 2) * 0.4,
             0.17,
           ),
         );
@@ -144,26 +174,25 @@ export class DungeonArea implements Area {
   }
   passages(state: GameState) {
     const index = this.dungeon.rooms.indexOf(this.room);
-    const passages = [
+    const exit = this.dungeon.entranceWorld ? { world: this.dungeon.entranceWorld } : null;
+    const passages: Passage[] = [
       {
-        x: 0,
-        z: 5.35,
+        ...this.back,
         destination: index
           ? { dungeon: this.dungeon.id, room: this.dungeon.rooms[index - 1].id }
-          : null,
+          : exit,
       },
     ];
     if (roomSolved(this.room, state.dungeons[this.dungeon.id]))
       passages.push({
-        x: 0,
-        z: -5.35,
+        ...this.forward,
         destination:
           index < this.dungeon.rooms.length - 1
             ? {
                 dungeon: this.dungeon.id,
                 room: this.dungeon.rooms[index + 1].id,
               }
-            : null,
+            : exit,
       });
     return passages;
   }
@@ -235,7 +264,7 @@ export class DungeonArea implements Area {
     this.gate.visible = !solved;
     this.collision.dynamic = solved
       ? []
-      : [{ x: 0, z: -5.35, halfX: 0.7, halfZ: 0.12 }];
+      : [{ x: this.forward.x, z: this.forward.z, halfX: this.forward.rotation ? 0.12 : 0.7, halfZ: this.forward.rotation ? 0.7 : 0.12 }];
     this.lamps.forEach((l, i) =>
       (l.material as THREE.MeshStandardMaterial).color.set(
         i < p.answers[this.room.challenge!.id] ? "#ffe290" : "#979d87",

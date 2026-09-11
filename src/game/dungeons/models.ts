@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { box, ball, material, mesh, flame } from "../models";
+import { box, ball, material, mesh, flame, silhouette } from "../models";
 import type { DungeonTheme, SymbolKind } from "./definitions";
 // Raised geometric symbols work without fonts, textures or colour recognition.
 export function symbol(
@@ -65,9 +65,9 @@ export function symbol(
 export const THEMES = {
   fire: {
     stone: "#635052",
-    floor: "#ba8063",
-    tiles: ["#daa77d", "#cf966e"],
-    band: "#e67c37",
+    floor: "#403b43",
+    tiles: ["#75686a", "#82716e"],
+    band: "#b57a4a",
     water: "#f36b25",
     foam: "#ffe3a0",
     gate: "#a54830",
@@ -145,18 +145,57 @@ export function waterDecoration(parent: THREE.Group, theme: DungeonTheme) {
     }
   return decoration;
 }
-export function roomDecoration(parent: THREE.Group, theme: DungeonTheme) {
+export function roomDecoration(parent: THREE.Group, theme: DungeonTheme, leftOpening = false, roomId = "light") {
   if (theme === "water") return waterDecoration(parent, theme);
   const group = new THREE.Group();
   group.name = "fire-decoration";
   parent.add(group);
-  const lava = material("#f96b22");
-  lava.emissive.set("#f95113");
-  lava.emissiveIntensity = 0.55;
-  const rim = material("#664c47");
+  const lava = material("#ed4c12");
+  lava.emissive.set("#ff4208");
+  lava.emissiveIntensity = 0.7;
+  const rim = material("#39343d");
+  const hot = material("#ffc05b");
+  hot.emissive.set("#ff9a28");
+  hot.emissiveIntensity = 0.8;
+  // Jagged, pale currents and cooled crust break up the straight temple channels.
+  const channel = (x: number, z: number, length: number, width: number, rotation: number) => {
+    const bed = new THREE.Group();
+    bed.position.set(x, 0, z);
+    bed.rotation.y = rotation;
+    group.add(bed);
+    box(bed, rim, 0, 0.025, 0, length, 0.04, width + 0.08);
+    box(bed, lava, 0, 0.055, 0, length, 0.03, width);
+    const current = new THREE.Shape();
+    const count = Math.ceil(length / 0.35);
+    for (let i = 0; i <= count; i++) {
+      const px = -length / 2 + length * i / count;
+      const pz = Math.sin(i * 2.3) * width * 0.18;
+      if (i === 0) current.moveTo(px, pz);
+      else current.lineTo(px, pz);
+    }
+    for (let i = count; i >= 0; i--)
+      current.lineTo(-length / 2 + length * i / count, Math.sin(i * 2.3) * width * 0.18 + width * 0.16);
+    current.closePath();
+    const glow = mesh(new THREE.ShapeGeometry(current), hot, bed, 0, 0.073, 0);
+    glow.rotation.x = -Math.PI / 2;
+    const crust = new THREE.Shape();
+    crust.moveTo(-0.18, 0);
+    crust.lineTo(-0.1, 0.12);
+    crust.lineTo(0.07, 0.16);
+    crust.lineTo(0.2, 0);
+    crust.closePath();
+    const crustGeometry = new THREE.ShapeGeometry(crust);
+    for (let i = 0; i < Math.floor(length / 0.65); i++) {
+      const side = i % 2 ? -1 : 1;
+      const flake = mesh(crustGeometry, rim, bed, -length / 2 + 0.3 + i * 0.65, 0.076, side * width / 2);
+      flake.rotation.set(-Math.PI / 2, 0, side === 1 ? 0 : Math.PI);
+    }
+  };
   for (const x of [-5.65, 5.65]) {
-    box(group, rim, x, 0.015, 0, 0.48, 0.04, 10.8);
-    box(group, lava, x, 0.045, 0, 0.3, 0.03, 10.8);
+    const segments = x < 0 && leftOpening ? [{ z: -3.35, length: 4.1 }, { z: 3.35, length: 4.1 }] : [{ z: 0, length: 10.8 }];
+    for (const { z, length } of segments) {
+      channel(x, z, length, 0.46, Math.PI / 2);
+    }
     for (const z of [-2.6, 2.6]) {
       mesh(
         new THREE.CylinderGeometry(0.17, 0.1, 0.18, 8),
@@ -171,10 +210,95 @@ export function roomDecoration(parent: THREE.Group, theme: DungeonTheme) {
   }
   for (const z of [-5.48, 5.48])
     for (const x of [-3.6, 3.6]) {
-      box(group, rim, x, 0.015, z, 4.4, 0.04, 0.32);
-      box(group, lava, x, 0.045, z, 4.4, 0.03, 0.25);
+      channel(x, z, 4.4, 0.3, 0);
     }
+  // A few hairline fissures in the outer paving, away from tracks and doorways.
+  const fissure = new THREE.Shape();
+  fissure.moveTo(0, 0);
+  fissure.lineTo(0.16, 0.2);
+  fissure.lineTo(0.06, 0.39);
+  fissure.lineTo(0.27, 0.7);
+  fissure.lineTo(0.11, 0.38);
+  fissure.lineTo(0.21, 0.19);
+  fissure.closePath();
+  const fissureGeometry = new THREE.ShapeGeometry(fissure);
+  for (const side of [-1, 1])
+    for (const z of [-3, 2.3]) {
+      const crack = mesh(fissureGeometry, lava, group, side * 5.38, 0.025, z);
+      crack.rotation.set(-Math.PI / 2, 0, side * Math.PI / 2);
+    }
+  fireTempleWalls(group, roomId, lava);
+  // Small reliefs do not need additional shadow-map draws on iPad.
+  group.traverse((object) => {
+    if (object instanceof THREE.Mesh) object.castShadow = false;
+  });
   return group;
+}
+
+/** Shallow architectural details stay inside the existing perimeter decoration. */
+function fireTempleWalls(parent: THREE.Group, roomId: string, lava: THREE.Material) {
+  const basalt = material("#423d46"),
+    cutStone = material("#75616a"),
+    copper = material("#c88b53"),
+    recess = material("#302e37");
+  const columnGeometry = new THREE.CylinderGeometry(0.18, 0.22, 1, 6);
+
+  // Symmetrical bays and masonry joints make this a built temple inside a volcano.
+  // The middle bay is left empty for the side entrance and final exit.
+  for (const side of [-1, 1]) {
+    for (const z of [-3.65, 3.65]) {
+      const bay = new THREE.Group();
+      bay.position.set(side * 5.79, 0, z);
+      bay.rotation.y = -side * Math.PI / 2;
+      parent.add(bay);
+      box(bay, basalt, 0, 0.79, 0, 1.75, 1.5, 0.16);
+      box(bay, recess, 0, 0.85, 0.095, 1.23, 0.95, 0.04);
+      for (const x of [-0.78, 0.78]) {
+        box(bay, cutStone, x, 0.77, 0.1, 0.19, 1.48, 0.2);
+        for (const y of [0.14, 1.47])
+          box(bay, copper, x, y, 0.12, 0.25, 0.1, 0.23);
+      }
+      box(bay, copper, 0, 1.57, 0.08, 1.93, 0.13, 0.24);
+      box(bay, cutStone, 0, 0.26, 0.13, 1.45, 0.14, 0.22);
+
+      if (roomId === "stones") {
+        // A narrow lava spill between cooled, hexagonal basalt ribs.
+        box(bay, lava, 0, 0.64, 0.14, 0.15, 0.95, 0.035);
+        for (const [x, height] of [[-0.4, 0.66], [-0.22, 0.93], [0.25, 0.81], [0.43, 0.54]]) {
+          const rib = mesh(columnGeometry, cutStone, bay, x, 0.32 + height / 2, 0.18);
+          rib.scale.set(0.57, height, 0.57);
+        }
+      } else if (roomId === "treasure") {
+        // A framed fire crest and stepped plinth echo the temple's door lintels.
+        const crest = mesh(new THREE.TorusGeometry(0.38, 0.035, 4, 12), copper, bay, 0, 0.87, 0.15);
+        crest.scale.y = 1.12;
+        flame(bay, 0, 0.49, 0.19, 0.69);
+        box(bay, copper, 0, 0.38, 0.15, 0.73, 0.08, 0.13);
+      } else {
+        const mountain = silhouette(bay, cutStone, [
+          [-0.52, 0.43], [-0.18, 1.1], [0.16, 1.1], [0.52, 0.43],
+        ]);
+        mountain.position.z = 0.13;
+        const flow = silhouette(bay, lava, [
+          [-0.12, 1.09], [0.1, 1.09], [0.04, 0.85], [0.18, 0.55],
+          [0.01, 0.55], [-0.07, 0.84],
+        ]);
+        flow.position.z = 0.18;
+        flame(bay, 0, 1.12, 0.17, 0.27);
+      }
+    }
+    // Broken basalt edges beside the channels; never across a doorway.
+    for (const z of [-4.95, -1.75, 1.75, 4.95]) {
+      const rock = mesh(columnGeometry, basalt, parent, side * 5.65, 0.15, z);
+      rock.scale.set(0.85, 0.3, 1.3);
+      rock.rotation.y = z;
+    }
+  }
+  for (const z of [-5.61, 5.61])
+    for (const x of [-4.6, -2.7, 2.7, 4.6]) {
+      box(parent, cutStone, x, 0.38, z, 0.035, 0.56, 0.025);
+      box(parent, copper, x, 0.58, z, 0.55, 0.055, 0.035);
+    }
 }
 export function portal(
   parent: THREE.Group,

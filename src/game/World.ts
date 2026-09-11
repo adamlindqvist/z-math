@@ -1,5 +1,4 @@
 import { buildVolcanoPortal, VOLCANO_ENTRANCE } from "./volcanoPortal";
-import { volcanoUnlocked } from "./dungeons/definitions";
 import { CASTLE_ENTRANCE } from "./castle/CastleArea";
 import type { Passage } from "./Area";
 import { StrangeRock } from "./entities/StrangeRock";
@@ -94,10 +93,10 @@ export class World implements Area {
   }
   passages(): Passage[] {
     return [
-      ...(volcanoUnlocked(gameStore.getState().dungeons) ? [{ ...VOLCANO_ENTRANCE, destination: { world: "volcano" as const } }] : []),
+      { ...VOLCANO_ENTRANCE, destination: { world: "volcano" } },
       { ...CASTLE_ENTRANCE, destination: { castle: "hall" } },
       ...DUNGEONS.filter(
-        (d) => !d.requiresBridge || gameStore.getState().bridgeUnlocked,
+        (d) => !d.entranceWorld && (!d.requiresBridge || gameStore.getState().bridgeUnlocked),
       ).map((d) => ({
         x: d.entrance.x,
         z: d.entrance.z,
@@ -181,7 +180,7 @@ export class World implements Area {
   private burstShown = { ...gameStore.getState().chests };
   constructor() {
     buildSouthGlade(this.root, this.collision);
-    this.volcanoPortal.update(volcanoUnlocked(gameStore.getState().dungeons), 0);
+    this.volcanoPortal.update(true, 0);
     this.root.add(...this.rocks.map((rock) => rock.root));
     for (const { definition, chest, butterfly } of this.secrets) {
       chest.root.position.set(
@@ -544,7 +543,7 @@ export class World implements Area {
       );
       tip.rotation.z = r;
     }
-    DUNGEONS.forEach((d) => {
+    DUNGEONS.filter((d) => !d.entranceWorld).forEach((d) => {
       const rotation = d.entrance.rotation ?? 0;
       const sin = Math.sin(rotation),
         cos = Math.cos(rotation);
@@ -606,7 +605,7 @@ export class World implements Area {
     this.collision.add(gladeDistance(-3.5), gladeDistance(1.3), 0.3);
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
-    this.volcanoPortal.update(volcanoUnlocked(gameStore.getState().dungeons), time);
+    this.volcanoPortal.update(true, time);
     const state = gameStore.getState();
     if (this.secretResetId !== state.resetId) {
       this.secretResetId = state.resetId;
