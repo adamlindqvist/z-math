@@ -789,7 +789,7 @@ it("shows rabbit picture progress, farmer help and the one-time portal reward", 
   for (const id of ["cream", "brown", "gray"] as const) {
     act(() => { gameStore.setTarget({ kind: "rabbit", id, label: "Följ med" }); });
     click("Följ med");
-    expect(host.textContent).toContain("Gå tillbaka till bonden!");
+    expect(host.textContent).toContain("Gå till kaninhagen!");
     act(() => gameStore.bringRabbitHome(id));
   }
   expect(host.querySelector('[aria-label="3 av 3 kaniner hemma"]')).not.toBeNull();

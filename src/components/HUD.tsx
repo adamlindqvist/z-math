@@ -32,7 +32,7 @@ export function HUD() {
   const hint =
     state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? "Den stora porten är öppen!" : "Eldtemplet ligger till höger!") :
     state.location?.world === "volcano" ? (state.minibosses.stone_giant === 3 ? "Vulkanens ingång är öppen!" : "Besegra Stenjätten. Öppna vulkanen!") :
-    state.location === null && state.bridgeUnlocked ? (rabbitsHome(state.rabbits) ? "Gå till den lysande portalen!" : state.followingRabbits.length ? "Gå tillbaka till bonden!" : "Hitta kaninerna!") :
+    state.location === null && state.bridgeUnlocked ? (rabbitsHome(state.rabbits) ? "Gå till den lysande portalen!" : state.followingRabbits.length ? "Gå till kaninhagen!" : "Hitta kaninerna!") :
     state.location?.castle === "throne"
       ? "Vad finns här?"
       : state.location?.castle === "hall"

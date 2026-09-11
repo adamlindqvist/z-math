@@ -1,5 +1,7 @@
 import type { CollisionSystem } from "../CollisionSystem";
+import { PLAYER_WALK_SPEED } from "../Player";
 export type Point = { x: number; z: number };
+const RABBIT_FOLLOW_SPEED = PLAYER_WALK_SPEED * 0.9;
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z);
 export function clearRabbitPath(collision: CollisionSystem, from: Point, to: Point) {
   const steps = Math.max(1, Math.ceil(distance(from, to) / 0.08));
@@ -52,7 +54,7 @@ export class RabbitFollower {
     if (this.trail.length > 1800) this.trail = rabbitRoute(collision, position, player);
     let length = 0, previous = position;
     for (const point of this.trail) { length += distance(previous, point); previous = point; }
-    let budget = Math.min(4.6 * dt, Math.max(0, length - gap));
+    let budget = Math.min(RABBIT_FOLLOW_SPEED * dt, Math.max(0, length - gap));
     let moved = false;
     while (budget > 0 && this.trail.length) {
       const next = this.trail[0], d = distance(position, next);

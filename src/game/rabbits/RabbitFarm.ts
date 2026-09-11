@@ -11,6 +11,10 @@ export class RabbitFarm {
   readonly rabbits = RABBITS.map(definition => ({
     definition, root: rabbitModel(definition.color), follower: new RabbitFollower(), following: false,
   }));
+  private followEffects = RABBITS.map(({ id }) => ({
+    root: Object.assign(new THREE.Group(), { name: `rabbit-follow-effect-${id}`, visible: false }),
+    time: 0,
+  }));
   private scenery: ReturnType<typeof buildFarm>;
   private hearts = new THREE.Group();
   private carrot = new THREE.Group();
@@ -32,6 +36,16 @@ export class RabbitFarm {
       rabbit.root.name = `rabbit-${rabbit.definition.id}`;
       root.add(rabbit.root);
     }
+    const sparkleGeometry = new THREE.OctahedronGeometry(0.1);
+    this.followEffects.forEach(({ root: effect }) => {
+      for (let i = 0; i < 7; i++) {
+        const sparkle = mesh(sparkleGeometry, new THREE.MeshBasicMaterial({ color: i % 2 ? "#fff4a8" : "#f7c84b" }), effect);
+        sparkle.castShadow = false;
+      }
+      const ring = mesh(new THREE.RingGeometry(0.28, 0.35, 24), new THREE.MeshBasicMaterial({ color: "#fff4a8", side: THREE.DoubleSide }), effect);
+      ring.name = "follow-ring"; ring.rotation.x = -Math.PI / 2; ring.castShadow = false;
+      root.add(effect);
+    });
     const pink = material("#f18aa6");
     for (let i = 0; i < 3; i++) {
       const heart = silhouette(this.hearts, pink, [[0, -0.13], [-0.17, 0.02], [-0.16, 0.14], [-0.07, 0.19], [0, 0.12], [0.07, 0.19], [0.16, 0.14], [0.17, 0.02]]);
@@ -50,6 +64,7 @@ export class RabbitFarm {
       rabbit.follower.reset(); rabbit.following = false;
     }
     this.hearts.visible = this.carrot.visible = false;
+    this.followEffects.forEach(effect => { effect.time = 0; effect.root.visible = false; });
     this.careSequence = -1; this.careTime = 0; this.idleTime = 0;
     this.bloom = rabbitsHome(state.rabbits) ? 1 : 0;
   }
@@ -79,16 +94,16 @@ export class RabbitFarm {
     if (rabbitsHome(state.rabbits)) this.bloom = Math.min(1, this.bloom + dt);
     this.scenery.flowers.visible = this.bloom > 0;
     this.scenery.flowers.scale.y = Math.max(0.01, this.bloom);
-    for (const rabbit of this.rabbits) {
+    for (const [index, rabbit] of this.rabbits.entries()) {
       const { id, home } = rabbit.definition;
       const following = state.followingRabbits.includes(id);
+      if (following && !rabbit.following) this.followEffects[index].time = 0.9;
       if (!following && rabbit.following) {
         const p = state.rabbits[id] ? home : rabbit.definition.position;
         rabbit.root.position.set(p.x, 0, p.z); rabbit.follower.reset();
       }
       rabbit.following = following;
       if (dt > 0) {
-        const index = RABBITS.findIndex(r => r.id === id);
         const parts = this.idleParts[index];
         const idle = !following && !state.rabbits[id];
         const phase = this.idleTime + index * 1.7;
@@ -111,11 +126,28 @@ export class RabbitFarm {
           this.store.bringRabbitHome(id); state = this.store.getState();
         }
       } else if (dt > 0 && state.rabbits[id]) {
-        const index = RABBITS.findIndex(r => r.id === id);
         const play = rabbitsHome(state.rabbits) && state.rabbitCare?.id !== id;
         rabbit.root.position.set(home.x + (play ? Math.sin(time + index * 2) * 0.16 : 0),
           play ? Math.max(0, Math.sin(time * 3 + index * 2)) * 0.12 : 0,
           home.z + (play ? Math.cos(time + index * 2) * 0.16 : 0));
+      }
+      const effect = this.followEffects[index];
+      effect.time = Math.max(0, effect.time - dt);
+      effect.root.visible = effect.time > 0;
+      if (effect.root.visible) {
+        const progress = 1 - effect.time / 0.9;
+        effect.root.position.copy(rabbit.root.position); effect.root.position.y += 0.18;
+        effect.root.children.forEach((sparkle, i) => {
+          if (sparkle.name === "follow-ring") {
+            sparkle.scale.setScalar(0.7 + progress * 1.8);
+            return;
+          }
+          const angle = i / 7 * Math.PI * 2;
+          const radius = 0.18 + progress * 0.75;
+          sparkle.position.set(Math.cos(angle) * radius, 0.25 + Math.sin(progress * Math.PI) * 0.65, Math.sin(angle) * radius);
+          sparkle.rotation.y = angle + progress * Math.PI;
+          sparkle.scale.setScalar(Math.max(0.01, Math.sin(progress * Math.PI)));
+        });
       }
     }
     const care = state.rabbitCare;

@@ -3,6 +3,7 @@ import { Vector3 } from "three";
 import { heroModel, applyEquipment } from "./heroModel";
 import type { Input } from "./Input";
 import type { CollisionSystem } from "./CollisionSystem";
+export const PLAYER_WALK_SPEED = 3.5;
 export class Player {
   model = heroModel();
   root = this.model.root;
@@ -28,7 +29,7 @@ export class Player {
     noclip = false,
   ) {
     const { x, y } = input.direction();
-    const speed = 3.5 * (noclip ? 2 : 1);
+    const speed = PLAYER_WALK_SPEED * (noclip ? 2 : 1);
     const dx = (room ? x : x * 0.864 + y * 0.504) * dt * speed;
     const dz = (room ? y : -x * 0.504 + y * 0.864) * dt * speed;
     const before = this.root.position.clone();

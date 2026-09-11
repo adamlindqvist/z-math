@@ -163,7 +163,7 @@ export function Dialogue() {
       <h2>{overlay === "rabbitReward" || rabbitsHome(rabbits) ? "Alla kaniner är hemma!" : "Hjälp mina kaniner!"}</h2>
       <p>{overlay === "rabbitReward" ? "Du får 10 rupees. Vulkanportalen är öppen!" : rabbitsHome(rabbits)
         ? "Tack för hjälpen! Du kan mata och klappa kaninerna."
-        : "Hitta mina tre kaniner. Följ dem hem till mig!"}</p>
+        : "Hitta mina tre kaniner. Visa dem vägen till hagen med kaninbilden!"}</p>
       {overlay === "rabbitReward" && <div className="flex items-center justify-center gap-5 text-forest"><Gem className="size-10" /><strong className="text-3xl">10</strong><DoorOpen className="size-10" /></div>}
     </Modal>;
   if (overlay === "bokoblin")

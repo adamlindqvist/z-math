@@ -11,6 +11,7 @@ import {
 import { World } from "../src/game/World";
 import { disposeTree } from "../src/game/Area";
 import { InteractionSystem } from "../src/game/InteractionSystem";
+import { gladePosition } from "../src/game/gladeLayout";
 
 const secret = WORLD_SECRETS[0];
 const target = { kind: "chest" as const, id: secret.chestId, label: "Öppna" };
@@ -430,7 +431,12 @@ describe("independent southern butterfly", () => {
         revealed: false,
         completed: false,
       });
-      const position = new Vector3(-5.625, 0, 29.3);
+      // The treasure belongs in the northeast of the southern glade.
+      const northeast = gladePosition(3, 17);
+      expect(south.chestPosition.x).toBeGreaterThan(northeast.x);
+      expect(south.chestPosition.z).toBeLessThan(northeast.z);
+      expect(south.chestPosition.z).toBeGreaterThan(gladePosition(0, 13).z);
+      const position = new Vector3(south.chestPosition.x, 0, south.chestPosition.z + 1.2);
       w.update(1.5, 0, position);
       expect(w.collision.free(position.x, position.z)).toBe(true);
       const scene = new Scene();

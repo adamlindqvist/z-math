@@ -44,9 +44,9 @@ export const WORLD_SECRETS = [
       gladePosition(4, 17.4),
       gladePosition(-2, 18.7),
       gladePosition(2, 23),
-      gladePosition(-4.5, 24),
+      gladePosition(4, 14.8),
     ],
-    chestPosition: gladePosition(-4.5, 24.4),
+    chestPosition: gladePosition(4, 14.4),
   },
   {
     id: "strange-rock-01",
