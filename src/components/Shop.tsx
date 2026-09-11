@@ -140,7 +140,6 @@ export function ShopDialog() {
                       ? `Du behöver ${SHOP[id] - s.rupees} rupees till`
                       : "Köp"}
                   </button>
-                  {s.rupees < SHOP[id] && <p>Leta gärna efter fler rupees!</p>}
                 </>
               )}
               <button

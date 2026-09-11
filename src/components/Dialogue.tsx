@@ -11,8 +11,6 @@ export const buttonBase =
   "cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none";
 export const primaryButton =
   "cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none flex min-h-[76px] w-full items-center justify-center gap-3.5 rounded-3xl bg-forest p-4 text-2xl text-white shadow-[0_5px_0_#22603b] [&_svg]:size-[30px]";
-export const eyebrow =
-  "mx-[58px]! mt-1! mb-2.5! text-xl! font-extrabold text-teal [@media(max-height:850px)]:grid [@media(max-height:850px)]:min-h-12 [@media(max-height:850px)]:place-items-center";
 export const emblem =
   "mx-auto mb-3 grid h-[108px] w-[120px] place-items-center rounded-[32px] bg-[#fff0b8] text-forest [&>svg]:size-14";
 // Same insets, corner and lift as the action button in TouchControls, so a dialog
@@ -123,7 +121,7 @@ export function Modal({
           }
         >
           {sidecar && (
-            <div className="min-h-0 min-[1000px]:max-h-[460px]">{sidecar}</div>
+            <div className="min-h-0">{sidecar}</div>
           )}
           <div
             data-testid="dialog-panel"
