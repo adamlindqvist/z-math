@@ -46,7 +46,7 @@ Varje push till `main` bygger och publicerar spelet till GitHub Pages. Aktivera 
 - I Stensalen: matcha sol, löv och måne. Gå mot stenen från vänster eller höger för att knuffa den längs spåret. Pilen visar riktningen. Ingen actionknapp behövs. Stenar på rätt symbol kan flyttas igen tills alla tre ligger rätt; då låses alla och porten öppnas. Knappen med återställningspilen börjar om med den olösta stengåtan.
 - I Skattkammaren öppnar fem bildadditioner (summa högst fem) kistan och ger fem Rupees en gång. Gå genom porten så teleporteras du tillbaka till gläntan. Den låga porten bakom dig leder alltid tillbaka.
 - Rätt mattesvar och stenknuffar i templet sparas direkt. Efter omladdning börjar du vid det sparade rummets säkra startpunkt. Lösta rum förblir lösta tills du börjar om med hela äventyret.
-- Följ stigen söderut till träbron. Bokoblin vaktar bron tills du har fått både svärd och sköld i Gläntans tempel. Tryck på **Skräm iväg** så springer Bokoblin undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
+- Följ stigen söderut till träbron. Grisen vaktar bron tills du har fått både svärd och sköld i Gläntans tempel. Tryck på **Skräm iväg** så springer grisen undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
 - Gå över bron till södra gläntan. Den nya kistan har tre additionsfrågor och ger fem rupees en gång, oberoende av den första kistan. Fel svar kostar inget; stänger du ett pågående kistquiz börjar dess tre frågor om nästa gång.
 - Samma fråga kommer aldrig igen i samma quiz eller räknesession. Har alla frågor i en kort omgång, som de fem bildfrågorna, redan använts återanvänds de äldsta först.
 - Ett fel svar markeras i rött och det rätta svaret visas samtidigt i lugnt blått, så att barnet ser vad som var rätt. Efter en kort stund byts frågan mot en ny i stället för att man får försöka igen på samma fråga; svarsknapparna är låsta under tiden. Antalet rätt påverkas inte av fel svar.
@@ -131,7 +131,7 @@ Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 ×
 
 ### Väska och utrustning
 
-Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Gläntans tempels sista mattelås ger fem rupees, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg Bokoblin vid bron; de behöver inte vara påtagna. Strid ingår inte.
+Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Gläntans tempels sista mattelås ger fem rupees, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg grisen vid bron; de behöver inte vara påtagna. Strid ingår inte.
 
 Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder anger `garment` i föremålsregistret.
 
@@ -145,7 +145,7 @@ Paus och dialoger stoppar kaninernas följande och hemlämning. Vid omladdning e
 
 `src/game/rabbits/` innehåller uppdragsdefinitioner, gårdens och kaninernas modeller samt följande och effekter. `World` kopplar gården till spelvärlden och `gameStore` hanterar progression och portalspärr. Nya tester täcker belöning, sparning, avbrott, följande runt hinder, hemlämning och portalvillkor. Visuell verifiering av kaningården återstår.
 
-`World` håller ihop båda landytorna och bron i samma scen. `SouthGlade` bygger den södra miljön och brons gränser. `gladeScenery` ger båda gläntorna samma mjukt slingrande stigar, rundade träd, blommande buskar, stenar, blommor och grästuvor, och dess `scatterDetail` delas med vulkanvärldens markdetaljer; `Bokoblin` äger vaktens modell och flykt. Utomhuskistor identifieras med `glade` och `south`, och den aktiva kistan behålls under hela frågeomgången.
+`World` håller ihop båda landytorna och bron i samma scen. `SouthGlade` bygger den södra miljön och brons gränser. `gladeScenery` ger båda gläntorna samma mjukt slingrande stigar, rundade träd, blommande buskar, stenar, blommor och grästuvor, och dess `scatterDetail` delas med vulkanvärldens markdetaljer; `Bokoblin` äger grisens modell och flykt. Utomhuskistor identifieras med `glade` och `south`, och den aktiva kistan behålls under hela frågeomgången.
 
 ### Konstiga stenarna
 

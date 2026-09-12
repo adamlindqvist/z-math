@@ -154,7 +154,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
               : state.target === "bokoblin"
                 ? hasBridgeEquipment(state)
                   ? "Skräm iväg"
-                  : "Bokoblin"
+                  : "Gris"
                 : state.target === "npc"
                   ? "Prata"
                   : "Gå och leta"}

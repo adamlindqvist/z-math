@@ -231,7 +231,7 @@ export class Game {
           ? "Bosses butik"
           : gameStore.getState().location?.castle === "throne" ? "Kungasalen" : undefined) ??
         resolveRoom(gameStore.getState().location)?.room.name ??
-        "Gläntan med slottet, Zelda, Gläntans tempel och Bokoblins bro till södra gläntan och vägen till Vulkanvärlden",
+        "Gläntan med slottet, Zelda, Gläntans tempel och grisens bro till södra gläntan och vägen till Vulkanvärlden",
     );
   }
   // Snapped to whole units so the shadow map does not crawl while walking.

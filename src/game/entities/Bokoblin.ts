@@ -12,7 +12,7 @@ export class Bokoblin {
   private legs: THREE.Group[] = [];
   private materials: THREE.Material[];
   constructor(unlocked: boolean) {
-    this.root.name = "Bokoblin";
+    this.root.name = "Gris";
     const skin = material("#a95730"),
       cloth = material("#777348"),
       bone = material("#ece3ac"),
@@ -239,7 +239,7 @@ export class Bokoblin {
       group.clear();
       for (const [mat, geometries] of parts) {
         const combined = mergeGeometries(geometries);
-        if (!combined) throw new Error("Kunde inte skapa bokoblinens modell.");
+        if (!combined) throw new Error("Kunde inte skapa grisens modell.");
         mesh(combined, mat, group);
         geometries.forEach((geometry) => geometry.dispose());
       }

@@ -171,7 +171,7 @@ export function Dialogue() {
   if (overlay === "bokoblin")
     return (
       <Modal
-        label="Bokoblin"
+        label="Gris"
         action={
           <CornerAction onActivate={() => gameStore.close()}>
             Okej!
@@ -183,7 +183,7 @@ export function Dialogue() {
           <Sword size={64} />
           <Shield size={64} />
         </div>
-        <h2>Bokoblinen vaktar bron</h2>
+        <h2>Grisen vaktar bron</h2>
         <p>Hitta svärdet och skölden i Gläntans tempel!</p>
       </Modal>
     );
