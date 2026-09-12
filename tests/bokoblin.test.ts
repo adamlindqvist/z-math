@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Mesh, type Material } from "three";
+import { Mesh, Vector3, type Material } from "three";
 import { Bokoblin } from "../src/game/entities/Bokoblin";
 
 function materials(bokoblin: Bokoblin) {
@@ -15,6 +15,37 @@ function materials(bokoblin: Bokoblin) {
 }
 
 describe("Bokoblin flight", () => {
+  it("smoothly faces the player while staying at the bridge", () => {
+    const bokoblin = new Bokoblin(false);
+    const origin = bokoblin.root.position.clone();
+    const player = origin.clone().add(new Vector3(3, 4, 0));
+    bokoblin.update(0.1, false, false, player);
+    expect(bokoblin.root.rotation.y).toBeLessThan(0);
+    expect(bokoblin.root.rotation.y).toBeGreaterThan(-Math.PI / 2);
+    for (let i = 0; i < 100; i++) bokoblin.update(0.1, false, false, player);
+    const facing = new Vector3(0, 0, -1).applyQuaternion(bokoblin.root.quaternion);
+    expect(facing.x).toBeCloseTo(1);
+    expect(facing.y).toBe(0);
+    expect(bokoblin.root.position).toEqual(origin);
+  });
+
+  it("takes the short turn behind itself and pauses tracking during dialogs", () => {
+    const bokoblin = new Bokoblin(false);
+    const origin = bokoblin.root.position.clone();
+    bokoblin.update(10, false, false, origin.clone().add(new Vector3(0.1, 0, 3)));
+    const before = bokoblin.root.rotation.y;
+    const player = origin.clone().add(new Vector3(-0.1, 0, 3));
+    bokoblin.update(0.1, false, false, player);
+    expect(Math.abs(bokoblin.root.rotation.y - before)).toBeLessThan(0.1);
+    const turned = bokoblin.root.rotation.y;
+    bokoblin.update(10, false, true, origin.clone().add(new Vector3(3, 0, 0)));
+    expect(bokoblin.root.rotation.y).toBe(turned);
+    bokoblin.update(1, false, false, origin);
+    expect(bokoblin.root.rotation.y).toBe(turned);
+    bokoblin.update(0.1, true, false, player);
+    expect(bokoblin.root.rotation.y).toBe(-Math.PI / 2);
+  });
+
   it("fades during the original short flight without shrinking", () => {
     const bokoblin = new Bokoblin(false);
     expect(materials(bokoblin).every((mat) => mat.opacity === 1)).toBe(true);

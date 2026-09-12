@@ -748,7 +748,7 @@ export class World implements Area {
           halfZ: 0.41,
         })),
     ];
-    this.bokoblin.update(dt, state.bridgeUnlocked, !!state.overlay);
+    this.bokoblin.update(dt, state.bridgeUnlocked, !!state.overlay, playerPosition);
     this.fireShieldChest.update(dt, state.chests["south-fire-shield"] && !(state.activeChest === "south-fire-shield" && state.overlay === "quiz"));
     this.southChest.update(
       dt,
