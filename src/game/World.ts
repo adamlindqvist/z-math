@@ -184,6 +184,7 @@ export class World implements Area {
   ];
   farm: RabbitFarm;
   water: THREE.Mesh;
+  private pondFish: { root: THREE.Group; tail: THREE.Group }[] = [];
   private sparkles: {
     object: THREE.Group;
     velocity: THREE.Vector3;
@@ -482,6 +483,39 @@ export class World implements Area {
     );
     this.water.scale.set(2.05, 1, 1.5);
     this.water.castShadow = false;
+    // Shallow, water-tinted fish sit against the opaque water surface.
+    // Their small oval routes leave room for the whole fish inside the shore.
+    const fishBody = new THREE.SphereGeometry(1, 10, 6);
+    const fishEye = new THREE.SphereGeometry(0.014, 6, 4);
+    const eyeMaterial = material("#355b59");
+    const tailShape = new THREE.Shape();
+    tailShape.moveTo(0, 0);
+    tailShape.lineTo(-0.16, 0.09);
+    tailShape.lineTo(-0.13, 0);
+    tailShape.lineTo(-0.16, -0.09);
+    tailShape.closePath();
+    const tailGeometry = new THREE.ShapeGeometry(tailShape);
+    tailGeometry.rotateX(-Math.PI / 2);
+    for (const color of ["#d9a36f", "#e4c882", "#719eaa", "#d9a36f", "#e4c882"]) {
+      const fish = new THREE.Group();
+      fish.name = "pond-fish";
+      const fishMaterial = material(color);
+      const body = mesh(fishBody, fishMaterial, fish);
+      body.scale.set(0.17, 0.012, 0.075);
+      const tail = new THREE.Group();
+      tail.position.x = -0.13;
+      fish.add(tail);
+      mesh(tailGeometry, fishMaterial, tail);
+      for (const side of [-1, 1]) {
+        mesh(fishEye, eyeMaterial, fish, 0.1, 0.012, side * 0.034);
+      }
+      fish.traverse((object) => {
+        if (object instanceof THREE.Mesh) object.castShadow = false;
+      });
+      this.root.add(fish);
+      this.pondFish.push({ root: fish, tail });
+    }
+    this.updatePondFish(0);
     this.collision.addEllipse(
       gladeDistance(6.7),
       gladeDistance(3.1),
@@ -621,7 +655,27 @@ export class World implements Area {
     this.collision.add(gladeDistance(5.6), gladeDistance(-3.7), 0.56, 0.41);
     this.collision.add(gladeDistance(-3.5), gladeDistance(1.3), 0.3);
   }
+  private updatePondFish(time: number) {
+    this.pondFish.forEach(({ root, tail }, i) => {
+      const direction = i % 2 === 0 ? 1 : -1;
+      const angle = time * (0.16 + i * 0.025) * direction + i * 2.4;
+      const radiusX = 0.65 + i * 0.19;
+      const radiusZ = 0.4 + i * 0.12;
+      root.position.set(
+        this.water.position.x + Math.cos(angle) * radiusX,
+        0.145,
+        this.water.position.z + Math.sin(angle) * radiusZ,
+      );
+      // Local +X points along the oval's tangent, including reverse swimmers.
+      root.rotation.y = Math.atan2(
+        -radiusZ * Math.cos(angle) * direction,
+        -radiusX * Math.sin(angle) * direction,
+      );
+      tail.rotation.y = Math.sin(time * 5 + i * 1.7) * 0.3;
+    });
+  }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
+    this.updatePondFish(time);
     this.farm.update(dt, time, playerPosition);
     this.volcanoPortal.update(rabbitsHome(gameStore.getState().rabbits), time);
     const state = gameStore.getState();
