@@ -172,6 +172,19 @@ describe("southern glade", () => {
     const w = new World();
     try {
       const interactions = new InteractionSystem(new Scene());
+      w.update(1, 1, new Vector3(0, 0, 0));
+      expect(Math.abs(w.bokoblin.root.position.x)).toBeGreaterThan(0.5);
+      // Patrolling never opens a gap in the locked bridge's full-width barrier.
+      for (const x of [-1.5, 0, 1.5]) {
+        const p = { x, z: 8.5 };
+        w.collision.move(p, 0, 8);
+        expect(p.z).toBeLessThan(9.3);
+      }
+      w.update(0.05, 1.05, new Vector3(0, 0, 5));
+      expect(Math.abs(w.bokoblin.root.position.x)).toBeGreaterThan(0);
+      expect(w.collision.free(0, 9.875)).toBe(false);
+      w.update(0.5, 1.55, new Vector3(0, 0, 5));
+      expect(w.bokoblin.root.position.x).toBe(0);
       interactions.update(new Vector3(0, 0, 8.475), w, 0);
       expect(gameStore.getState().target).toBe("bokoblin");
       for (const x of [-1.5, 0, 1.5]) {

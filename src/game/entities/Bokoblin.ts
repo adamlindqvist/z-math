@@ -6,6 +6,10 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 export class Bokoblin {
   root = new THREE.Group();
   private flight = 0;
+  private patrolDirection = 1;
+  private guarding = true;
+  private stepTime = 0;
+  private legs: THREE.Group[] = [];
   private materials: THREE.Material[];
   constructor(unlocked: boolean) {
     this.root.name = "Bokoblin";
@@ -114,32 +118,18 @@ export class Bokoblin {
       tooth.rotation.z = -side * 0.2;
 
       // Bent legs and broad, bare feet give the guard a steady stance.
-      const thigh = ball(
-        this.root,
-        skin,
-        side * 0.27,
-        0.43,
-        0.03,
-        0.17,
-        0.26,
-        0.18,
-      );
+      const leg = new THREE.Group();
+      leg.name = side < 0 ? "left-leg" : "right-leg";
+      leg.position.set(side * 0.27, 0.58, 0);
+      this.legs.push(leg);
+      const thigh = ball(leg, skin, side * 0.27, 0.43, 0.03, 0.17, 0.26, 0.18);
       thigh.rotation.z = -side * 0.4;
-      const shin = ball(
-        this.root,
-        skin,
-        side * 0.36,
-        0.23,
-        0,
-        0.115,
-        0.19,
-        0.12,
-      );
+      const shin = ball(leg, skin, side * 0.36, 0.23, 0, 0.115, 0.19, 0.12);
       shin.rotation.z = side * 0.16;
-      ball(this.root, skin, side * 0.38, 0.095, -0.1, 0.18, 0.095, 0.23);
+      ball(leg, skin, side * 0.38, 0.095, -0.1, 0.18, 0.095, 0.23);
       for (const toe of [-1, 1])
         ball(
-          this.root,
+          leg,
           bone,
           side * 0.38 + toe * 0.073,
           0.075,
@@ -148,6 +138,9 @@ export class Bokoblin {
           0.04,
           0.067,
         );
+
+      // Keep the hip as the animation pivot while retaining the standing pose.
+      for (const part of leg.children) part.position.sub(leg.position);
 
       const upperArm = ball(
         this.root,
@@ -224,28 +217,34 @@ export class Bokoblin {
     for (const side of [-1, 1])
       ball(this.root, dark, side * 0.038, 1.018, -0.355, 0.025, 0.029, 0.01);
 
-    // Static details share one mesh per material to keep draw calls low on iPad.
-    this.root.updateMatrixWorld(true);
-    const parts = new Map<THREE.Material, THREE.BufferGeometry[]>();
-    this.root.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      const mat = object.material as THREE.Material;
-      const geometry = object.geometry.index
-        ? object.geometry.toNonIndexed()
-        : object.geometry;
-      if (geometry !== object.geometry) object.geometry.dispose();
-      geometry.applyMatrix4(object.matrixWorld);
-      const geometries = parts.get(mat) ?? [];
-      geometries.push(geometry);
-      parts.set(mat, geometries);
-    });
-    this.root.clear();
-    for (const [mat, geometries] of parts) {
-      const combined = mergeGeometries(geometries);
-      if (!combined) throw new Error("Kunde inte skapa bokoblinens modell.");
-      mesh(combined, mat, this.root);
-      geometries.forEach((geometry) => geometry.dispose());
+    // Merge each moving part separately, preserving its local hip pivot.
+    for (const group of [this.root, ...this.legs]) {
+      group.updateMatrixWorld(true);
+      const inverse = group.matrixWorld.clone().invert();
+      const parts = new Map<THREE.Material, THREE.BufferGeometry[]>();
+      group.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        const mat = object.material as THREE.Material;
+        const geometry = object.geometry.index
+          ? object.geometry.toNonIndexed()
+          : object.geometry;
+        if (geometry !== object.geometry) object.geometry.dispose();
+        geometry.applyMatrix4(
+          new THREE.Matrix4().multiplyMatrices(inverse, object.matrixWorld),
+        );
+        const geometries = parts.get(mat) ?? [];
+        geometries.push(geometry);
+        parts.set(mat, geometries);
+      });
+      group.clear();
+      for (const [mat, geometries] of parts) {
+        const combined = mergeGeometries(geometries);
+        if (!combined) throw new Error("Kunde inte skapa bokoblinens modell.");
+        mesh(combined, mat, group);
+        geometries.forEach((geometry) => geometry.dispose());
+      }
     }
+    this.root.add(...this.legs);
     this.flight = unlocked ? 1 : 0;
     this.update(0, unlocked, false);
   }
@@ -255,31 +254,82 @@ export class Bokoblin {
     paused: boolean,
     playerPosition?: THREE.Vector3,
   ) {
-    if (!unlocked) this.flight = 0;
-    else if (!paused) this.flight = Math.min(1, this.flight + dt / 0.9);
+    const step = Math.max(0, dt);
+    const bridgeZ = gladeDistance(7.9);
+    if (!unlocked) {
+      if (this.flight > 0 || !playerPosition) {
+        this.root.position.set(0, 0, bridgeZ);
+        this.patrolDirection = 1;
+        this.guarding = true;
+        this.stepTime = 0;
+        this.animateLegs(false);
+      }
+      this.flight = 0;
+    } else if (!paused) this.flight = Math.min(1, this.flight + step / 0.9);
     const opacity = 1 - this.flight;
     this.root.visible = this.flight < 1;
-    this.root.position.set(
-      this.flight * 3.8,
-      Math.sin(this.flight * Math.PI * 8) * 0.08,
-      gladeDistance(7.9) - this.flight * 1.2,
-    );
-    if (unlocked) this.root.rotation.y = -Math.PI / 2;
-    else if (!playerPosition) this.root.rotation.y = 0;
+    if (unlocked) {
+      this.root.position.set(
+        this.flight * 3.8,
+        Math.sin(this.flight * Math.PI * 8) * 0.08,
+        bridgeZ - this.flight * 1.2,
+      );
+      this.root.rotation.y = -Math.PI / 2;
+      if (!paused) {
+        this.stepTime += step * 18;
+        this.animateLegs(this.flight < 1, true);
+      }
+    } else if (!playerPosition) this.root.rotation.y = 0;
     else if (!paused) {
-      const dx = playerPosition.x - this.root.position.x;
-      const dz = playerPosition.z - this.root.position.z;
+      // Measure from the bridge, not the patrolling guard. A wider release
+      // radius prevents repeated starts and stops at the edge of detection.
+      const distance = Math.hypot(playerPosition.x, playerPosition.z - bridgeZ);
+      this.guarding = distance <= (this.guarding ? 7 : 5.5);
+      const targetX = this.guarding ? 0 : this.patrolDirection * 1.1;
+      const remaining = targetX - this.root.position.x;
+      const movement =
+        Math.sign(remaining) *
+        Math.min(Math.abs(remaining), step * (this.guarding ? 4.2 : 0.65));
+      this.root.position.x += movement;
+      this.root.position.z = bridgeZ;
+      const moving = Math.abs(movement) > 0.00001;
+      if (moving) this.stepTime += step * (this.guarding ? 18 : 7);
+      this.root.position.y = moving
+        ? Math.abs(Math.sin(this.stepTime)) * 0.035
+        : 0;
+      this.animateLegs(moving, this.guarding);
+      if (!this.guarding && Math.abs(targetX - this.root.position.x) < 0.001)
+        this.patrolDirection *= -1;
+
+      const returning = this.guarding && Math.abs(this.root.position.x) > 0.05;
+      const dx =
+        !this.guarding || returning
+          ? remaining
+          : playerPosition.x - this.root.position.x;
+      const dz =
+        !this.guarding || returning
+          ? 0
+          : playerPosition.z - this.root.position.z;
       if (dx * dx + dz * dz > 0.0001) {
         // The model faces -Z; ease along the shortest arc without tilting.
         const target = Math.atan2(-dx, -dz);
         const difference = target - this.root.rotation.y;
-        const shortestArc = Math.atan2(Math.sin(difference), Math.cos(difference));
-        this.root.rotation.y += shortestArc * (1 - Math.exp(-6 * Math.max(0, dt)));
+        const shortestArc = Math.atan2(
+          Math.sin(difference),
+          Math.cos(difference),
+        );
+        this.root.rotation.y += shortestArc * (1 - Math.exp(-6 * step));
       }
     }
     for (const mat of this.materials) mat.opacity = opacity;
     this.root.traverse((object) => {
       if (object instanceof THREE.Mesh) object.castShadow = opacity === 1;
+    });
+  }
+  private animateLegs(moving: boolean, running = false) {
+    const swing = moving ? Math.sin(this.stepTime) * (running ? 0.5 : 0.3) : 0;
+    this.legs.forEach((leg, index) => {
+      leg.rotation.x = index === 0 ? swing : -swing;
     });
   }
 }
