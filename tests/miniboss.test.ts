@@ -503,6 +503,65 @@ describe("Stenjätten in the 3D world", () => {
       area.dispose();
     }
   });
+  it("fires continuous beams and one impact on every correct phase, pauses and clears them", () => {
+    enterVolcano(gameStore);
+    start(gameStore);
+    const area = new VolcanoArea();
+    const beams = [0, 1].map((i) => area.root.getObjectByName(`giant-laser-${i}`)!);
+    const impact = area.root.getObjectByName("giant-impact")!;
+    const core = area.root.getObjectByName("exposed-lava")!;
+    try {
+      choose(gameStore, 1);
+      choose(gameStore, 2);
+      area.update(0.3, 0.3);
+      expect([...beams, impact].every((o) => !o.visible)).toBe(true);
+      advance(gameStore);
+      for (const pair of [[1, 4], [2, 5], [3, 6]]) {
+        pair.forEach((v) => choose(gameStore, v));
+        area.update(0.1, 0);
+        expect(beams.every((o) => o.visible)).toBe(true);
+        expect(impact.visible).toBe(false);
+        if (pair[0] === 1) expect(core.visible).toBe(false);
+        area.update(0.2, 0);
+        expect(impact.visible).toBe(true);
+        expect(core.visible).toBe(true);
+        area.root.updateMatrixWorld(true);
+        beams.forEach((beam, i) => {
+          const startPoint = beam.localToWorld(new Vector3(0, -0.5, 0));
+          const endPoint = beam.localToWorld(new Vector3(0, 0.5, 0));
+          const stone = area.root.getObjectByName(`rune-stone-${pair[i]}`)!;
+          const plate = stone.children.find((child) => child.type === "Group")!;
+          expect(startPoint.distanceTo(plate.getWorldPosition(new Vector3()))).toBeLessThan(1e-5);
+          expect(endPoint.distanceTo(impact.getWorldPosition(new Vector3()))).toBeLessThan(1e-5);
+        });
+        const size = impact.children[0].scale.clone();
+        const beamPosition = beams[0].position.clone();
+        gameStore.pause();
+        area.update(10, 0);
+        expect(impact.children[0].scale.equals(size)).toBe(true);
+        expect(beams[0].position.equals(beamPosition)).toBe(true);
+        gameStore.close();
+        area.update(0.9, 0);
+        expect([...beams, impact].every((o) => !o.visible)).toBe(true);
+        area.update(0.31, 0);
+        expect([...beams, impact].every((o) => !o.visible)).toBe(true);
+      }
+      expect(gameStore.getState().encounter!.status).toBe("collapsing");
+      gameStore.reset();
+      area.update(0, 0);
+      enterVolcano(gameStore);
+      start(gameStore);
+      choose(gameStore, 1);
+      choose(gameStore, 4);
+      area.update(0.3, 0);
+      expect(impact.visible).toBe(true);
+      gameStore.reset();
+      area.update(0, 0);
+      expect([...beams, impact, core].every((o) => !o.visible)).toBe(true);
+    } finally {
+      area.dispose();
+    }
+  });
   it("opens visible cracks after each phase and exposes more lava in phase two", () => {
     enterVolcano(gameStore);
     start(gameStore);
@@ -526,6 +585,29 @@ describe("Stenjätten in the 3D world", () => {
       expect(first.every((part) => part.visible)).toBe(true);
       expect(second.every((part) => !part.visible)).toBe(true);
       expect(core.visible).toBe(true);
+      const camera = new GameCamera();
+      const player = new Vector3(STONE_GIANT_CENTER.x + 2, 0, STONE_GIANT_CENTER.z + 3);
+      area.update(1, 1, player);
+      camera.resize(1180, 820);
+      camera.setMode("glade", player);
+      camera.camera.updateMatrixWorld();
+      area.root.updateMatrixWorld(true);
+      const ray = new Raycaster();
+      let visibleSamples = 0;
+      const positions = (core as Mesh).geometry.getAttribute("position");
+      for (let i = 0; i < positions.count; i += 3) {
+        const point = new Vector3();
+        for (let j = 0; j < 3; j++) point.add(new Vector3().fromBufferAttribute(positions, i + j));
+        core.localToWorld(point.multiplyScalar(1 / 3));
+        ray.set(camera.camera.position, point.sub(camera.camera.position).normalize());
+        const hit = ray.intersectObject(area.miniboss.root, true).find(({ object }) => {
+          for (let parent: typeof object | null = object; parent; parent = parent.parent)
+            if (!parent.visible) return false;
+          return true;
+        });
+        if (hit?.object === core) visibleSamples++;
+      }
+      expect(visibleSamples).toBeGreaterThan(5);
       const width = first[0].scale.x,
         lavaSize = core.scale.z;
       choose(gameStore, 2);

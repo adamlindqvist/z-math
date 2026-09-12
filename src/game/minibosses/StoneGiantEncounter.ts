@@ -121,7 +121,21 @@ export class StoneGiantEncounter {
     crown: THREE.Mesh;
     home: THREE.Vector3;
   }[] = [];
-  private sparks: THREE.Mesh[] = [];
+  private lasers: THREE.Group[] = [];
+  private laserCore = new THREE.MeshBasicMaterial({
+    color: "#ff433c", transparent: true, depthWrite: false,
+  });
+  private laserGlow = new THREE.MeshBasicMaterial({
+    color: "#ff1608", transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  private impact = new THREE.Group();
+  private puff: THREE.Mesh;
+  private fragments: THREE.Mesh[] = [];
+  private destination = new THREE.Vector3();
+  private source = new THREE.Vector3();
+  private direction = new THREE.Vector3();
+  private beamAxis = new THREE.Vector3(0, 1, 0);
   private encounter: MinibossEncounter | null = null;
   /** 1 while roaming freely, 0 while facing the player; blended, never snapped. */
   private patrol = 1;
@@ -224,9 +238,9 @@ export class StoneGiantEncounter {
       const brow = box(head, basalt, side * 0.23, 0.16, 0.55, 0.23, 0.07, 0.04);
       brow.rotation.z = side * 0.18;
     }
-    this.rune = stoneFace(this.body, 0.66, darkStone);
+    this.rune = stoneFace(this.body, 0.46, darkStone);
     this.rune.name = "giant-rune";
-    this.rune.position.set(0, 1.72, 0.59);
+    this.rune.position.set(0, 1.96, 0.65);
     this.rune.rotation.x = -0.28;
     const runeInk = material("#d8a268");
     runeInk.emissive.set("#cf7226");
@@ -234,14 +248,14 @@ export class StoneGiantEncounter {
     this.digits = definition.phases.map((value) =>
       numberFace(value, 0.55, this.rune, runeInk),
     );
-    this.backRune = stoneFace(this.body, 0.66, darkStone);
+    this.backRune = stoneFace(this.body, 0.46, darkStone);
     this.backRune.name = "giant-back-rune";
-    this.backRune.position.set(0, 1.72, -0.79);
+    this.backRune.position.set(0, 1.96, -0.85);
     this.backRune.rotation.set(-0.28, Math.PI, 0, "YXZ");
     this.backDigits = definition.phases.map((value) =>
       numberFace(value, 0.55, this.backRune, runeInk),
     );
-    // Broken seams run around the carved rune, with new branches in phase two.
+    // Broad seams flank the exposed chest, leaving the smaller number face clear.
     const paths = [
       {
         phase: 1,
@@ -294,19 +308,23 @@ export class StoneGiantEncounter {
         const [x, y] = path.points[i - 1],
           [nx, ny] = path.points[i];
         const seam = box(
-          this.rune,
+          this.body,
           this.cracks,
-          (x + nx) / 2,
-          (y + ny) / 2,
-          0.04,
-          0.025,
-          Math.hypot(nx - x, ny - y) + 0.012,
+          (x + nx) * 0.75,
+          1.15 + (y + ny) * 0.45,
+          0.76,
+          0.035,
+          Math.hypot((nx - x) * 1.5, (ny - y) * 0.9) + 0.012,
           0.012,
         );
-        seam.rotation.z = -Math.atan2(nx - x, ny - y);
+        seam.rotation.z = -Math.atan2((nx - x) * 1.5, (ny - y) * 0.9);
         seam.name = `armor-crack-phase-${path.phase}`;
         seam.castShadow = false;
         this.fissures.push({ mesh: seam, phase: path.phase });
+        const backSeam = seam.clone();
+        backSeam.position.z = -0.76;
+        this.body.add(backSeam);
+        this.fissures.push({ mesh: backSeam, phase: path.phase });
       }
     this.ring = mesh(
       new THREE.RingGeometry(0.8, 0.88, 40),
@@ -368,12 +386,35 @@ export class StoneGiantEncounter {
         home: root.position.clone(),
       });
     }
-    const sparkGeometry = new THREE.SphereGeometry(0.095, 8, 6);
-    for (let i = 0; i < 14; i++) {
-      const spark = mesh(sparkGeometry, ink, this.root);
-      spark.visible = false;
-      spark.castShadow = false;
-      this.sparks.push(spark);
+    // Two continuous beams share geometry and materials; the halo needs no bloom pass.
+    const beamGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
+    for (let i = 0; i < 2; i++) {
+      const laser = new THREE.Group();
+      laser.name = `giant-laser-${i}`;
+      for (const [radius, surface] of [
+        [0.045, this.laserCore], [0.13, this.laserGlow],
+      ] as const) {
+        const beam = mesh(beamGeometry, surface, laser);
+        beam.scale.set(radius, 1, radius);
+        beam.castShadow = false;
+        beam.receiveShadow = false;
+      }
+      this.root.add(laser);
+      this.lasers.push(laser);
+    }
+    this.impact.name = "giant-impact";
+    this.root.add(this.impact);
+    this.puff = mesh(new THREE.IcosahedronGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        color: "#ff9c4a", transparent: true, depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }), this.impact);
+    this.puff.castShadow = false;
+    const fragmentGeometry = new THREE.DodecahedronGeometry(0.11, 0);
+    for (let i = 0; i < 8; i++) {
+      const fragment = mesh(fragmentGeometry, darkStone, this.impact);
+      fragment.castShadow = false;
+      this.fragments.push(fragment);
     }
     this.chest.root.position.set(0, 0, 0);
     this.chest.root.userData.target = chestTarget;
@@ -480,21 +521,26 @@ export class StoneGiantEncounter {
     const success = status === "success";
     const collapse =
       status === "collapsing" ? Math.min(1, this.elapsed / 2) : 0;
+    const hitTime = 0.18;
+    const hitProgress = success
+      ? THREE.MathUtils.clamp((this.elapsed - hitTime) / 0.75, 0, 1)
+      : 0;
+    const recoil = success ? Math.sin(hitProgress * Math.PI) : 0;
     const damage =
       phase +
-      (success ? Math.min(1, this.elapsed / 1.5) : collapse > 0 ? 1 : 0);
+      (success ? hitProgress : collapse > 0 ? 1 : 0);
     this.core.visible = damage > 0;
     this.core.name = "exposed-lava";
     this.core.scale
-      .set(0.9 + damage * 0.13, 1.25, 0.65 + damage * 0.1)
+      .set(0.9 + damage * 0.2, 1.1, 0.95 + damage * 0.18)
       .multiplyScalar(1 - collapse);
     for (const fissure of this.fissures) {
       const opened = Math.min(1, Math.max(0, damage - fissure.phase + 1));
       fissure.mesh.visible = opened > 0;
       fissure.mesh.scale.x = opened * (damage >= 2 ? 2.8 : 1.2);
     }
-    this.core.position.y = 1.45 * (1 - collapse);
-    this.core.position.z = -0.12;
+    this.core.position.y = 1.25 * (1 - collapse);
+    this.core.position.z = 0;
     this.cracks.emissiveIntensity = 0.5 + damage * 1.1 + collapse * 3;
     for (const digits of [this.digits, this.backDigits]) {
       digits.forEach((digit, i) => {
@@ -516,6 +562,7 @@ export class StoneGiantEncounter {
     this.body.position.x = collapse
       ? Math.sin(this.elapsed * 60) * 0.06 * (1 - collapse)
       : 0;
+    this.body.rotation.x = -recoil * 0.09;
     this.armor.forEach(({ mesh: part, home, rotation }, i) => {
       part.position.copy(home);
       part.rotation.copy(rotation);
@@ -524,11 +571,11 @@ export class StoneGiantEncounter {
         part.position.y += Math.max(0, Math.sin(step)) * 0.12 * patrol;
         part.position.z += Math.cos(step) * 0.1 * patrol;
       }
-      part.position.x += Math.sign(home.x) * damage * 0.14;
+      part.position.x += Math.sign(home.x) * damage * 0.24;
       part.rotation.z += Math.sign(home.x) * damage * 0.08;
       if (success)
         part.rotation.x +=
-          Math.sin(Math.min(1, this.elapsed / 1.5) * Math.PI) * 0.16;
+          recoil * 0.16;
       if (i === 6 || i === 7)
         part.rotation.x += Math.sin(this.clock * (2 + phase)) * phase * 0.07;
       part.scale.setScalar(1 - damage * 0.055);
@@ -573,23 +620,49 @@ export class StoneGiantEncounter {
       stone.crown.visible = selected;
       stone.crown.position.y = activated ? 0.65 : 0.3;
     });
-    const destination = new THREE.Vector3();
+    const beamOpacity = success
+      ? Math.min(1, this.elapsed / hitTime) *
+        THREE.MathUtils.clamp((1.15 - this.elapsed) / 0.3, 0, 1)
+      : 0;
+    this.laserCore.opacity = beamOpacity;
+    this.laserGlow.opacity = beamOpacity * 0.3;
     if (success) {
       this.root.updateMatrixWorld(true);
-      this.rune.getWorldPosition(destination);
-      this.root.worldToLocal(destination);
+      this.destination.set(0, 1.35, 0.85);
+      this.body.localToWorld(this.destination);
+      this.root.worldToLocal(this.destination);
     }
-    this.sparks.forEach((spark, i) => {
-      spark.visible = success;
-      if (!success || !encounter) return;
-      const stone = this.stones[encounter.selected[i % 2] - 1];
-      const t = (this.elapsed / 0.8 + Math.floor(i / 2) / 7) % 1;
-      stone.plate.getWorldPosition(spark.position);
-      this.root.worldToLocal(spark.position);
-      spark.position.lerp(destination, t);
-      spark.position.y += Math.sin(t * Math.PI) * 0.65;
-      spark.scale.setScalar(0.6 + Math.sin(t * Math.PI));
+    this.lasers.forEach((laser, i) => {
+      laser.visible = beamOpacity > 0;
+      if (!laser.visible || !encounter) return;
+      const stone = this.stones[encounter.selected[i] - 1];
+      stone.plate.getWorldPosition(this.source);
+      this.root.worldToLocal(this.source);
+      this.direction.subVectors(this.destination, this.source);
+      laser.position.copy(this.source).addScaledVector(this.direction, 0.5);
+      laser.scale.y = this.direction.length();
+      laser.quaternion.setFromUnitVectors(this.beamAxis, this.direction.normalize());
     });
+    const impactAge = this.elapsed - hitTime;
+    const impactProgress = THREE.MathUtils.clamp(impactAge / 0.85, 0, 1);
+    this.impact.visible = success && impactAge >= 0 && impactProgress < 1;
+    if (this.impact.visible) {
+      this.impact.position.copy(this.destination);
+      this.puff.scale.setScalar(0.25 + Math.sqrt(impactProgress) * 1.05);
+      (this.puff.material as THREE.MeshBasicMaterial).opacity =
+        Math.pow(1 - impactProgress, 0.7);
+      this.fragments.forEach((fragment, i) => {
+        const angle = i * Math.PI * 2 / this.fragments.length;
+        fragment.position.set(
+          Math.cos(angle) * impactProgress * 1.3,
+          Math.sin(angle) * impactProgress * 0.9 +
+            0.7 * impactProgress - impactProgress * impactProgress,
+          Math.sin(angle * 2 + 0.7) * impactProgress * 0.95,
+        );
+        fragment.rotation.set(impactProgress * (i + 1), angle, impactProgress * 3);
+        fragment.scale.setScalar(1 - impactProgress);
+      });
+    }
   }
   dispose() {
     disposeTree(this.root);
