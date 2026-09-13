@@ -1,4 +1,5 @@
 import { StrangeRock } from "./entities/StrangeRock";
+import { RobotLizard } from "./entities/RobotLizard";
 import { VOLCANO_ROCK_SECRET } from "./secrets/definitions";
 import { caveMouth } from "./caveScenery";
 import { StoneGiantEncounter } from "./minibosses/StoneGiantEncounter";
@@ -47,6 +48,7 @@ export class VolcanoArea implements Area {
   });
   rupees = [...VOLCANO_RUPEES.map(({ id, x, z }) => new Collectible(id, x, z)), ...this.rockRupees];
   miniboss = new StoneGiantEncounter();
+  private robotLizard: RobotLizard;
   chest = new Chest(gameStore.getState().chests["volcano-01"]);
   private glow = new THREE.MeshStandardMaterial({
     color: "#ff833d",
@@ -216,13 +218,15 @@ export class VolcanoArea implements Area {
       vertices.setXYZ(i, x * variation, y, z * variation);
     }
     mountainGeometry.computeVertexNormals();
-    mesh(
+    const mountain = mesh(
       mountainGeometry,
       rock,
       volcano,
       0,
       1.7,
     );
+    this.robotLizard = new RobotLizard(mountain);
+    this.root.add(this.robotLizard.root);
     const crater = mesh(
       new THREE.CylinderGeometry(1.05, 0.7, 0.6, 12, 1, true),
       material("#9c605b"),
@@ -358,6 +362,7 @@ export class VolcanoArea implements Area {
     });
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
+    this.robotLizard.update(dt);
     this.miniboss.update(dt, playerPosition);
     const state = gameStore.getState();
     if (this.secretResetId !== state.resetId) {

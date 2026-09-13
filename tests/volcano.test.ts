@@ -4,7 +4,7 @@ import { GameCamera } from "../src/game/Camera";
 import { VOLCANO_RUPEES } from "../src/game/volcanoLayout";
 import { disposeTree } from "../src/game/Area";
 import { afterEach, describe, expect, it } from "vitest";
-import { Box3, Mesh, Scene, Vector3 } from "three";
+import { Box3, Mesh, Raycaster, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import { DUNGEONS } from "../src/game/dungeons/definitions";
 import { World } from "../src/game/World";
@@ -78,6 +78,32 @@ function reachable(
 }
 afterEach(() => gameStore.reset());
 describe("Vulkanvärlden", () => {
+  it("keeps the climbing robot on the mountain as it circles and changes height", () => {
+    const area = new VolcanoArea();
+    try {
+      const lizard = area.root.getObjectByName("robot-lizard")!;
+      const volcano = area.root.getObjectByName("volcano")!;
+      const mountain = volcano.children[0] as Mesh;
+      const ray = new Raycaster();
+      const sides = new Set<string>();
+      const heights: number[] = [];
+      for (let i = 0; i < 100; i++) {
+        area.update(0.5, i * 0.5);
+        const up = new Vector3(0, 1, 0).applyQuaternion(lizard.quaternion);
+        ray.set(lizard.position, up.clone().negate());
+        const contact = ray.intersectObject(mountain, false)[0];
+        expect(contact, `rock contact at step ${i}`).toBeDefined();
+        expect(contact.distance).toBeCloseTo(0.07, 4);
+        expect(up.y).toBeGreaterThan(0.2);
+        expect(up.y).toBeLessThan(0.9);
+        heights.push(lizard.position.y);
+        sides.add(`${Math.sign(lizard.position.x - volcano.position.x)},${Math.sign(lizard.position.z - volcano.position.z)}`);
+      }
+      expect(sides.size).toBe(4);
+      expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(1.5);
+      expect(lizard.userData.target).toBeUndefined();
+    } finally { area.dispose(); }
+  });
   it("collects every trail rupee only in the volcano and keeps them collected after reload", () => {
     const storage = memory(), s = createGameStore(storage);
     for (const { id } of VOLCANO_RUPEES) s.collect(id);
