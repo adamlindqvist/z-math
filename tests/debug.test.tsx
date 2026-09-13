@@ -20,6 +20,24 @@ function memory() {
 }
 
 describe("temporary debug sessions", () => {
+  it("changes time only in the glade debug menu and protects saved progress", () => {
+    const storage = memory(), store = createGameStore(storage);
+    store.collect("path-1");
+    const saved = storage.getItem(SAVE_KEY);
+    store.debugSetDayPeriod("night");
+    expect(store.getState().debugDayPeriod).toBeNull();
+    store.openDebug();
+    store.debugSetDayPeriod("night");
+    expect(store.getState().debugDayPeriod?.period).toBe("night");
+    expect(store.getState().debugActive).toBe(true);
+    expect(storage.getItem(SAVE_KEY)).toBe(saved);
+    store.debugTravelTo({ world: "volcano" });
+    store.debugSetDayPeriod("day");
+    expect(store.getState().debugDayPeriod?.period).toBe("night");
+    store.debugEndSession();
+    expect(store.getState().debugDayPeriod).toBeNull();
+  });
+
   it("unlocks paths consistently, awards rooms once and protects the save", () => {
     const storage = memory();
     const store = createGameStore(storage);
@@ -162,6 +180,9 @@ describe("debug menu", () => {
     expect(input.direction()).toEqual({ x: 0, y: 0 });
     expect(host.querySelector('[role="dialog"]')).not.toBeNull();
     expect(host.textContent).toContain("Gläntan");
+    const nightButton = Array.from(host.querySelectorAll("button")).find(button => button.textContent?.trim() === "Natt")!;
+    act(() => nightButton.click());
+    expect(gameStore.getState().debugDayPeriod?.period).toBe("night");
     const volcanoButton = Array.from(host.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Vulkanvärlden"),
     )!;
@@ -170,6 +191,7 @@ describe("debug menu", () => {
     expect(gameStore.getState().location).toEqual({ world: "volcano" });
     expect(gameStore.getState().debugActive).toBe(true);
     expect(volcanoButton.getAttribute("aria-current")).toBe("location");
+    expect(nightButton.disabled).toBe(true);
     for (const dungeon of DUNGEONS)
       for (const room of dungeon.rooms)
         expect(host.textContent).toContain(`${dungeon.name} · ${room.name}`);

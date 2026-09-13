@@ -7,6 +7,10 @@ import {
   Map,
   RotateCcw,
   ShieldCheck,
+  Sun,
+  Sunset,
+  Moon,
+  Sunrise,
   X,
 } from "lucide-react";
 import {
@@ -134,6 +138,24 @@ export default function DebugMenu() {
               );
             }),
           )}
+        </div>
+      </section>
+
+      <section className="mb-6">
+        <h3 className="mb-2 text-xl font-black">Tid i gläntan</h3>
+        <p className="mb-3 text-base text-[#536d5e]">
+          {state.location ? "Gå till gläntan för att byta tid." : "Välj tid. Dygnet fortsätter när du stänger menyn."}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            ["day", "Dag", Sun], ["dusk", "Skymning", Sunset],
+            ["night", "Natt", Moon], ["dawn", "Gryning", Sunrise],
+          ] as const).map(([period, label, Icon]) => (
+            <button key={period} className={actionClass} disabled={!!state.location}
+              onClick={() => gameStore.debugSetDayPeriod(period)}>
+              <Icon aria-hidden="true" /> {label}
+            </button>
+          ))}
         </div>
       </section>
 

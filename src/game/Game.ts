@@ -1,3 +1,4 @@
+import { DayNightCycle } from "./DayNightCycle";
 import { WaterArea } from "./WaterArea";
 import { DesertArea } from "./DesertArea";
 import { natureArrival } from "./nature/layout";
@@ -88,6 +89,7 @@ export class Game {
   private time = 0;
   private observer: ResizeObserver;
   private resetId = gameStore.getState().resetId;
+  private dayNight = new DayNightCycle(this.resetId);
   // The sun follows the player so its shadow frustum covers whichever area is
   // in view; a fixed frustum clipped shadows off in the distant south glade.
   private ambient = new THREE.HemisphereLight("#ffefd8", "#9da981", 2.2);
@@ -286,6 +288,14 @@ export class Game {
       );
     this.interactions.update(this.player.position, this.world, this.time);
     this.camera.update(this.player.position, dt);
+    this.dayNight.update(dt, state, document.hidden);
+    if (!state.location) {
+      this.dayNight.apply(this.sun, this.ambient);
+      // Blend over the existing CSS sky, preserving the exact daytime backdrop.
+      this.renderer.setClearColor("#18243e", this.dayNight.darkness);
+    } else {
+      this.renderer.setClearColor(0x000000, 0);
+    }
     this.updateSun();
     this.renderer.render(this.scene, this.camera.camera);
     this.frame = requestAnimationFrame(this.tick);

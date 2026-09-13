@@ -1,3 +1,4 @@
+import type { DayPeriod } from "../game/DayNightCycle";
 import { NATURE_RUPEES } from "../game/nature/layout";
 import { RABBITS, freshRabbits, rabbitsHome, validRabbits, type RabbitId, type RabbitProgress } from "../game/rabbits/definitions";
 import {
@@ -177,6 +178,7 @@ export interface GameState extends Progress {
   resetId: number;
   debugActive: boolean;
   debugNoclip: boolean;
+  debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
@@ -332,6 +334,7 @@ export function createGameStore(
     resetId: 0,
     debugActive: false,
     debugNoclip: false,
+    debugDayPeriod: null,
   };
   let rabbitCareSequence = 0;
   let debugBaseline: Progress | null = null;
@@ -720,6 +723,11 @@ export function createGameStore(
         bridgeUnlocked: true,
       });
     },
+    debugSetDayPeriod: (period: DayPeriod) => {
+      if (state.overlay !== "debug" || state.location) return;
+      beginDebugSession();
+      set({ debugDayPeriod: { period } });
+    },
     debugSetNoclip: (enabled: boolean) => {
       if (state.overlay !== "debug") return;
       beginDebugSession();
@@ -749,6 +757,7 @@ export function createGameStore(
         shopSelection: null,
         shopPurchased: false,
         resetId: state.resetId + 1,
+        debugDayPeriod: null,
       });
     },
     debugEndSession: () => {
@@ -779,6 +788,7 @@ export function createGameStore(
         shopSelection: null,
         shopPurchased: false,
         resetId: state.resetId + 1,
+        debugDayPeriod: null,
         debugActive: false,
         debugNoclip: false,
       });
@@ -1289,6 +1299,7 @@ export function createGameStore(
           shopSelection: null,
           shopPurchased: false,
           resetId: state.resetId + 1,
+          debugDayPeriod: null,
           dungeons: {
             ...state.dungeons,
             [found.dungeon.id]: {
@@ -1333,6 +1344,7 @@ export function createGameStore(
           shopSelection: null,
           shopPurchased: false,
           resetId: state.resetId + 1,
+          debugDayPeriod: null,
         },
         true,
       ),

@@ -14,6 +14,10 @@ export class Collectible {
     shape.lineTo(-0.12, -0.3);
     shape.lineTo(-0.18, 0.08);
     shape.closePath();
+    const rupeeMaterial = material("#38a7ac", 0.35);
+    // A gentle self-lit surface stays visible at night without extra lights.
+    rupeeMaterial.emissive.set("#38a7ac");
+    rupeeMaterial.emissiveIntensity = 0.45;
     const rupee = mesh(
       new THREE.ExtrudeGeometry(shape, {
         depth: 0.09,
@@ -22,7 +26,7 @@ export class Collectible {
         bevelThickness: 0.018,
         bevelSegments: 1,
       }),
-      material("#38a7ac", 0.35),
+      rupeeMaterial,
       this.root,
       0,
       0,
