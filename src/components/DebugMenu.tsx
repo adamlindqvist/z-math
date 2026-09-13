@@ -111,6 +111,7 @@ export default function DebugMenu() {
               {castle === "hall" ? "Entréhall" : castle === "throne" ? "Kungasalen" : "Bosses butik"}
             </button>
           ))}
+          {(["water", "desert"] as const).map(world => <button key={world} className={actionClass} onClick={() => gameStore.debugTravelTo({ world })} aria-current={state.location?.world === world ? "location" : undefined}><DoorOpen aria-hidden="true" />{world === "water" ? "Vattenvärlden" : "Ökenvärlden"}</button>)}
           {DUNGEONS.flatMap((dungeon) =>
             dungeon.rooms.map((room) => {
               const selected =

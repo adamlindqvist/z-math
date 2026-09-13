@@ -6,7 +6,7 @@ import { canOpenChest } from "../entities/chestAccess";
 import { Collectible } from "../entities/Collectible";
 import { SlidingBarrier } from "../entities/SlidingBarrier";
 import { gameStore, type GameState } from "../../store/gameStore";
-import { OBJECT_IDS, WORLD_OBJECTS, PICKUP_OBJECTS, type WorldObjectId } from "../interactables/definitions";
+import { OBJECT_IDS, WORLD_OBJECTS, PICKUP_OBJECTS, sameLocation, type WorldObjectId } from "../interactables/definitions";
 import { puzzleSolved, PUZZLES } from "../puzzles/definitions";
 import { furnishThroneRoom } from "./throneRoomModels";
 
@@ -59,7 +59,7 @@ export class ThroneRoomArea implements Area {
   }
   passages() { return [{ x: 0,z: 3.65,destination: { castle: "hall" as const } }]; }
   interactions(state: GameState): Interaction[] {
-    const targets: Interaction[] = OBJECT_IDS.map(id => {
+    const targets: Interaction[] = OBJECT_IDS.filter(id => sameLocation(WORLD_OBJECTS[id].location, { castle: "throne" })).map(id => {
       const d = WORLD_OBJECTS[id];
       return { x: d.x,z: d.z,target: { kind: "worldObject",id,label: d.label } };
     });

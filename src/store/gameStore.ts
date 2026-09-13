@@ -1,3 +1,4 @@
+import { NATURE_RUPEES } from "../game/nature/layout";
 import { RABBITS, freshRabbits, rabbitsHome, validRabbits, type RabbitId, type RabbitProgress } from "../game/rabbits/definitions";
 import {
   freshMinibosses, validMinibosses, minibossDefeated,
@@ -59,6 +60,8 @@ import {
 } from "../items/definitions";
 import {
   DUNGEONS,
+  natureRestored,
+  volcanoGateOpen,
   freshDungeons,
   resolveRoom,
   roomSolved,
@@ -74,8 +77,9 @@ import {
 } from "../math/questionGenerators";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 export const RUPEE_IDS = [
+  ...NATURE_RUPEES.map(r => r.id),
   ...VOLCANO_RUPEES.map(({ id }) => id),
   "royal-helmet-rupee",
   "royal-pot-rupee",
@@ -112,6 +116,8 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "elephant"
+  | "giraffe"
   | "farmer"
   | "rabbitReward"
   | "pictureClue"
@@ -256,6 +262,7 @@ export function parseSave(raw: string | null): Progress {
         (id: unknown) => typeof id !== "string" || !RUPEE_IDS.includes(id),
       ) ||
       new Set(p.collected).size !== p.collected.length ||
+      !validNatureProgress(p) ||
       p.rupees !==
         p.collected.length +
           CHEST_IDS.reduce(
@@ -427,9 +434,10 @@ export function createGameStore(
   const solveThrough = (
     dungeonId: string,
     lastRoomIndex: number,
+    base = state,
   ): Partial<GameState> => {
     const dungeon = DUNGEONS.find((candidate) => candidate.id === dungeonId);
-    const current = state.dungeons[dungeonId];
+    const current = base.dungeons[dungeonId];
     if (!dungeon || !current || lastRoomIndex < 0) return {};
     const progress: DungeonProgress = {
       answers: { ...current.answers },
@@ -441,8 +449,8 @@ export function createGameStore(
       ),
       rewards: [...current.rewards],
     };
-    let inventory: Inventory = state;
-    let rupees = state.rupees;
+    let inventory: Inventory = base;
+    let rupees = base.rupees;
     for (const room of dungeon.rooms.slice(0, lastRoomIndex + 1)) {
       if (room.challenge) {
         const challenge = room.challenge;
@@ -459,7 +467,7 @@ export function createGameStore(
     return {
       ...inventory,
       rupees,
-      dungeons: { ...state.dungeons, [dungeonId]: progress },
+      dungeons: { ...base.dungeons, [dungeonId]: progress },
     };
   };
   return {
@@ -639,7 +647,7 @@ export function createGameStore(
           update = { ...update, ...inventory, bridgeUnlocked: true };
         }
       }
-      if (destination?.world || found?.dungeon.id === "fire") {
+      if (destination?.world || found?.dungeon.entranceWorld) {
         update = { ...update,
           ...receiveItems({ ...state, ...update }, ["temple-sword", "temple-shield"]),
           bridgeUnlocked: true,
@@ -649,6 +657,12 @@ export function createGameStore(
       }
       if (destination?.world === "volcano-interior" || found?.dungeon.id === "fire")
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
+      const natureWorld = destination?.world === "water" || destination?.world === "desert" ? destination.world : found?.dungeon.entranceWorld;
+      if (natureWorld === "water" || natureWorld === "desert") {
+        update.minibosses = { ...state.minibosses, stone_giant: 3 };
+        update = { ...update, ...solveThrough("fire", 2, { ...state, ...update }) };
+        if (natureWorld === "desert") update = { ...update, ...solveThrough("water", 2, { ...state, ...update }) };
+      }
       set({
         ...update,
         location: destination,
@@ -780,6 +794,13 @@ export function createGameStore(
         (state.location?.world === "volcano-interior" && destination?.world === "volcano") ||
         (state.location?.world === "volcano-interior" && next?.dungeon.id === "fire" && currentIndex === -1 && next.room === next.dungeon.rooms[0]) ||
         (found?.dungeon.id === "fire" && destination?.world === "volcano-interior" && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons.fire))));
+      const natureAdjacent =
+        (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons)) ||
+        (state.location?.world === "water" && destination?.world === "volcano-interior") ||
+        (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water")) ||
+        (state.location?.world === "desert" && destination?.world === "water") ||
+        ((state.location?.world === "water" || state.location?.world === "desert") && next?.dungeon.entranceWorld === state.location.world && next.room === next.dungeon.rooms[0]) ||
+        ((found?.dungeon.entranceWorld === "water" || found?.dungeon.entranceWorld === "desert") && destination?.world === found.dungeon.entranceWorld && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons[found.dungeon.id]))));
       const volcanoAdjacent =
         (state.location === null &&
           destination?.world === "volcano" && state.bridgeUnlocked && rabbitsHome(state.rabbits)) ||
@@ -805,7 +826,7 @@ export function createGameStore(
             Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
               1);
       if (
-        (interiorAdjacent || volcanoAdjacent || castleAdjacent || adjacent) &&
+        (natureAdjacent || interiorAdjacent || volcanoAdjacent || castleAdjacent || adjacent) &&
         canVisit(destination, state.dungeons)
       )
         set(
@@ -914,6 +935,7 @@ export function createGameStore(
             update.worldObjects = [...state.worldObjects, target.id];
             persist = true;
           } else if (behavior.kind === "clue") update.overlay = "pictureClue";
+          else if (behavior.kind === "animal") update.overlay = behavior.animal;
           set(update, persist, event);
           return;
         }
@@ -1377,7 +1399,7 @@ function validLocation(
   if (value && typeof value === "object" && "world" in value)
     return (
       Object.keys(value).length === 1 &&
-      (value.world === "volcano" || value.world === "volcano-interior")
+      (value.world === "volcano" || value.world === "volcano-interior" || value.world === "water" || value.world === "desert")
     );
   if (value && typeof value === "object" && "castle" in value)
     return (
@@ -1492,6 +1514,8 @@ function pickupAllowed(state: GameState, id: string) {
         state.worldObjects.includes(objectId)
       );
   }
+  const natureRupee = NATURE_RUPEES.find(r => r.id === id);
+  if (natureRupee) return state.location?.world === natureRupee.world;
   if (VOLCANO_RUPEES.some((rupee) => rupee.id === id))
     return state.location?.world === "volcano";
   if (id.startsWith("castle-")) return state.location?.castle === "hall";
@@ -1502,4 +1526,17 @@ function secretInLocation(definition: (typeof WORLD_SECRETS)[number], location: 
   return definition.type === "strange-rock" && definition.world === "volcano"
     ? location?.world === "volcano"
     : location === null;
+}
+
+/** Check prerequisites even when a save is currently back in an earlier world. */
+function validNatureProgress(p: Progress) {
+  const touched = (world: "water" | "desert") => {
+    const d = DUNGEONS.find(d => d.id === world)!;
+    return p.location?.world === world || p.location?.dungeon === world || p.chests[`${world}-01`] ||
+      NATURE_RUPEES.some(r => r.world === world && p.collected.includes(r.id)) ||
+      d.rooms.some(r => r.challenge ? p.dungeons[world].answers[r.challenge.id] > 0 : r.stones?.some((stone, i) => p.dungeons[world].stones[r.id][i] !== stone.start));
+  };
+  if ((touched("water") || touched("desert")) && (!p.bridgeUnlocked || !rabbitsHome(p.rabbits) || !minibossDefeated(p.minibosses, "stone_giant") || !volcanoGateOpen(p.dungeons))) return false;
+  if (touched("desert") && !natureRestored(p.dungeons, "water")) return false;
+  return ([ ["water", "water-shield"], ["desert", "sun-hat"] ] as const).every(([world, item]) => natureRestored(p.dungeons, world) === p.items.includes(item));
 }

@@ -25,6 +25,8 @@ export function ItemPicture({ id }: { id: ItemId }) {
     package: Package,
   };
   const Icon = icons[ITEMS[id].icon];
+  if (id === "sun-hat") return <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true"><ellipse cx="40" cy="53" rx="35" ry="12" fill="#e9c67c"/><path d="M19 49L23 22Q40 13 57 22L61 49Z" fill="#e9c67c" stroke="#af793f" strokeWidth="3"/><path d="M21 41Q40 48 59 41" fill="none" stroke="#399dab" strokeWidth="8"/></svg>;
+  if (id === "water-shield") return <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true"><circle cx="40" cy="40" r="31" fill="#258fae" stroke="#b4e9e3" strokeWidth="5"/><path d="M18 32Q26 22 34 32T50 32T66 32M18 48Q26 38 34 48T50 48T66 48" fill="none" stroke="#e4fff2" strokeWidth="4"/></svg>;
   if (id === "lava_hat") return (
     <svg viewBox="0 0 80 80" className="mx-auto size-16" aria-hidden="true">
       <path d="M35 26L41 9L46 27Z" fill="#ffc266" />

@@ -1,3 +1,5 @@
+import { AnimalPicture } from "./AnimalPicture";
+import { natureRestored } from "../game/dungeons/definitions";
 import { RabbitPictures } from "./RabbitPictures";
 import { rabbitsHome } from "../game/rabbits/definitions";
 import { Gem, DoorOpen } from "lucide-react";
@@ -146,7 +148,7 @@ export function Modal({
   );
 }
 export function Dialogue() {
-  const { overlay, rabbits } = useGameState();
+  const { overlay, rabbits, dungeons } = useGameState();
   if (
     !overlay ||
     overlay === "pictureClue" ||
@@ -158,6 +160,15 @@ export function Dialogue() {
     overlay === "debug"
   )
     return null;
+  if (overlay === "elephant" || overlay === "giraffe") {
+    const elephant = overlay === "elephant", restored = natureRestored(dungeons, elephant ? "water" : "desert");
+    return <Modal label={elephant ? "Elefanten Ella" : "Giraffen Gullan"} action={<CornerAction onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
+      <AnimalPicture kind={overlay} restored={restored} />
+      <h2>{restored ? "Tack för hjälpen!" : elephant ? "Hjälp korallerna!" : "Oasen behöver vatten!"}</h2>
+      <p>{restored ? elephant ? "Färgerna är tillbaka! Vägen till öknen är öppen!" : "Oasen är grön igen! Nu kan jag äta goda blad." : elephant ? "Korallerna har tappat färgen. Hjälp mig i Vattentemplet!" : "Hjälp mig i Ökentemplet!"}</p>
+      <div className="flex justify-center gap-6 text-teal" aria-hidden="true"><DoorOpen className="size-10"/><ArrowRight className="size-10"/><Sprout className="size-10"/></div>
+    </Modal>;
+  }
   if (overlay === "farmer" || overlay === "rabbitReward")
     return <Modal label={overlay === "farmer" ? "Bonden" : "Alla kaniner är hemma!"}
       action={<CornerAction onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>

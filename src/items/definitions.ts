@@ -17,6 +17,8 @@ export type ItemDefinition = {
   icon: "shirt" | "sword" | "shield" | "package" | "hat";
 };
 export const ITEMS = {
+  "water-shield": { name: "Vattenskölden", description: "En blå sköld med glittrande vågor!", category: "equipment", equipSlot: "shield", icon: "shield" },
+  "sun-hat": { name: "Solhatten", description: "En bred solhatt från den gröna oasen!", category: "cosmetic", equipSlot: "head", icon: "hat" },
   lava_hat: {
     name: "Lavamössa",
     description: "En glödande mössa från Stenjättens skatt!",

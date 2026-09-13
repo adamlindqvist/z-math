@@ -14,6 +14,22 @@ export function itemModel(id: ItemId) {
   const root = new THREE.Group();
   root.name = id;
   const item: ItemDefinition = ITEMS[id];
+  if (id === "sun-hat") {
+    const straw = material("#e9c67c");
+    mesh(new THREE.CylinderGeometry(0.67, 0.67, 0.07, 16), straw, root, 0, -0.08);
+    mesh(new THREE.CylinderGeometry(0.32, 0.39, 0.31, 12), straw, root, 0, 0.09);
+    mesh(new THREE.CylinderGeometry(0.383, 0.396, 0.09, 12), material("#399dab"), root, 0, -0.015);
+    return root;
+  }
+  if (id === "water-shield") {
+    const shield = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.08, 12), material("#258fae"), root);
+    shield.rotation.x = Math.PI / 2;
+    const rim = mesh(new THREE.TorusGeometry(0.35, 0.025, 5, 16), material("#d5f5e8"), root, 0, 0, 0.06);
+    rim.name = "water-shield-rim";
+    for (let i = 0; i < 9; i++) for (const y of [-0.1, 0.1])
+      ball(root, material("#d5f5e8"), -0.23 + i * 0.057, y + Math.sin(i * 0.8) * 0.04, 0.06, 0.04, 0.025, 0.018);
+    return root;
+  }
   if (item.garment) {
     root.add(garmentModel(item.garment));
     return root;

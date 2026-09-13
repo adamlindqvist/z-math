@@ -63,6 +63,7 @@ export function symbol(
 }
 // Palette shared by the entrance and every room. No textures or extra lights.
 export const THEMES = {
+  sand: { stone: "#d9b276", floor: "#e9cd93", tiles: ["#f4dfa9", "#e7c78b"], band: "#af793f", water: "#e9cd93", foam: "#fff0ba", gate: "#ac753e", track: "#b7915f", block: "#b68c53", accent: "#ffe38a", opening: "#b58642" },
   stone: {
     stone: "#c2b69e",
     floor: "#c9bea7",
@@ -221,6 +222,17 @@ function stoneDecoration(parent: THREE.Group) {
   return group;
 }
 export function roomDecoration(parent: THREE.Group, theme: DungeonTheme, leftOpening = false, roomId = "light") {
+  if (theme === "sand") {
+    const group = new THREE.Group(); group.name = "sand-decoration"; parent.add(group);
+    const stone = material(THEMES.sand.stone), band = material(THEMES.sand.band), gold = material(THEMES.sand.accent);
+    for (const side of [-1, 1]) for (const z of [-3, 0, 3]) {
+      box(group, stone, side * 5.1, 0.9, z, 0.45, 1.8, 0.6);
+      box(group, band, side * 5.1, 1.8, z, 0.65, 0.15, 0.75);
+      const relief = new THREE.Group(); relief.position.set(side * 5.25, 1.1, z); relief.rotation.y = -side * Math.PI / 2; group.add(relief);
+      sunMotif(relief, gold, 0, 0, 0, 0.25);
+    }
+    return group;
+  }
   if (theme === "stone") return stoneDecoration(parent);
   if (theme === "water") return waterDecoration(parent, theme);
   return fireDecoration(parent, leftOpening, roomId);
@@ -401,6 +413,14 @@ export function portal(
   box(g, stone, 0, 1.93, 0, 2.45, 0.45, 0.65);
   if (theme === "water") wave(g, foam, 0, 1.96, 0.36, 0.8);
   else if (theme === "fire") flame(g, 0, 1.73, 0.36, 0.42);
+  else if (theme === "sand") {
+    sunMotif(g, foam, 0, 1.95, 0.37, 0.25);
+    for (const side of [-1, 1]) {
+      box(g, band, side * 0.95, 0.1, 0, 0.7, 0.2, 0.75);
+      for (const y of [0.6, 1, 1.4]) box(g, foam, side * 0.95, y, 0.29, 0.45, 0.035, 0.03);
+    }
+    if (filled) for (let i = 0; i < 3; i++) box(g, stone, 0, 2.25 + i * 0.16, 0, 2.6 - i * 0.55, 0.16, 0.75);
+  }
   else {
     const details = new THREE.Group();
     details.name = "stone-portal-decoration";
@@ -458,6 +478,7 @@ export function portal(
     );
     surface.position.set(0, 0.89, 0.03);
     g.add(surface);
+    if (theme === "sand") { sunMotif(g, foam, 0, 0.9, 0.08, 0.38); return g; }
     if (theme === "fire") {
       flame(g, 0, 0.2, 0.08, 1.3);
       for (const side of [-1, 1]) flame(g, side * 0.95, 1.76, 0, 0.42);
@@ -526,4 +547,13 @@ export function portal(
     wave(waterDetails, foam, 0, 0.18, 0.08, 1);
   }
   return g;
+}
+
+function sunMotif(parent: THREE.Group, mat: THREE.Material, x: number, y: number, z: number, radius: number) {
+  const sun = new THREE.Group(); sun.position.set(x, y, z); parent.add(sun);
+  const disk = mesh(new THREE.CircleGeometry(radius * 0.6, 12), mat, sun); disk.castShadow = false;
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    box(sun, mat, Math.sin(a) * radius, Math.cos(a) * radius, 0, 0.045, radius * 0.55, 0.025).rotation.z = -a;
+  }
 }

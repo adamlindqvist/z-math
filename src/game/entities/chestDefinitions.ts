@@ -3,6 +3,8 @@ import type { Location } from "../dungeons/definitions";
 import type { PuzzleId } from "../puzzles/definitions";
 export type ChestDefinition = { opening: "quiz" | "direct"; reward: number; location: Location; items?: readonly ItemId[]; pictureQuiz?: "counting" | "addition"; puzzle?: PuzzleId; barrier?: string };
 export const CHESTS = {
+  "water-01": { opening: "quiz", reward: 5, location: { world: "water" }, pictureQuiz: "addition" },
+  "desert-01": { opening: "quiz", reward: 5, location: { world: "desert" }, pictureQuiz: "addition" },
   "stone-giant-treasure": { opening: "direct", reward: 0, location: { world: "volcano" }, items: ["lava_hat", "stone_armor"] },
   glade: { opening: "quiz", reward: 5, location: null },
   "volcano-01": { opening: "quiz", reward: 5, location: { world: "volcano" }, pictureQuiz: "addition" },

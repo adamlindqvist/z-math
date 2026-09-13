@@ -1,3 +1,4 @@
+import { NATURE_TEMPLE } from "../nature/layout";
 import { gladePosition } from "../gladeLayout";
 import type { ItemId } from "../../items/definitions";
 export type SymbolKind = "sun" | "leaf" | "moon";
@@ -24,14 +25,14 @@ export interface RoomDefinition {
   challenge?: ChallengeDefinition;
   stones?: StoneDefinition[];
 }
-export type DungeonTheme = "stone" | "water" | "fire";
+export type DungeonTheme = "stone" | "water" | "fire" | "sand";
 export interface DungeonDefinition {
   theme: DungeonTheme;
   id: string;
   name: string;
   entrance: { x: number; z: number; rotation?: number };
   requiresBridge?: boolean;
-  entranceWorld?: "volcano-interior";
+  entranceWorld?: "volcano-interior" | "water" | "desert";
   rooms: RoomDefinition[];
 }
 export const TRACK_X = [-3.2, -1.6, 0, 1.6, 3.2];
@@ -179,10 +180,25 @@ export const DUNGEONS: DungeonDefinition[] = [
     ],
   },
 ];
+// Keep the proven room rules; each temple owns independent progress and rewards.
+for (const [id, name, theme, source, item] of [
+  ["water", "Vattentemplet", "water", "moss", "water-shield"],
+  ["desert", "Ökentemplet", "sand", "fire", "sun-hat"],
+] as const) {
+  const rooms = structuredClone(DUNGEONS.find(d => d.id === source)!.rooms);
+  for (const room of rooms) if (room.challenge) {
+    room.challenge.id = `${id}-${room.id}-lock`;
+    if (room.id === "treasure") room.challenge.items = [item];
+  }
+  DUNGEONS.push({ id, name, theme, entranceWorld: id, entrance: { ...NATURE_TEMPLE }, rooms });
+}
+export const natureRestored = (progress: Record<string, DungeonProgress>, world: "water" | "desert") =>
+  progress[world].rewards.includes(`${world}-treasure-lock`);
+
 export type Location =
   | { dungeon: string; room: string; castle?: never; world?: never }
   | { castle: "hall" | "shop" | "throne"; dungeon?: never; room?: never; world?: never }
-  | { world: "volcano" | "volcano-interior"; dungeon?: never; room?: never; castle?: never }
+  | { world: "volcano" | "volcano-interior" | "water" | "desert"; dungeon?: never; room?: never; castle?: never }
   | null;
 export interface DungeonProgress {
   answers: Record<string, number>;
@@ -226,7 +242,7 @@ export function canVisit(
 ) {
   if (!location || location.castle === "hall" || location.castle === "shop" || location.castle === "throne")
     return true;
-  if (location.world === "volcano" || location.world === "volcano-interior") return true;
+  if (location.world) return true;
   const found = resolveRoom(location);
   if (!found) return false;
   const { dungeon, room } = found;

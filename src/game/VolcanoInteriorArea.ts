@@ -8,7 +8,7 @@ import { portal } from "./dungeons/models";
 import { DUNGEONS, volcanoGateOpen } from "./dungeons/definitions";
 import { gameStore, type GameState } from "../store/gameStore";
 
-/** A small crossroads: return south, temple east, future world north. */
+/** A small crossroads: return south, temple east, water world north. */
 export class VolcanoInteriorArea implements Area {
   root = new THREE.Group();
   collision = new CollisionSystem(6.2, 8, -1.5);
@@ -109,11 +109,13 @@ export class VolcanoInteriorArea implements Area {
       const seam = box(this.root, this.glow, x, 0.1, z + 0.48, 0.8, 0.035, 0.065);
       seam.rotation.y = side * 0.3;
     }
+    this.opening = volcanoGateOpen(gameStore.getState().dungeons) ? 1 : 0;
     this.update(0, 0);
   }
   passages(): Passage[] {
     const fire = DUNGEONS.find((d) => d.id === "fire")!;
     return [
+      ...(volcanoGateOpen(gameStore.getState().dungeons) && this.opening >= 1 ? [{ x: 0, z: -8, destination: { world: "water" as const } }] : []),
       { x: 0, z: 5.35, destination: { world: "volcano" } },
       { ...fire.entrance, destination: { dungeon: "fire", room: fire.rooms[0].id } },
     ];

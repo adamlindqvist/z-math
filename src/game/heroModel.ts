@@ -10,7 +10,7 @@ import {
 
 export function heroModel() {
   const model = character("hero");
-  for (const id of ["green-hat", "royal-crown", "lava_hat"] as const) {
+  for (const id of ["green-hat", "royal-crown", "lava_hat", "sun-hat"] as const) {
     const hat = itemModel(id);
     hat.position.set(
       0,
@@ -19,6 +19,10 @@ export function heroModel() {
     );
     model.root.add(hat);
   }
+  const waterShield = itemModel("water-shield");
+  waterShield.position.copy(model.root.getObjectByName("shield")!.position);
+  waterShield.rotation.copy(model.root.getObjectByName("shield")!.rotation);
+  model.root.add(waterShield);
   return model;
 }
 
@@ -26,6 +30,8 @@ export function applyEquipment(
   model: ReturnType<typeof heroModel>,
   equipment: Equipment,
 ) {
+  model.root.getObjectByName("sun-hat")!.visible = equipment.head === "sun-hat";
+  model.root.getObjectByName("water-shield")!.visible = equipment.shield === "water-shield";
   model.root.getObjectByName("base-hat")!.visible =
     equipment.head === "base-hat";
   model.root.getObjectByName("lava_hat")!.visible = equipment.head === "lava_hat";

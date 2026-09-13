@@ -90,7 +90,8 @@ it("connects the hub paths and opens the great gate only after the temple reward
   expect(revisited.collision.free(0, -4.8)).toBe(true);
   expect(revisited.root.getObjectByName("great-volcano-gate")!.visible).toBe(true);
   expect(revisited.root.getObjectByName("great-volcano-gate")!.position.y).toBeCloseTo(2.6);
-  expect(revisited.passages().length).toBe(2);
+  expect(revisited.passages().map(p => p.destination)).toContainEqual({ world: "water" });
+  expect(revisited.passages().length).toBe(3);
   revisited.dispose(); hub.dispose(); room.dispose();
 });
 
