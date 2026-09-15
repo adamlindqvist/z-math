@@ -167,7 +167,7 @@ export class WaterArea implements Area {
         : []),
     ];
   }
-  interactions(state: GameState): Interaction[] {
+  interactions(state: GameState, position?: THREE.Vector3): Interaction[] {
     return [
       {
         ...NATURE_CHEST,
@@ -178,8 +178,18 @@ export class WaterArea implements Area {
         },
       },
       ...[...this.objects].map(([id, object]) => ({
-        x: object.position.x,
-        z: object.position.z,
+        // Measure Ella's reach from the nearest edge of her solid body. This
+        // also keeps her own collision box from blocking the line of sight.
+        x:
+          object.position.x +
+          (id === "ella" && position
+            ? THREE.MathUtils.clamp(position.x - object.position.x, -0.65, 0.65)
+            : 0),
+        z:
+          object.position.z +
+          (id === "ella" && position
+            ? THREE.MathUtils.clamp(position.z - object.position.z, -0.9, 0.9)
+            : 0),
         target: object.userData.target,
       })),
     ];

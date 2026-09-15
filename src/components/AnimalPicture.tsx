@@ -9,18 +9,64 @@ export function AnimalPicture({
     <svg viewBox="0 0 140 110" className="mx-auto h-28 w-36" aria-hidden="true">
       {kind === "elephant" ? (
         <>
-          <ellipse cx="33" cy="47" rx="27" ry="35" fill="#a3adb9" />
-          <ellipse cx="107" cy="47" rx="27" ry="35" fill="#a3adb9" />
-          <ellipse cx="30" cy="48" rx="17" ry="23" fill="#ceafb0" />
-          <ellipse cx="110" cy="48" rx="17" ry="23" fill="#ceafb0" />
-          <ellipse cx="70" cy="43" rx="34" ry="36" fill="#a3adb9" />
+          {[30, 110].map((x) => (
+            <g key={x}>
+              <rect
+                x={x - 23}
+                y="15"
+                width="46"
+                height="65"
+                rx="20"
+                fill="#b39a64"
+              />
+              <circle
+                cx={x}
+                cy="47"
+                r="19"
+                fill="#35494e"
+                stroke="#718985"
+                strokeWidth="3"
+              />
+              <circle
+                cx={x}
+                cy="47"
+                r="12"
+                fill="none"
+                stroke="#b39a64"
+                strokeWidth="3"
+                strokeDasharray="5 3"
+              />
+              <circle cx={x} cy="47" r="5" fill="#8cf1e7" />
+            </g>
+          ))}
+          <rect
+            x="37"
+            y="8"
+            width="66"
+            height="66"
+            rx="25"
+            fill="#718985"
+            stroke="#b39a64"
+            strokeWidth="4"
+          />
           <path
-            d="M61 58V86Q61 105 84 96"
+            d="M62 58V85Q62 101 82 94"
             fill="none"
-            stroke="#a3adb9"
-            strokeWidth="19"
+            stroke="#35494e"
+            strokeWidth="20"
             strokeLinecap="round"
           />
+          <path
+            d="M62 58V85Q62 101 82 94"
+            fill="none"
+            stroke="#b39a64"
+            strokeWidth="21"
+            strokeDasharray="7 4"
+          />
+          <rect x="63" y="10" width="14" height="15" rx="4" fill="#b39a64" />
+          <circle cx="70" cy="18" r="4" fill="#8cf1e7" />
+          <circle cx="45" cy="57" r="3" fill="#b39a64" />
+          <circle cx="95" cy="57" r="3" fill="#b39a64" />
         </>
       ) : (
         <>

@@ -1,5 +1,17 @@
 import { seabed } from "../src/game/water/scenery";
-import { Box3, Group, Raycaster, Vector3 } from "three";
+import {
+  Box3,
+  Group,
+  Raycaster,
+  Vector3,
+  Vector2,
+  Scene,
+  PerspectiveCamera,
+} from "three";
+import {
+  InteractionSystem,
+  pickInteraction,
+} from "../src/game/InteractionSystem";
 import { afterEach, expect, it } from "vitest";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import { DUNGEONS, natureRestored } from "../src/game/dungeons/definitions";
@@ -425,5 +437,57 @@ it("renders each seabed junction as one surface without competing path layers", 
     }
   } finally {
     disposeTree(root);
+  }
+});
+
+it("lets Ella be talked to and tapped from around her body, but not far away or through rocks", () => {
+  enterWater(gameStore);
+  const water = new WaterArea();
+  const scene = new Scene();
+  const interactions = new InteractionSystem(scene);
+  const camera = new PerspectiveCamera(45, 1, 0.1, 30);
+  camera.position.set(-3, 8, 8);
+  camera.lookAt(-3, 0, 8);
+  camera.updateMatrixWorld(true);
+  water.root.updateMatrixWorld(true);
+  try {
+    for (const [x, z] of [
+      [-3, 10.4],
+      [-3, 5.6],
+      [-0.8, 8],
+      [-4, 8],
+    ]) {
+      const position = new Vector3(x, 0, z);
+      expect(water.collision.free(x, z), `approach ${x}, ${z}`).toBe(true);
+      interactions.update(position, water, 0);
+      expect(gameStore.getState().target).toMatchObject({ id: "ella" });
+      expect(
+        pickInteraction(water, position, camera, new Vector2()),
+      ).toMatchObject({ id: "ella" });
+      gameStore.interact();
+      expect(gameStore.getState().overlay).toBe("elephant");
+      gameStore.close();
+    }
+    for (const [x, z] of [
+      [0, 8],
+      [-3, 11],
+      [-8, 8],
+    ]) {
+      const position = new Vector3(x, 0, z);
+      interactions.update(position, water, 0);
+      expect(gameStore.getState().target).not.toMatchObject({ id: "ella" });
+      expect(
+        pickInteraction(water, position, camera, new Vector2()),
+      ).toBeNull();
+    }
+    // An intervening obstacle must still prevent both ways of interacting.
+    water.collision.add(-1.35, 8, 0.1, 0.5);
+    const blocked = new Vector3(-0.8, 0, 8);
+    interactions.update(blocked, water, 0);
+    expect(gameStore.getState().target).toBeNull();
+    expect(pickInteraction(water, blocked, camera, new Vector2())).toBeNull();
+  } finally {
+    water.dispose();
+    disposeTree(scene);
   }
 });
