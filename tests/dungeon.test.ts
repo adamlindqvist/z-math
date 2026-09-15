@@ -233,7 +233,7 @@ describe("Gläntans tempel rules and persistence", () => {
 });
 
 describe("temple world integration", () => {
-  it.each(["stone", "water"] as const)("keeps %s decorations outside the playable center in every room", (theme) => {
+  it.each(["stone", "water", "sand"] as const)("keeps %s decorations outside the playable center in every room", (theme) => {
     for (const definition of DUNGEONS[0].rooms) {
       const area = new DungeonArea({ ...DUNGEONS[0], theme }, definition);
       const decoration = area.root.getObjectByName(`${theme}-decoration`)!;

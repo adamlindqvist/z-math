@@ -186,6 +186,7 @@ export function InventoryDialog() {
             </CornerAction>
             <CornerAction
               className={cornerSecondary}
+              closesDialog
               onActivate={() => gameStore.close()}
             >
               <Play />
@@ -223,7 +224,7 @@ export function InventoryDialog() {
       label="Väska"
       sidecar={<CharacterPreview equipment={state.equipment} />}
       action={
-        <CornerAction onActivate={() => gameStore.close()}>
+        <CornerAction closesDialog onActivate={() => gameStore.close()}>
           <Play />
           Spela vidare
         </CornerAction>
@@ -232,6 +233,7 @@ export function InventoryDialog() {
       <button
         className="absolute top-3 right-3 grid size-16 cursor-pointer touch-manipulation place-items-center rounded-2xl bg-[#e4eddd] focus-visible:outline-4 focus-visible:outline-teal"
         aria-label="Stäng väskan"
+        data-dialog-close
         onClick={() => gameStore.close()}
       >
         <X size={32} />

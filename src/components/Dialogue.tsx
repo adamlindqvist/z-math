@@ -32,9 +32,11 @@ export const cornerSecondary = `${buttonBase} pointer-events-auto flex min-h-16 
 export function CornerAction({
   onActivate,
   className = cornerAction,
+  closesDialog = false,
   children,
 }: {
   onActivate: () => void;
+  closesDialog?: boolean;
   className?: string;
   children: ReactNode;
 }) {
@@ -42,6 +44,7 @@ export function CornerAction({
   return (
     <button
       className={className}
+      data-dialog-close={closesDialog || undefined}
       onPointerDown={() => {
         primed.current = true;
       }}
@@ -72,11 +75,24 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // Capture before the game's Escape shortcut so closing cannot also pause.
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" && event.code !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) {
+        ref.current
+          ?.querySelector<HTMLButtonElement>("button[data-dialog-close]:not(:disabled)")
+          ?.click();
+      }
+    };
+    window.addEventListener("keydown", escape, true);
     const previous = document.activeElement as HTMLElement | null;
     ref.current
       ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
       ?.focus();
     return () => {
+      window.removeEventListener("keydown", escape, true);
       previous?.blur();
     };
   }, []);
@@ -162,7 +178,7 @@ export function Dialogue() {
     return null;
   if (overlay === "elephant" || overlay === "giraffe") {
     const elephant = overlay === "elephant", restored = natureRestored(dungeons, elephant ? "water" : "desert");
-    return <Modal label={elephant ? "Elefanten Ella" : "Giraffen Gullan"} action={<CornerAction onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
+    return <Modal label={elephant ? "Elefanten Ella" : "Giraffen Gullan"} action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
       <AnimalPicture kind={overlay} restored={restored} />
       <h2>{restored ? "Tack för hjälpen!" : elephant ? "Hjälp korallerna!" : "Oasen behöver vatten!"}</h2>
       <p>{restored ? elephant ? "Färgerna är tillbaka! Vägen till öknen är öppen!" : "Oasen är grön igen! Nu kan jag äta goda blad." : elephant ? "Korallerna har tappat färgen. Hjälp mig i Vattentemplet!" : "Hjälp mig i Ökentemplet!"}</p>
@@ -171,7 +187,7 @@ export function Dialogue() {
   }
   if (overlay === "farmer" || overlay === "rabbitReward")
     return <Modal label={overlay === "farmer" ? "Bonden" : "Alla kaniner är hemma!"}
-      action={<CornerAction onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
+      action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
       <RabbitPictures rabbits={rabbits} />
       <h2>{overlay === "rabbitReward" || rabbitsHome(rabbits) ? "Alla kaniner är hemma!" : "Hjälp mina kaniner!"}</h2>
       <p>{overlay === "rabbitReward" ? "Du får 10 rupees. Vulkanportalen är öppen!" : rabbitsHome(rabbits)
@@ -184,7 +200,7 @@ export function Dialogue() {
       <Modal
         label="Gris"
         action={
-          <CornerAction onActivate={() => gameStore.close()}>
+          <CornerAction closesDialog onActivate={() => gameStore.close()}>
             Okej!
             <ArrowRight />
           </CornerAction>
@@ -213,6 +229,7 @@ export function Dialogue() {
         </p>
         <button
           className={primaryButton}
+          data-dialog-close={overlay === "pause" || undefined}
           onClick={() =>
             overlay === "pause" ? gameStore.close() : gameStore.reset()
           }
@@ -223,6 +240,7 @@ export function Dialogue() {
         {overlay === "pause" && <SoundButton />}
         <button
           className={`${buttonBase} mt-4 min-h-16 w-full rounded-[20px] bg-[#e8efdc] text-[21px] text-ink`}
+          data-dialog-close={overlay === "reset" || undefined}
           onClick={() =>
             overlay === "pause"
               ? gameStore.confirmReset()
@@ -254,6 +272,7 @@ export function Dialogue() {
       <button
         className={`${buttonBase} absolute top-3 right-3 grid size-16 place-items-center rounded-[22px] bg-[#e4eddd] text-ink [&_svg]:size-8`}
         aria-label="Stäng dialog"
+        data-dialog-close
         onClick={() => gameStore.close()}
       >
         <X size={20} />

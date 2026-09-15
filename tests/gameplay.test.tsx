@@ -10,7 +10,7 @@ import { Player } from "../src/game/Player";
 import { World } from "../src/game/World";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { gameStore } from "../src/store/gameStore";
-import { Dialogue } from "../src/components/Dialogue";
+import { Dialogue, Modal } from "../src/components/Dialogue";
 import { MathQuiz, RETRY_DELAY } from "../src/components/MathQuiz";
 import { TouchControls } from "../src/components/TouchControls";
 import { HUD } from "../src/components/HUD";
@@ -76,6 +76,61 @@ afterEach(() => {
 });
 
 describe("playable controls and interface", () => {
+  it("uses the available close button for Escape and never also pauses", () => {
+    const close = vi.fn();
+    const render = (disabled: boolean, present = true) => act(() => root.render(
+      <Modal label="Test">
+        {present && <button data-dialog-close disabled={disabled} onClick={close}>Stäng</button>}
+        <button>Fortsätt</button>
+      </Modal>,
+    ));
+    render(false);
+    act(() => document.activeElement!.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }),
+    ));
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(gameStore.getState().overlay).toBeNull();
+    act(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "Escape", repeat: true })));
+    expect(close).toHaveBeenCalledTimes(1);
+    render(true);
+    key("Escape");
+    render(false, false);
+    key("Escape");
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(gameStore.getState().overlay).toBeNull();
+    act(() => root.render(null));
+    key("Escape");
+    expect(gameStore.getState().overlay).toBe("pause");
+  });
+  it("closes the chest and quiz with Escape but preserves correct-answer feedback", () => {
+    vi.useFakeTimers();
+    act(() => {
+      gameStore.setTarget({ kind: "chest", id: "glade", label: "Öppna" });
+      gameStore.interact();
+    });
+    key("Escape");
+    expect(gameStore.getState().overlay).toBeNull();
+    act(() => gameStore.interact());
+    click("Räkna!");
+    key("Escape");
+    expect(gameStore.getState().overlay).toBeNull();
+    act(() => gameStore.interact());
+    click("Räkna!");
+    act(() => gameStore.answer(gameStore.getState().question!.correctAnswer));
+    key("Escape");
+    expect(gameStore.getState().overlay).toBe("quiz");
+    expect(gameStore.getState().feedback).toBe("correct");
+  });
+  it("cancels reset with Escape without erasing progress", () => {
+    act(() => gameStore.collect("path-1"));
+    key("Escape");
+    click("Börja om");
+    key("Escape");
+    expect(gameStore.getState().overlay).toBe("pause");
+    expect(gameStore.getState().rupees).toBe(1);
+    key("Escape");
+    expect(gameStore.getState().overlay).toBeNull();
+  });
   it("selects and clears runes with simultaneous touch controls and ignores canceled actions", () => {
     act(() => {
       gameStore.openDebug();

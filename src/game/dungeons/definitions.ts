@@ -187,6 +187,64 @@ for (const [id, name, theme, source, item] of [
   ["desert", "Ökentemplet", "sand", "fire", "sun-hat"],
 ] as const) {
   const rooms = structuredClone(DUNGEONS.find(d => d.id === source)!.rooms);
+  if (id === "water") {
+    const stoneRoom = rooms.find(room => room.id === "stones")!;
+    stoneRoom.hint = "Följ spåret. Gå runt stenen vid svängen!";
+    // Two turns per track build on the fire temple's single corner.
+    // Separate tracks leave room to walk around and undo every push.
+    stoneRoom.stones = [
+      {
+        id: "sun", symbol: "sun", start: 0, goal: 3, tiles: { 3: "sun" },
+        points: [
+          { x: -3.2, z: -3.2 }, { x: -1.6, z: -3.2 },
+          { x: -1.6, z: -1.6 }, { x: -3.2, z: -1.6 },
+        ],
+      },
+      {
+        id: "leaf", symbol: "leaf", start: 0, goal: 3, tiles: { 3: "leaf" },
+        points: [
+          { x: 1.6, z: -3.2 }, { x: 3.2, z: -3.2 },
+          { x: 3.2, z: -1.6 }, { x: 1.6, z: -1.6 },
+        ],
+      },
+      {
+        id: "moon", symbol: "moon", start: 0, goal: 4, tiles: { 4: "moon" },
+        points: [
+          { x: -3.2, z: 1.6 }, { x: -1.6, z: 1.6 },
+          { x: -1.6, z: 3.2 }, { x: 0, z: 3.2 }, { x: 1.6, z: 3.2 },
+        ],
+      },
+    ];
+  }
+  if (id === "desert") {
+    const stoneRoom = rooms.find(room => room.id === "stones")!;
+    stoneRoom.hint = "Följ spåret. Gå runt stenen vid svängen!";
+    // Three turns, then four: one gentle step beyond the water temple.
+    stoneRoom.stones = [
+      {
+        id: "sun", symbol: "sun", start: 0, goal: 4, tiles: { 4: "sun" },
+        points: [
+          { x: -3.2, z: -3.2 }, { x: -1.6, z: -3.2 },
+          { x: -1.6, z: -1.6 }, { x: -3.2, z: -1.6 }, { x: -3.2, z: 0 },
+        ],
+      },
+      {
+        id: "leaf", symbol: "leaf", start: 0, goal: 4, tiles: { 4: "leaf" },
+        points: [
+          { x: 3.2, z: -3.2 }, { x: 1.6, z: -3.2 },
+          { x: 1.6, z: -1.6 }, { x: 3.2, z: -1.6 }, { x: 3.2, z: 0 },
+        ],
+      },
+      {
+        id: "moon", symbol: "moon", start: 0, goal: 5, tiles: { 5: "moon" },
+        points: [
+          { x: -3.2, z: 3.2 }, { x: -1.6, z: 3.2 },
+          { x: -1.6, z: 1.6 }, { x: 0, z: 1.6 },
+          { x: 0, z: 3.2 }, { x: 1.6, z: 3.2 },
+        ],
+      },
+    ];
+  }
   for (const room of rooms) if (room.challenge) {
     room.challenge.id = `${id}-${room.id}-lock`;
     if (room.id === "treasure") room.challenge.items = [item];

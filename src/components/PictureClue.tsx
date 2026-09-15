@@ -2,7 +2,7 @@ import { gameStore, useGameState } from "../store/gameStore";
 import { Modal, CornerAction } from "./Dialogue";
 export function PictureClue() {
   if (useGameState().overlay !== "pictureClue") return null;
-  return <Modal label="Märkena hör ihop" action={<CornerAction onActivate={() => gameStore.close()}><span data-read-aloud>Spela vidare</span></CornerAction>}>
+  return <Modal label="Märkena hör ihop" action={<CornerAction closesDialog onActivate={() => gameStore.close()}><span data-read-aloud>Spela vidare</span></CornerAction>}>
     <h2>Märkena hör ihop.</h2>
     <svg viewBox="0 0 480 250" role="img" aria-label="En sköld, en tom rustning och ett kungaporträtt med samma kronmärke, förbundna med en tom tron" className="mx-auto my-4 w-full max-w-[440px]">
       <defs><g id="clue-seal"><circle r="16" fill="#efd077" stroke="#a87b43" strokeWidth="2"/><path d="M-10 6L-11-7L-4-2L0-11L4-2L11-7L10 6Z" fill="#94364c"/></g></defs>

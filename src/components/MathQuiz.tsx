@@ -64,6 +64,7 @@ export function MathQuiz() {
         className="cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none absolute top-3 right-3 grid size-16 place-items-center rounded-[22px] bg-[#e4eddd] text-ink [&_svg]:size-8"
         aria-label="Försök senare"
         disabled={isCorrect}
+        data-dialog-close
         onClick={() => gameStore.close()}
       >
         <X size={20} />

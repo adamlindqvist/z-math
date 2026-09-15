@@ -218,14 +218,44 @@ describe("Eldtemplet", () => {
     ]);
   });
 
-  it("walks to all seven pushes, turns corners, keeps vertical motion solid, and exits", () => {
+  it.each(["fire", "water", "desert"])("walks every %s push, turns corners, keeps motion solid, and exits", (id) => {
     enterStones(gameStore);
-    const room = new DungeonArea(fire, fire.rooms[1]);
+    if (id !== "fire") {
+      solveStones(gameStore);
+      travel(gameStore, "treasure");
+      quiz(gameStore, "fire-treasure-lock");
+      gameStore.close();
+      gameStore.travelTo({ world: "volcano-interior" });
+      gameStore.travelTo({ world: "water" });
+      gameStore.travelTo({ dungeon: "water", room: "light" });
+      quiz(gameStore, "water-light-lock");
+      gameStore.travelTo({ dungeon: "water", room: "stones" });
+    }
+    if (id === "desert") {
+      const water = DUNGEONS.find(d => d.id === "water")!;
+      for (const [index, stone] of water.rooms[1].stones!.entries()) {
+        for (let slot = stone.start; slot < stone.goal; slot++) {
+          expect(gameStore.pushStone(index, 1)).toBe(true);
+          gameStore.finishMotion();
+        }
+      }
+      gameStore.travelTo({ dungeon: "water", room: "treasure" });
+      quiz(gameStore, "water-treasure-lock");
+      gameStore.close();
+      gameStore.travelTo({ world: "water" });
+      gameStore.travelTo({ world: "desert" });
+      gameStore.travelTo({ dungeon: "desert", room: "light" });
+      quiz(gameStore, "desert-light-lock");
+      gameStore.travelTo({ dungeon: "desert", room: "stones" });
+    }
+    expect(gameStore.getState().location).toEqual({ dungeon: id, room: "stones" });
+    const temple = DUNGEONS.find(d => d.id === id)!;
+    const room = new DungeonArea(temple, temple.rooms[1]);
     const player = new Player();
     player.position.set(0, 0, 4.7);
     const interactions = new InteractionSystem(new Scene());
     let pushes = 0;
-    for (const [index, stone] of fire.rooms[1].stones!.entries()) {
+    for (const [index, stone] of temple.rooms[1].stones!.entries()) {
       for (let slot = 0; slot < stone.goal; slot++) {
         const from = stone.points[slot],
           to = stone.points[slot + 1];
@@ -264,17 +294,33 @@ describe("Eldtemplet", () => {
         room.update(0.2, 0);
         room.update(0, 0);
         expect(gameStore.getState().motion).toBeNull();
+        if (id !== "fire" && !(index === 2 && slot + 1 === stone.goal)) {
+          // Every turn can be undone by walking to the other side.
+          walk(player, room.collision, to.x + dx, to.z + dz);
+          expect(room.tryPush(player.position, -dx * 0.25, -dz * 0.25)).toBe(true);
+          room.update(0.3, 0);
+          room.update(0, 0);
+          expect(gameStore.getState().dungeons[id].stones.stones[index]).toBe(slot);
+          walk(player, room.collision, from.x - dx, from.z - dz);
+          expect(room.tryPush(player.position, dx * 0.25, dz * 0.25)).toBe(true);
+          room.update(0.3, 0);
+          room.update(0, 0);
+        }
         pushes++;
       }
     }
-    expect(pushes).toBe(7);
-    expect(roomSolved(fire.rooms[1], gameStore.getState().dungeons.fire)).toBe(
+    expect(pushes).toBe(id === "desert" ? 13 : id === "water" ? 10 : 7);
+    expect(roomSolved(temple.rooms[1], gameStore.getState().dungeons[id])).toBe(
       true,
     );
     walk(player, room.collision, 0, -5.2);
     interactions.update(player.position, room, 0);
     expect(gameStore.getState().location?.room).toBe("treasure");
     room.dispose();
+    if (id !== "fire") {
+      disposeTree(player.root);
+      return;
+    }
     const treasure = new DungeonArea(fire, fire.rooms[2]);
     player.position.set(0, 0, 4.7);
     walk(player, treasure.collision, 0, -1.2);

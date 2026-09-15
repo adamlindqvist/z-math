@@ -25,7 +25,7 @@ export function ShopDialog() {
       <Modal
         label="Stängd dörr"
         action={
-          <CornerAction onActivate={() => gameStore.close()}>
+          <CornerAction closesDialog onActivate={() => gameStore.close()}>
             <Play />
             Spela vidare
           </CornerAction>
@@ -69,7 +69,7 @@ export function ShopDialog() {
         s.shopPurchased ? (
           <>
             {equipped ? (
-              <CornerAction onActivate={() => gameStore.close()}>
+              <CornerAction closesDialog onActivate={() => gameStore.close()}>
                 <Play />
                 Spela vidare
               </CornerAction>
@@ -87,7 +87,7 @@ export function ShopDialog() {
             </CornerAction>
           </>
         ) : (
-          <CornerAction onActivate={() => gameStore.close()}>
+          <CornerAction closesDialog onActivate={() => gameStore.close()}>
             <Play />
             Spela vidare
           </CornerAction>

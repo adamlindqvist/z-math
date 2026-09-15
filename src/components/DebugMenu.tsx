@@ -65,6 +65,7 @@ export default function DebugMenu() {
       <button
         className="absolute top-3 right-3 grid size-14 touch-manipulation place-items-center rounded-2xl bg-[#dce5d5] focus-visible:outline-4 focus-visible:outline-teal"
         aria-label="Stäng debugmenyn"
+        data-dialog-close
         onClick={() => gameStore.closeDebug()}
       >
         <X aria-hidden="true" />

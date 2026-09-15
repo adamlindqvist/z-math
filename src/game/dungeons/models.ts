@@ -127,7 +127,7 @@ export function wave(
   ribbon.castShadow = false;
   return ribbon;
 }
-export function waterDecoration(parent: THREE.Group, theme: "water") {
+export function waterDecoration(parent: THREE.Group, theme: "water", roomId = "light") {
   const palette = THEMES[theme];
   const water = material(palette.water, 0.35),
     foam = material(palette.foam);
@@ -157,7 +157,71 @@ export function waterDecoration(parent: THREE.Group, theme: "water") {
       mesh(new THREE.ConeGeometry(0.12, 0.23, 8), foam, drop, 0, 0.16).scale.x =
         0.38;
     }
+  waterTempleWalls(decoration, roomId);
+  decoration.traverse(object => {
+    if (object instanceof THREE.Mesh) object.castShadow = false;
+  });
   return decoration;
+}
+
+// Framed wall niches echo the fire temple, with calm underwater motifs.
+function waterTempleWalls(parent: THREE.Group, roomId: string) {
+  const stone = material(THEMES.water.stone);
+  const trim = material(THEMES.water.band);
+  const pale = material(THEMES.water.foam);
+  const recess = material("#397f99");
+  const water = material(THEMES.water.water, 0.35);
+  const coral = material("#e4a69d");
+  const pearl = material("#e0ffff");
+  pearl.emissive.set("#94ddff");
+  pearl.emissiveIntensity = 0.4;
+  const bubbleGeometry = new THREE.TorusGeometry(0.1, 0.018, 4, 12);
+  for (const side of [-1, 1]) {
+    for (const z of [-3.65, 3.65]) {
+      const niche = new THREE.Group();
+      niche.position.set(side * 5.79, 0, z);
+      niche.rotation.y = -side * Math.PI / 2;
+      parent.add(niche);
+      box(niche, stone, 0, 0.8, 0, 1.75, 1.5, 0.14);
+      box(niche, recess, 0, 0.86, 0.085, 1.24, 1.04, 0.03);
+      for (const x of [-0.77, 0.77]) {
+        box(niche, pale, x, 0.8, 0.1, 0.18, 1.45, 0.18);
+        for (const y of [0.18, 1.45])
+          box(niche, trim, x, y, 0.11, 0.25, 0.1, 0.22);
+      }
+      box(niche, trim, 0, 1.58, 0.08, 1.94, 0.14, 0.22);
+      box(niche, pale, 0, 0.29, 0.13, 1.42, 0.12, 0.22);
+      if (roomId === "stones") {
+        // A small spill and basin repeat the winding water-channel theme.
+        box(niche, water, 0, 0.84, 0.13, 0.36, 0.92, 0.025);
+        for (const x of [-0.1, 0.09])
+          box(niche, pale, x, 0.84, 0.15, 0.025, 0.77, 0.018);
+        box(niche, trim, 0, 0.4, 0.15, 0.83, 0.15, 0.22);
+        wave(niche, pale, 0, 0.44, 0.27, 0.55);
+      } else if (roomId === "treasure") {
+        // A fan-shaped shell cradles a softly glowing pearl.
+        for (let i = -2; i <= 2; i++) {
+          const rib = ball(niche, coral, i * 0.13, 0.76 - Math.abs(i) * 0.04, 0.15, 0.12, 0.35, 0.055);
+          rib.rotation.z = -i * 0.26;
+        }
+        ball(niche, pearl, 0, 0.63, 0.25, 0.16, 0.16, 0.12);
+      } else {
+        for (const y of [0.63, 0.88]) wave(niche, pale, 0, y, 0.13, 0.8);
+        for (const [x, y] of [[-0.3, 1.18], [0.18, 1.25]])
+          mesh(bubbleGeometry, pearl, niche, x, y, 0.14);
+      }
+    }
+    for (const z of [-1.8, 1.8]) {
+      box(parent, trim, side * 5.77, 0.5, z, 0.12, 0.14, 0.35);
+      ball(parent, pearl, side * 5.75, 0.68, z, 0.1, 0.14, 0.1);
+    }
+  }
+  for (const z of [-5.61, 5.61])
+    for (const x of [-4.6, -2.7, 2.7, 4.6]) {
+      box(parent, trim, x, 0.36, z, 0.03, 0.53, 0.025);
+      const relief = wave(parent, pale, x, 0.53, z - Math.sign(z) * 0.03, 0.45);
+      if (z > 0) relief.rotation.y = Math.PI;
+    }
 }
 // A carved diamond rosette, deliberately distinct from the three puzzle symbols.
 function stoneRosette(parent: THREE.Group, trim: THREE.Material, inset: THREE.Material) {
@@ -222,21 +286,81 @@ function stoneDecoration(parent: THREE.Group) {
   return group;
 }
 export function roomDecoration(parent: THREE.Group, theme: DungeonTheme, leftOpening = false, roomId = "light") {
-  if (theme === "sand") {
-    const group = new THREE.Group(); group.name = "sand-decoration"; parent.add(group);
-    const stone = material(THEMES.sand.stone), band = material(THEMES.sand.band), gold = material(THEMES.sand.accent);
-    for (const side of [-1, 1]) for (const z of [-3, 0, 3]) {
-      box(group, stone, side * 5.1, 0.9, z, 0.45, 1.8, 0.6);
-      box(group, band, side * 5.1, 1.8, z, 0.65, 0.15, 0.75);
-      const relief = new THREE.Group(); relief.position.set(side * 5.25, 1.1, z); relief.rotation.y = -side * Math.PI / 2; group.add(relief);
-      sunMotif(relief, gold, 0, 0, 0, 0.25);
-    }
-    return group;
-  }
+  if (theme === "sand") return sandDecoration(parent, roomId);
   if (theme === "stone") return stoneDecoration(parent);
-  if (theme === "water") return waterDecoration(parent, theme);
+  if (theme === "water") return waterDecoration(parent, theme, roomId);
   return fireDecoration(parent, leftOpening, roomId);
 }
+// Shallow sandstone architecture keeps the winding puzzle and doors clear.
+function sandDecoration(parent: THREE.Group, roomId: string) {
+  const group = new THREE.Group();
+  group.name = "sand-decoration";
+  parent.add(group);
+  const stone = material(THEMES.sand.stone);
+  const trim = material(THEMES.sand.band);
+  const pale = material(THEMES.sand.tiles[0]);
+  const recess = material("#997044");
+  const turquoise = material("#438f92");
+  const gold = material(THEMES.sand.accent);
+  gold.emissive.set("#ffd075");
+  gold.emissiveIntensity = 0.25;
+  for (const side of [-1, 1]) {
+    box(group, trim, side * 5.62, 0.03, 0, 0.32, 0.03, 10.6);
+    for (let z = -4.8; z <= 4.8; z += 0.8) {
+      box(group, turquoise, side * 5.62, 0.055, z, 0.15, 0.02, 0.22);
+    }
+    for (const z of [-3.65, 3.65]) {
+      const niche = new THREE.Group();
+      niche.position.set(side * 5.79, 0, z);
+      niche.rotation.y = -side * Math.PI / 2;
+      group.add(niche);
+      box(niche, stone, 0, 0.8, 0, 1.76, 1.5, 0.14);
+      box(niche, recess, 0, 0.84, 0.09, 1.24, 1.03, 0.025);
+      for (const x of [-0.77, 0.77]) {
+        box(niche, pale, x, 0.8, 0.1, 0.19, 1.45, 0.18);
+        for (const y of [0.19, 0.65, 1.1, 1.46])
+          box(niche, turquoise, x, y, 0.2, 0.2, 0.065, 0.025);
+      }
+      for (let step = 0; step < 3; step++)
+        box(niche, step === 1 ? trim : pale, 0, 1.55 + step * 0.1, 0.06, 1.94 - step * 0.28, 0.1, 0.22);
+      box(niche, trim, 0, 0.29, 0.12, 1.45, 0.13, 0.22);
+      if (roomId === "stones") {
+        // A stepped pyramid echoes the increasingly winding stone journey.
+        for (let step = 0; step < 4; step++)
+          box(niche, step % 2 ? pale : stone, 0, 0.47 + step * 0.16, 0.15, 0.98 - step * 0.22, 0.16, 0.075);
+        box(niche, gold, 0, 1.17, 0.15, 0.13, 0.13, 0.05).rotation.z = Math.PI / 4;
+      } else if (roomId === "treasure") {
+        // Three little treasure jars with contrasting necks and golden lids.
+        for (const [x, height] of [[-0.36, 0.32], [0, 0.52], [0.36, 0.32]]) {
+          ball(niche, turquoise, x, 0.4 + height / 2, 0.17, 0.14, height / 2, 0.075);
+          box(niche, gold, x, 0.43 + height, 0.17, 0.19, 0.065, 0.13);
+        }
+        sunMotif(niche, gold, 0, 1.21, 0.15, 0.18);
+      } else {
+        sunMotif(niche, gold, 0, 1.02, 0.15, 0.3);
+        const dunes = silhouette(niche, pale, [
+          [-0.54, 0.43], [-0.25, 0.67], [0.02, 0.5], [0.3, 0.71], [0.54, 0.43],
+        ]);
+        dunes.position.z = 0.15;
+      }
+    }
+    for (const z of [-1.7, 1.7]) {
+      box(group, trim, side * 5.76, 0.49, z, 0.15, 0.12, 0.3);
+      ball(group, gold, side * 5.74, 0.66, z, 0.1, 0.14, 0.1);
+    }
+  }
+  for (const z of [-5.6, 5.6])
+    for (const x of [-4.6, -2.7, 2.7, 4.6]) {
+      box(group, trim, x, 0.35, z, 0.035, 0.52, 0.025);
+      box(group, turquoise, x + 0.3, 0.53, z, 0.24, 0.12, 0.04);
+      box(group, trim, x, 0.03, z - Math.sign(z) * 0.1, 1.3, 0.03, 0.24);
+    }
+  group.traverse(object => {
+    if (object instanceof THREE.Mesh) object.castShadow = false;
+  });
+  return group;
+}
+
 function fireDecoration(parent: THREE.Group, leftOpening: boolean, roomId: string) {
   const group = new THREE.Group();
   group.name = "fire-decoration";
