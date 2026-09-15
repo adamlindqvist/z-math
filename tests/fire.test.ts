@@ -256,6 +256,7 @@ describe("Eldtemplet", () => {
     const interactions = new InteractionSystem(new Scene());
     let pushes = 0;
     for (const [index, stone] of temple.rooms[1].stones!.entries()) {
+      const pushDirections: { dx: number; dz: number }[] = [];
       for (let slot = 0; slot < stone.goal; slot++) {
         const from = stone.points[slot],
           to = stone.points[slot + 1];
@@ -264,6 +265,7 @@ describe("Eldtemplet", () => {
         walk(player, room.collision, from.x - dx, from.z - dz);
         const hint = room.pushHint(gameStore.getState(), player.position);
         expect(hint).toMatchObject({ index, direction: 1, dx, dz });
+        pushDirections.push({ dx: hint!.dx, dz: hint!.dz });
         expect(room.tryPush(player.position, dx * 0.02, dz * 0.02)).toBe(false);
         expect(room.tryPush(player.position, -dx, -dz)).toBe(false);
         expect(room.tryPush(player.position, 0.25, 0.25)).toBe(false);
@@ -307,6 +309,11 @@ describe("Eldtemplet", () => {
           room.update(0, 0);
         }
         pushes++;
+      }
+      if (id !== "fire" && index < 2) {
+        // Sun folds back; leaf continues in a staircase, not a mirrored copy.
+        const first = pushDirections[0], third = pushDirections[2];
+        expect(first.dx * third.dx + first.dz * third.dz).toBe(index === 0 ? -1 : 1);
       }
     }
     expect(pushes).toBe(id === "desert" ? 13 : id === "water" ? 10 : 7);

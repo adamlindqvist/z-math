@@ -203,8 +203,8 @@ for (const [id, name, theme, source, item] of [
       {
         id: "leaf", symbol: "leaf", start: 0, goal: 3, tiles: { 3: "leaf" },
         points: [
-          { x: 1.6, z: -3.2 }, { x: 3.2, z: -3.2 },
-          { x: 3.2, z: -1.6 }, { x: 1.6, z: -1.6 },
+          { x: 1.6, z: -3.2 }, { x: 1.6, z: -1.6 },
+          { x: 3.2, z: -1.6 }, { x: 3.2, z: 0 },
         ],
       },
       {
@@ -231,8 +231,8 @@ for (const [id, name, theme, source, item] of [
       {
         id: "leaf", symbol: "leaf", start: 0, goal: 4, tiles: { 4: "leaf" },
         points: [
-          { x: 3.2, z: -3.2 }, { x: 1.6, z: -3.2 },
-          { x: 1.6, z: -1.6 }, { x: 3.2, z: -1.6 }, { x: 3.2, z: 0 },
+          { x: 0.8, z: -3.2 }, { x: 0.8, z: -1.6 },
+          { x: 2.4, z: -1.6 }, { x: 2.4, z: 0 }, { x: 4, z: 0 },
         ],
       },
       {
