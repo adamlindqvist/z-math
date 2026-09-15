@@ -70,21 +70,23 @@ export function AnimalPicture({
         </>
       ) : (
         <>
-          <path d="M49 110L53 49H88L92 110" fill="#efc25c" />
-          <path
-            d="M60 77L74 70L81 82L68 89ZM75 102L84 92L89 105Z"
-            fill="#a7753e"
-          />
-          <path
-            d="M53 21L50 5M87 21L91 5"
-            stroke="#73502f"
-            strokeWidth="8"
-            strokeLinecap="round"
-          />
-          <ellipse cx="34" cy="28" rx="19" ry="9" fill="#efc25c" />
-          <ellipse cx="107" cy="28" rx="19" ry="9" fill="#efc25c" />
-          <rect x="40" y="17" width="62" height="51" rx="23" fill="#efc25c" />
-          <ellipse cx="71" cy="58" rx="28" ry="15" fill="#f7d994" />
+          <path d="M49 110L53 49H88L92 110" fill="#39464a" />
+          {[73, 86, 99].map((y) => (
+            <g key={y}>
+              <rect x="50" y={y} width="41" height="9" rx="3" fill="#b99a62" />
+              <circle cx="56" cy={y + 4.5} r="2" fill="#847b65" />
+              <circle cx="85" cy={y + 4.5} r="2" fill="#847b65" />
+            </g>
+          ))}
+          <path d="M53 21L50 7M87 21L91 7" stroke="#39464a" strokeWidth="6" />
+          <circle cx="50" cy="7" r="5" fill="#b99a62" />
+          <circle cx="91" cy="7" r="5" fill="#b99a62" />
+          <path d="M43 22L17 18L22 32L43 36M98 22L124 18L119 32L98 36" fill="#b99a62" />
+          <rect x="40" y="17" width="62" height="51" rx="18" fill="#847b65" stroke="#b99a62" strokeWidth="3" />
+          <rect x="44" y="48" width="54" height="25" rx="10" fill="#b99a62" />
+          <rect x="65" y="19" width="11" height="10" rx="3" fill="#99eee3" />
+          <circle cx="49" cy="56" r="2" fill="#39464a" />
+          <circle cx="92" cy="56" r="2" fill="#39464a" />
         </>
       )}
       <circle cx="55" cy="39" r="7" fill="#fff9e6" />
