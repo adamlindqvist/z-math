@@ -139,6 +139,7 @@ export function shellGate(
   root: THREE.Group,
   collision: CollisionSystem,
   m: SeaModels,
+  destination: "sand" | "water" = "sand",
 ) {
   const group = new THREE.Group();
   group.name = "great-shell-gate";
@@ -197,14 +198,21 @@ export function shellGate(
   const inside = new THREE.Mesh(
     new THREE.PlaneGeometry(2.8, 2.6),
     new THREE.ShaderMaterial({
+      uniforms: {
+        portalColor: {
+          value: destination === "water"
+            ? new THREE.Vector3(0.22, 0.78, 0.88)
+            : new THREE.Vector3(0.95, 0.80, 0.51),
+        },
+      },
       transparent: true,
       side: THREE.DoubleSide,
       depthWrite: false,
       vertexShader: `varying vec2 uvPortal; void main(){uvPortal=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-      fragmentShader: `varying vec2 uvPortal; void main(){
+      fragmentShader: `uniform vec3 portalColor; varying vec2 uvPortal; void main(){
         vec2 p=(uvPortal-vec2(0.5,0.42))*vec2(2.0,1.5);
         float glow=1.0-smoothstep(0.15,0.95,length(p));
-        gl_FragColor=vec4(0.95,0.80,0.51,glow*0.4);
+        gl_FragColor=vec4(portalColor,glow*0.4);
       }`,
     }),
   );

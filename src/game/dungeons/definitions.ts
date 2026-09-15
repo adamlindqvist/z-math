@@ -1,3 +1,4 @@
+import { DESERT_TEMPLE } from "../desert/layout";
 import { NATURE_TEMPLE } from "../nature/layout";
 import { gladePosition } from "../gladeLayout";
 import type { ItemId } from "../../items/definitions";
@@ -190,7 +191,7 @@ for (const [id, name, theme, source, item] of [
     room.challenge.id = `${id}-${room.id}-lock`;
     if (room.id === "treasure") room.challenge.items = [item];
   }
-  DUNGEONS.push({ id, name, theme, entranceWorld: id, entrance: { ...NATURE_TEMPLE }, rooms });
+  DUNGEONS.push({ id, name, theme, entranceWorld: id, entrance: { ...(id === "desert" ? DESERT_TEMPLE : NATURE_TEMPLE) }, rooms });
 }
 export const natureRestored = (progress: Record<string, DungeonProgress>, world: "water" | "desert") =>
   progress[world].rewards.includes(`${world}-treasure-lock`);

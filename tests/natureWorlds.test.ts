@@ -285,62 +285,72 @@ it("prepares new debug destinations without losing room progress or changing the
   expect(s.getState().location).toBeNull();
 });
 
-it("connects every underwater interaction and pickup to a clear approach on the seabed", () => {
-  enterWater(gameStore);
-  const area = new WaterArea();
-  try {
-    const step = 0.25,
-      seen = new Set<string>(),
-      queue = [{ x: 0, z: 20.5 }];
-    const key = (x: number, z: number) => `${x},${z}`;
-    seen.add(key(0, 20.5));
-    for (let i = 0; i < queue.length; i++) {
-      const p = queue[i];
-      for (const [dx, dz] of [
-        [step, 0],
-        [-step, 0],
-        [0, step],
-        [0, -step],
-      ]) {
-        const next = { x: p.x + dx, z: p.z + dz };
-        if (
-          !seen.has(key(next.x, next.z)) &&
-          area.collision.free(next.x, next.z)
-        ) {
-          seen.add(key(next.x, next.z));
-          queue.push(next);
+it.each(["water", "desert"] as const)(
+  "connects every %s interaction, pickup and passage to a clear approach",
+  (world) => {
+    enterWater(gameStore);
+    const area = world === "water" ? new WaterArea() : new DesertArea();
+    try {
+      const step = 0.25,
+        seen = new Set<string>(),
+        queue = [{ ...area.spawn }];
+      const key = (x: number, z: number) => `${x},${z}`;
+      seen.add(key(area.spawn.x, area.spawn.z));
+      for (let i = 0; i < queue.length; i++) {
+        const p = queue[i];
+        for (const [dx, dz] of [
+          [step, 0],
+          [-step, 0],
+          [0, step],
+          [0, -step],
+        ]) {
+          const next = { x: p.x + dx, z: p.z + dz };
+          if (
+            !seen.has(key(next.x, next.z)) &&
+            area.collision.free(next.x, next.z)
+          ) {
+            seen.add(key(next.x, next.z));
+            queue.push(next);
+          }
         }
       }
+      if (world === "desert") {
+        // Flood fill must remain inside the visible canyon, not reach the
+        // rectangular safety bounds beyond the rocks (even through the gate).
+        expect(
+          queue.every((p) => Math.abs(p.x) < 20 && p.z > -3 && p.z < 24),
+        ).toBe(true);
+      }
+      for (const interaction of area.interactions(gameStore.getState())) {
+        expect(
+          queue.some(
+            (p) =>
+              Math.hypot(p.x - interaction.x, p.z - interaction.z) < 1.7 &&
+              area.collision.visible(p, interaction),
+          ),
+          JSON.stringify(interaction.target),
+        ).toBe(true);
+      }
+      for (const rupee of area.rupees)
+        expect(
+          queue.some(
+            (p) =>
+              Math.hypot(
+                p.x - rupee.root.position.x,
+                p.z - rupee.root.position.z,
+              ) < 0.5,
+          ),
+          rupee.id,
+        ).toBe(true);
+      for (const p of area.passages(gameStore.getState()))
+        expect(queue.some((q) => Math.hypot(q.x - p.x, q.z - p.z) < 0.25)).toBe(
+          true,
+        );
+    } finally {
+      area.dispose();
     }
-    for (const interaction of area.interactions(gameStore.getState())) {
-      expect(
-        queue.some(
-          (p) =>
-            Math.hypot(p.x - interaction.x, p.z - interaction.z) < 1.7 &&
-            area.collision.visible(p, interaction),
-        ),
-        JSON.stringify(interaction.target),
-      ).toBe(true);
-    }
-    for (const rupee of area.rupees)
-      expect(
-        queue.some(
-          (p) =>
-            Math.hypot(
-              p.x - rupee.root.position.x,
-              p.z - rupee.root.position.z,
-            ) < 0.5,
-        ),
-        rupee.id,
-      ).toBe(true);
-    for (const p of area.passages(gameStore.getState()))
-      expect(queue.some((q) => Math.hypot(q.x - p.x, q.z - p.z) < 0.25)).toBe(
-        true,
-      );
-  } finally {
-    area.dispose();
-  }
-});
+  },
+);
 
 it("replays the anemone and clam animations without rewards and pauses restoration during dialogs", () => {
   enterWater(gameStore);
@@ -488,6 +498,108 @@ it("lets Ella be talked to and tapped from around her body, but not far away or 
     expect(pickInteraction(water, blocked, camera, new Vector2())).toBeNull();
   } finally {
     water.dispose();
+    disposeTree(scene);
+  }
+});
+
+it("arrives inside the open desert shell and returns through its centre", () => {
+  const area = new DesertArea();
+  try {
+    const state = gameStore.getState();
+    const entry = area
+      .passages(state)
+      .find((p) => p.destination?.world === "water")!;
+    const spawn = natureArrival({ world: "desert" }, { world: "water" })!;
+    expect(area.spawn).toEqual(spawn);
+    expect(area.root.getObjectByName("great-shell-gate")).toBeDefined();
+    expect(entry.rotation).toBe(Math.PI);
+    expect(Math.hypot(entry.x - spawn.x, entry.z - spawn.z)).toBeGreaterThan(1);
+    const position = { ...spawn };
+    area.collision.move(position, entry.x - spawn.x, entry.z - spawn.z);
+    expect(position.x).toBeCloseTo(entry.x);
+    expect(position.z).toBeCloseTo(entry.z);
+    gameStore.openDebug();
+    gameStore.debugTravelTo({ world: "desert" });
+    gameStore.closeDebug();
+    const interactions = new InteractionSystem(new Scene());
+    interactions.update(new Vector3(spawn.x, 0, spawn.z), area, 0);
+    expect(gameStore.getState().location).toEqual({ world: "desert" });
+    interactions.update(new Vector3(position.x, 0, position.z), area, 0);
+    expect(gameStore.getState().location).toEqual({ world: "water" });
+
+    const temple = area
+      .passages(state)
+      .find((p) => p.destination?.dungeon === "desert")!;
+    expect(DUNGEONS.find((d) => d.id === "desert")!.entrance).toEqual({
+      x: temple.x,
+      z: temple.z,
+    });
+    const returnPoint = natureArrival(
+      { world: "desert" },
+      { dungeon: "desert", room: "light" },
+    )!;
+    expect(area.collision.free(returnPoint.x, returnPoint.z)).toBe(true);
+    area.collision.move(
+      returnPoint,
+      temple.x - returnPoint.x,
+      temple.z - returnPoint.z,
+    );
+    expect(returnPoint.x).toBeCloseTo(temple.x);
+    expect(returnPoint.z).toBeCloseTo(temple.z);
+  } finally {
+    area.dispose();
+  }
+});
+
+it("lets Gullan be talked to and tapped around her body without reaching through rocks", () => {
+  gameStore.openDebug();
+  gameStore.debugTravelTo({ world: "desert" });
+  gameStore.closeDebug();
+  const desert = new DesertArea();
+  const scene = new Scene();
+  const interactions = new InteractionSystem(scene);
+  const camera = new PerspectiveCamera(45, 1, 0.1, 30);
+  camera.position.set(-4, 8, 9);
+  camera.lookAt(-4, 0, 9);
+  camera.updateMatrixWorld(true);
+  desert.root.updateMatrixWorld(true);
+  try {
+    for (const [x, z] of [
+      [-4, 11.4],
+      [-4, 6.6],
+      [-6.2, 9],
+      [-3, 9],
+    ]) {
+      const position = new Vector3(x, 0, z);
+      expect(desert.collision.free(x, z), `approach ${x}, ${z}`).toBe(true);
+      interactions.update(position, desert, 0);
+      expect(gameStore.getState().target).toMatchObject({ id: "gullan" });
+      expect(
+        pickInteraction(desert, position, camera, new Vector2()),
+      ).toMatchObject({ id: "gullan" });
+      gameStore.interact();
+      expect(gameStore.getState().overlay).toBe("giraffe");
+      gameStore.close();
+    }
+    for (const [x, z] of [
+      [-7, 9],
+      [-4, 12],
+      [-4, 6],
+    ]) {
+      const position = new Vector3(x, 0, z);
+      interactions.update(position, desert, 0);
+      expect(gameStore.getState().target).not.toMatchObject({ id: "gullan" });
+      expect(
+        pickInteraction(desert, position, camera, new Vector2()),
+      ).toBeNull();
+    }
+    desert.collision.add(-5.65, 9, 0.1, 0.5);
+    const blocked = new Vector3(-6.2, 0, 9);
+    interactions.update(blocked, desert, 0);
+    expect(gameStore.getState().target).not.toMatchObject({ id: "gullan" });
+    expect(pickInteraction(desert, blocked, camera, new Vector2())).toBeNull();
+  } finally {
+    desert.dispose();
     disposeTree(scene);
   }
 });

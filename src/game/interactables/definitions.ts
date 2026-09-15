@@ -1,3 +1,4 @@
+import { DESERT_OBJECTS } from "../desert/layout";
 import type { Location } from "../dungeons/definitions";
 import type { PuzzleId } from "../puzzles/definitions";
 import type { SoundEvent } from "../../audio/types";
@@ -14,11 +15,11 @@ export type ObjectDefinition = {
 const room = { castle: "throne" } as const;
 export const WORLD_OBJECTS = {
   ella: { location: { world: "water" }, x: -3, z: 8, label: "Prata", behavior: { kind: "animal", animal: "elephant" }, sound: "interact" },
-  gullan: { location: { world: "desert" }, x: -3, z: 8, label: "Prata", behavior: { kind: "animal", animal: "giraffe" }, sound: "interact" },
+  gullan: { location: { world: "desert" }, ...DESERT_OBJECTS["gullan"], label: "Prata", behavior: { kind: "animal", animal: "giraffe" }, sound: "interact" },
   "sea-anemone": { location: { world: "water" }, x: -4, z: 16, label: "Rör försiktigt", behavior: { kind: "reaction" }, sound: "plop" },
   "pearl-clam": { location: { world: "water" }, x: 4, z: 10, label: "Titta i musslan", behavior: { kind: "reaction" }, sound: "plop" },
-  "desert-palm": { location: { world: "desert" }, x: -4, z: 16, label: "Prassla", behavior: { kind: "reaction" }, sound: "wind" },
-  "sand-pot": { location: { world: "desert" }, x: 4, z: 10, label: "Puffa", behavior: { kind: "reaction" }, sound: "plop" },
+  "desert-palm": { location: { world: "desert" }, ...DESERT_OBJECTS["desert-palm"], label: "Prassla", behavior: { kind: "reaction" }, sound: "wind" },
+  "sand-pot": { location: { world: "desert" }, ...DESERT_OBJECTS["sand-pot"], label: "Puffa", behavior: { kind: "reaction" }, sound: "plop" },
   "royal-shield": { location: room, x: -2.05, z: -1.6, label: "Tryck", behavior: { kind: "symbol", puzzle: "royal-symbols" }, sound: "click" },
   "royal-armour": { location: room, x: 3.7, z: -2, label: "Tryck", behavior: { kind: "symbol", puzzle: "royal-symbols" }, sound: "click" },
   "royal-portrait": { location: room, x: -1.9, z: -3, label: "Tryck", behavior: { kind: "symbol", puzzle: "royal-symbols" }, sound: "click" },
