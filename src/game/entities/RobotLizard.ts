@@ -1,3 +1,4 @@
+import { RobotEyes } from "./RobotEyes";
 import * as THREE from "three";
 import { box, material, mesh } from "../models";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -5,6 +6,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 /** Decorative companion: no collision, interaction target or saved state. */
 export class RobotLizard {
   root = new THREE.Group();
+  readonly eyes = new RobotEyes();
   private body = new THREE.Group();
   private tail = new THREE.Group();
   private legs: THREE.Group[] = [];
@@ -26,9 +28,7 @@ export class RobotLizard {
     const joints = material("#303b3f", 0.6);
     shell.metalness = 0.45;
     metal.metalness = 0.6;
-    const light = new THREE.MeshStandardMaterial({
-      color: "#9be9f1", emissive: "#50c7dc", emissiveIntensity: 0.5,
-    });
+    const light = this.eyes;
     box(this.body, joints, 0, 0.33, 0, 0.48, 0.25, 0.72);
     // Overlapping armor, raised engine drums and a dorsal frame echo the reference.
     for (const z of [-0.25, 0, 0.25]) {

@@ -198,6 +198,7 @@ export class WaterArea implements Area {
     const state = gameStore.getState(),
       step = state.overlay ? 0 : dt;
     this.elapsed += step;
+    this.ella.eyes.setTempleCompleted(natureRestored(state.dungeons, "water"));
     this.progress = natureRestored(state.dungeons, "water")
       ? Math.min(1, this.progress + step * 0.45)
       : 0;

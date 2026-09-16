@@ -1,5 +1,7 @@
 import { seabed } from "../src/game/water/scenery";
 import {
+  Mesh,
+  MeshStandardMaterial,
   Box3,
   Group,
   Raycaster,
@@ -15,6 +17,7 @@ import {
 import { afterEach, expect, it } from "vitest";
 import { createGameStore, gameStore, parseSave } from "../src/store/gameStore";
 import { DUNGEONS, natureRestored } from "../src/game/dungeons/definitions";
+import { VolcanoArea } from "../src/game/VolcanoArea";
 import { WaterArea } from "../src/game/WaterArea";
 import { DesertArea } from "../src/game/DesertArea";
 import { VolcanoInteriorArea } from "../src/game/VolcanoInteriorArea";
@@ -601,5 +604,49 @@ it("lets Gullan be talked to and tapped around her body without reaching through
   } finally {
     desert.dispose();
     disposeTree(scene);
+  }
+});
+
+
+it("changes each robot's eyes only after its own temple is completed, including on re-entry and reset", () => {
+  gameStore.reset();
+  const areas = [new VolcanoArea(), new WaterArea(), new DesertArea()];
+  const eyeColors = (root: Group) => {
+    const colors = new Set<string>();
+    root.traverse((object) => {
+      if (object instanceof Mesh && object.material instanceof MeshStandardMaterial &&
+          object.material.name === "robot-eyes") {
+        colors.add(object.material.color.getHexString());
+      }
+    });
+    return [...colors];
+  };
+  const check = (colors: string[]) => {
+    areas.forEach((area, i) => {
+      area.update(0, 0);
+      expect(eyeColors(area.root)).toEqual([colors[i]]);
+    });
+  };
+  try {
+    check(["ff3030", "ff3030", "ff3030"]);
+    enterWater(gameStore);
+    check(["308cff", "ff3030", "ff3030"]);
+    solveTemple(gameStore, "water");
+    check(["308cff", "308cff", "ff3030"]);
+    gameStore.travelTo({ world: "desert" });
+    solveTemple(gameStore, "desert");
+    check(["308cff", "308cff", "308cff"]);
+    for (const Area of [VolcanoArea, WaterArea, DesertArea]) {
+      const revisited = new Area();
+      try {
+        expect(eyeColors(revisited.root)).toEqual(["308cff"]);
+      } finally {
+        revisited.dispose();
+      }
+    }
+    gameStore.reset();
+    check(["ff3030", "ff3030", "ff3030"]);
+  } finally {
+    areas.forEach((area) => area.dispose());
   }
 });

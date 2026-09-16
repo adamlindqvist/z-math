@@ -1,3 +1,4 @@
+import { RobotEyes } from "../entities/RobotEyes";
 import * as THREE from "three";
 import { ball, box, material, mesh } from "../models";
 export function palm(parent: THREE.Group, x: number, z: number, green = true) {
@@ -28,6 +29,7 @@ export function animal(kind: "water" | "desert") {
   const root = new THREE.Group(),
     head = new THREE.Group(),
     spray = new THREE.Group();
+  const eyes = new RobotEyes();
   const white = material("#fff9e6");
   head.position.set(0, kind === "water" ? 1.3 : 1.25, 0.65);
   root.add(head);
@@ -111,8 +113,8 @@ export function animal(kind: "water" | "desert") {
       ball(head, light, side * 0.59, 0.07, 0.24, 0.09, 0.09, 0.035);
       ball(head, bronze, side * 0.25, 0.18, 0.53, 0.15, 0.17, 0.085);
       ball(head, white, side * 0.25, 0.18, 0.59, 0.115);
-      ball(head, joint, side * 0.25, 0.18, 0.69, 0.06);
-      ball(head, light, side * 0.25 - 0.018, 0.205, 0.735, 0.022);
+      ball(head, eyes, side * 0.25, 0.18, 0.69, 0.06);
+      ball(head, white, side * 0.25 - 0.018, 0.205, 0.735, 0.022);
     }
     for (let i = 0; i < 7; i++) {
       const segment = disc(
@@ -228,10 +230,10 @@ export function animal(kind: "water" | "desert") {
       disc(head, joint, side * 0.17, 1.91, 0, 0.045, 0.3);
       ball(head, bronze, side * 0.17, 2.07, 0, 0.085);
       ball(head, white, side * 0.23, 1.6, 0.55, 0.12);
-      ball(head, joint, side * 0.23, 1.6, 0.65, 0.065);
-      ball(head, light, side * 0.23 - 0.018, 1.625, 0.697, 0.025);
+      ball(head, eyes, side * 0.23, 1.6, 0.65, 0.065);
+      ball(head, white, side * 0.23 - 0.018, 1.625, 0.697, 0.025);
     }
   }
   spray.visible = false;
-  return { root, head, spray };
+  return { root, head, spray, eyes };
 }

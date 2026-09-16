@@ -191,6 +191,7 @@ export class DesertArea implements Area {
       step = state.overlay ? 0 : dt;
     this.elapsed += step;
     const restored = natureRestored(state.dungeons, "desert");
+    this.gullan.eyes.setTempleCompleted(restored);
     this.oasis.visible = restored;
     this.plants.forEach((p) =>
       p.leaves.color.set(restored ? "#619951" : "#b4a061"),
