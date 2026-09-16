@@ -31,7 +31,7 @@ export function HUD() {
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
   const hint =
-    state.location?.world === "underworld" ? "Utforska! Guldporten leder upp igen." :
+    state.location?.world === "underworld" ? "Stegen leder upp till öknen." :
     state.location?.world === "water" ? (natureRestored(state.dungeons, "water") ? "Snäckporten till öknen är öppen!" : "Hjälp Ella. Hitta Vattentemplet!") :
     state.location?.world === "desert" ? (natureRestored(state.dungeons, "desert") ? "Ett hål har öppnats vid templet!" : "Hjälp Gullan. Hitta Ökentemplet!") :
     state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? "Den stora porten är öppen!" : "Eldtemplet ligger till höger!") :

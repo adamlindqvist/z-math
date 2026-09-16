@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { type Area, type Passage, disposeTree } from "./Area";
+import { type Area, type Interaction, type Passage, disposeTree } from "./Area";
 import { CollisionSystem } from "./CollisionSystem";
 import { material, mesh } from "./models";
 import { UNDERWORLD_RETURN } from "./underworld/layout";
@@ -158,46 +158,109 @@ export class UnderworldArea implements Area {
       }
     }
     this.root.add(grass, caps);
-    // A golden root arch is the only exit and can be walked through from either side.
-    const arch = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.2, 0, 7.4),
-      new THREE.Vector3(-1.1, 2.2, 7.4),
-      new THREE.Vector3(0, 2.9, 7.4),
-      new THREE.Vector3(1.1, 2.2, 7.4),
-      new THREE.Vector3(1.2, 0, 7.4),
-    ]);
-    const gold = new THREE.MeshStandardMaterial({
-      color: "#ffe3a0",
-      emissive: "#d8a753",
-      emissiveIntensity: 0.9,
+    // A ladder reaches daylight above the cavern, making the way UP tangible.
+    // The child activates the climb action at its foot to return to the desert.
+    const exit = new THREE.Group();
+    exit.name = "ladder-to-desert";
+    exit.rotation.y = Math.PI;
+    exit.position.set(UNDERWORLD_RETURN.x, 0, UNDERWORLD_RETURN.z);
+    this.root.add(exit);
+    const wood = material("#82765a", 1);
+    const rungMaterial = material("#a49770", 1);
+    const ropeMaterial = material("#c2b58a", 1);
+    const ladder = new THREE.Group();
+    const ladderHeight = 24;
+    ladder.rotation.x = 0.12;
+    exit.add(ladder);
+    // Weathered, roughly hewn posts with subtle bends instead of smooth poles.
+    const railGeometry = new THREE.BoxGeometry(0.19, ladderHeight, 0.2, 1, 32, 1);
+    const vertices = railGeometry.attributes.position;
+    for (let i = 0; i < vertices.count; i++) {
+      const y = vertices.getY(i);
+      vertices.setX(i, vertices.getX(i) + Math.sin(y * 2.1) * 0.018);
+      vertices.setZ(i, vertices.getZ(i) + Math.sin(y * 1.7) * 0.012);
+    }
+    railGeometry.computeVertexNormals();
+    for (const x of [-0.65, 0.65]) {
+      mesh(railGeometry, wood, ladder, x, ladderHeight / 2, 0);
+    }
+    const rungCount = Math.floor((ladderHeight - 0.6) / 0.62) + 1;
+    const rungs = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1.65, 0.13, 0.18), rungMaterial, rungCount,
+    );
+    // Shared geometry keeps all of the rope lashings inexpensive on iPad.
+    const bindings = new THREE.InstancedMesh(
+      new THREE.TorusGeometry(0.145, 0.026, 4, 8), ropeMaterial, rungCount * 4,
+    );
+    const grain = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.018, 0.32, 0.008), material("#615b47", 1), rungCount * 2,
+    );
+    const tint = new THREE.Color();
+    for (let i = 0; i < rungCount; i++) {
+      const y = 0.3 + i * 0.62;
+      const tilt = Math.sin(i * 2.7) * 0.025;
+      this.dummy.position.set(Math.sin(i * 1.9) * 0.025, y, 0.13);
+      this.dummy.rotation.set(0, 0, tilt);
+      this.dummy.scale.set(1 + Math.sin(i * 3.1) * 0.035, 1, 1);
+      this.dummy.updateMatrix();
+      rungs.setMatrixAt(i, this.dummy.matrix);
+      rungs.setColorAt(i, tint.setHSL(0.12, 0.12, 0.76 + (i % 3) * 0.07));
+      for (let side = 0; side < 2; side++) {
+        const x = side === 0 ? -0.65 : 0.65;
+        for (let wrap = 0; wrap < 2; wrap++) {
+          this.dummy.position.set(x, y + x * tilt + (wrap ? 0.055 : -0.055), 0.055);
+          this.dummy.rotation.set(Math.PI / 2, 0.12, 0);
+          this.dummy.scale.set(0.9, 1.3, 1);
+          this.dummy.updateMatrix();
+          bindings.setMatrixAt(i * 4 + side * 2 + wrap, this.dummy.matrix);
+        }
+        this.dummy.position.set(x + Math.sin(i * 1.8) * 0.04, y + 0.3, 0.116);
+        this.dummy.rotation.set(0, 0, 0.015);
+        this.dummy.scale.setScalar(1);
+        this.dummy.updateMatrix();
+        grain.setMatrixAt(i * 2 + side, this.dummy.matrix);
+      }
+    }
+    rungs.castShadow = rungs.receiveShadow = true;
+    bindings.castShadow = bindings.receiveShadow = true;
+    ladder.add(rungs, bindings, grain);
+    const openingHeight = (ladderHeight - 0.2) * Math.cos(ladder.rotation.x);
+    const openingZ = (ladderHeight - 0.2) * Math.sin(ladder.rotation.x);
+    // Keep the foot clear of colliders so a child can reach it from either side.
+    const sandstone = material("#dfb675");
+    const rimGeometry = new THREE.DodecahedronGeometry(1, 0);
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const rock = mesh(rimGeometry, sandstone, exit,
+        Math.cos(angle) * 1.35, openingHeight, openingZ + Math.sin(angle) * 1.05);
+      rock.scale.set(0.48, 0.22, 0.38);
+      rock.rotation.y = angle;
+    }
+    const daylight = new THREE.MeshBasicMaterial({
+      color: "#fff2bf", side: THREE.DoubleSide,
     });
-    mesh(new THREE.TubeGeometry(arch, 18, 0.17, 7, false), gold, this.root);
-    for (const x of [-1.2, 1.2]) this.collision.add(x, 7.4, 0.18);
-    const portal = mesh(
-      new THREE.CircleGeometry(1, 24),
+    const opening = mesh(new THREE.CircleGeometry(1, 24), daylight, exit, 0, openingHeight + 0.03, openingZ);
+    opening.rotation.x = -Math.PI / 2;
+    opening.scale.set(1.35, 1.05, 1);
+    opening.castShadow = false;
+    // A soft patch of sunlight marks the reachable foot without adding a light.
+    const sunlight = mesh(new THREE.CircleGeometry(1.45, 24),
       new THREE.MeshBasicMaterial({
-        color: "#ffe8ac",
-        transparent: true,
-        opacity: 0.15,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      }),
-      this.root,
-      0,
-      1.3,
-      7.4,
-    );
-    portal.scale.set(1, 1.35, 1);
-    // An upward arrow communicates the return without needing to read.
-    mesh(new THREE.ConeGeometry(0.25, 0.4, 3), gold, this.root, 0, 2.05, 7.4);
-    mesh(
-      new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6),
-      gold,
-      this.root,
-      0,
-      1.65,
-      7.4,
-    );
+        color: "#ffe4a0", transparent: true, opacity: 0.22, depthWrite: false,
+      }), exit, 0, 0.015, 0);
+    sunlight.rotation.x = -Math.PI / 2;
+    sunlight.castShadow = false;
+    // A large upward arrow beside the rungs is readable without words.
+    const arrow = new THREE.Shape();
+    arrow.moveTo(-0.12, 0);
+    arrow.lineTo(0.12, 0);
+    arrow.lineTo(0.12, 0.48);
+    arrow.lineTo(0.36, 0.48);
+    arrow.lineTo(0, 0.88);
+    arrow.lineTo(-0.36, 0.48);
+    arrow.lineTo(-0.12, 0.48);
+    arrow.closePath();
+    mesh(new THREE.ShapeGeometry(arrow), daylight, exit, -1.12, 1.35, 0.2);
     const pool = mesh(
       new THREE.CircleGeometry(1.9, 32),
       material("#547d75"),
@@ -233,10 +296,13 @@ export class UnderworldArea implements Area {
     this.update(0, 0);
   }
   passages(): Passage[] {
-    return [{ ...UNDERWORLD_RETURN, destination: { world: "desert" } }];
-  }
-  interactions() {
     return [];
+  }
+  interactions(): Interaction[] {
+    return [{
+      ...UNDERWORLD_RETURN,
+      target: { kind: "underworldLadder", label: "Klättra upp" },
+    }];
   }
   update(_dt: number, time: number) {
     this.ganondorf.update(time);

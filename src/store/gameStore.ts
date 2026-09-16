@@ -104,6 +104,7 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "underworldLadder"; label: string }
   | { kind: "horse"; action: "mount" | "dismount"; label: string }
   | { kind: "farmer"; label: string }
   | { kind: "rabbit"; id: RabbitId; label: string }
@@ -480,6 +481,71 @@ export function createGameStore(
       dungeons: { ...base.dungeons, [dungeonId]: progress },
     };
   };
+  const travelTo = (destination: Location) => {
+    if (state.overlay || state.motion || state.riding) return;
+    const found = resolveRoom(state.location);
+    const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
+    const next = resolveRoom(destination);
+    if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
+    const interiorAdjacent =
+      (state.location?.world === "volcano" && destination?.world === "volcano-interior" && minibossDefeated(state.minibosses, "stone_giant")) ||
+      (state.location?.world === "volcano-interior" && destination?.world === "volcano") ||
+      (state.location?.world === "volcano-interior" && next?.dungeon.id === "fire" && currentIndex === -1 && next.room === next.dungeon.rooms[0]) ||
+      (found?.dungeon.id === "fire" && destination?.world === "volcano-interior" && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons.fire))));
+    const natureAdjacent =
+      (state.location?.world === "desert" && destination?.world === "underworld" && natureRestored(state.dungeons, "desert")) ||
+      (state.location?.world === "underworld" && destination?.world === "desert") ||
+      (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons)) ||
+      (state.location?.world === "water" && destination?.world === "volcano-interior") ||
+      (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water")) ||
+      (state.location?.world === "desert" && destination?.world === "water") ||
+      ((state.location?.world === "water" || state.location?.world === "desert") && next?.dungeon.entranceWorld === state.location.world && next.room === next.dungeon.rooms[0]) ||
+      ((found?.dungeon.entranceWorld === "water" || found?.dungeon.entranceWorld === "desert") && destination?.world === found.dungeon.entranceWorld && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons[found.dungeon.id]))));
+    const volcanoAdjacent =
+      (state.location === null &&
+        destination?.world === "volcano" && state.bridgeUnlocked && rabbitsHome(state.rabbits)) ||
+      (state.location?.world === "volcano" && destination === null);
+    const castleAdjacent =
+      (!state.location && destination?.castle === "hall") ||
+      (state.location?.castle === "hall" &&
+        (destination === null ||
+          destination?.castle === "shop" ||
+          destination?.castle === "throne")) ||
+      ((state.location?.castle === "shop" ||
+        state.location?.castle === "throne") &&
+        destination?.castle === "hall");
+    const adjacent = !state.location
+      ? !!next && !next.dungeon.entranceWorld && next.dungeon.rooms[0] === next.room
+      : (!destination && !found?.dungeon.entranceWorld &&
+          (currentIndex === 0 ||
+            (!!found &&
+              currentIndex === found.dungeon.rooms.length - 1 &&
+              roomSolved(found.room, state.dungeons[found.dungeon.id])))) ||
+        (!!next &&
+          next.dungeon === found?.dungeon &&
+          Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
+            1);
+    if (
+      (natureAdjacent || interiorAdjacent || volcanoAdjacent || castleAdjacent || adjacent) &&
+      canVisit(destination, state.dungeons)
+    )
+      set(
+        {
+          location: destination,
+          encounter: null,
+          shopGreeting: false,
+          shopSelection: null,
+          shopPurchased: false,
+          target: null,
+          motion: null,
+          activeSecret: null,
+          movingBarriers: [],
+          objectEvent: null,
+          reward: 0,
+        },
+        true,
+      );
+  };
   return {
     getState: () => state,
     updateMinibossPresence: (id: MinibossId, distance: number) => {
@@ -801,71 +867,7 @@ export function createGameStore(
         debugNoclip: false,
       });
     },
-    travelTo: (destination: Location) => {
-      if (state.overlay || state.motion || state.riding) return;
-      const found = resolveRoom(state.location);
-      const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
-      const next = resolveRoom(destination);
-      if (next?.dungeon.requiresBridge && !state.bridgeUnlocked) return;
-      const interiorAdjacent =
-        (state.location?.world === "volcano" && destination?.world === "volcano-interior" && minibossDefeated(state.minibosses, "stone_giant")) ||
-        (state.location?.world === "volcano-interior" && destination?.world === "volcano") ||
-        (state.location?.world === "volcano-interior" && next?.dungeon.id === "fire" && currentIndex === -1 && next.room === next.dungeon.rooms[0]) ||
-        (found?.dungeon.id === "fire" && destination?.world === "volcano-interior" && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons.fire))));
-      const natureAdjacent =
-        (state.location?.world === "desert" && destination?.world === "underworld" && natureRestored(state.dungeons, "desert")) ||
-        (state.location?.world === "underworld" && destination?.world === "desert") ||
-        (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons)) ||
-        (state.location?.world === "water" && destination?.world === "volcano-interior") ||
-        (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water")) ||
-        (state.location?.world === "desert" && destination?.world === "water") ||
-        ((state.location?.world === "water" || state.location?.world === "desert") && next?.dungeon.entranceWorld === state.location.world && next.room === next.dungeon.rooms[0]) ||
-        ((found?.dungeon.entranceWorld === "water" || found?.dungeon.entranceWorld === "desert") && destination?.world === found.dungeon.entranceWorld && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons[found.dungeon.id]))));
-      const volcanoAdjacent =
-        (state.location === null &&
-          destination?.world === "volcano" && state.bridgeUnlocked && rabbitsHome(state.rabbits)) ||
-        (state.location?.world === "volcano" && destination === null);
-      const castleAdjacent =
-        (!state.location && destination?.castle === "hall") ||
-        (state.location?.castle === "hall" &&
-          (destination === null ||
-            destination?.castle === "shop" ||
-            destination?.castle === "throne")) ||
-        ((state.location?.castle === "shop" ||
-          state.location?.castle === "throne") &&
-          destination?.castle === "hall");
-      const adjacent = !state.location
-        ? !!next && !next.dungeon.entranceWorld && next.dungeon.rooms[0] === next.room
-        : (!destination && !found?.dungeon.entranceWorld &&
-            (currentIndex === 0 ||
-              (!!found &&
-                currentIndex === found.dungeon.rooms.length - 1 &&
-                roomSolved(found.room, state.dungeons[found.dungeon.id])))) ||
-          (!!next &&
-            next.dungeon === found?.dungeon &&
-            Math.abs(next.dungeon.rooms.indexOf(next.room) - currentIndex) ===
-              1);
-      if (
-        (natureAdjacent || interiorAdjacent || volcanoAdjacent || castleAdjacent || adjacent) &&
-        canVisit(destination, state.dungeons)
-      )
-        set(
-          {
-            location: destination,
-            encounter: null,
-            shopGreeting: false,
-            shopSelection: null,
-            shopPurchased: false,
-            target: null,
-            motion: null,
-            activeSecret: null,
-            movingBarriers: [],
-            objectEvent: null,
-            reward: 0,
-          },
-          true,
-        );
-    },
+    travelTo,
     pushStone: (index: number, direction: -1 | 1) => {
       const found = resolveRoom(state.location);
       if (!found || state.overlay || state.motion) return false;
@@ -920,6 +922,10 @@ export function createGameStore(
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "underworldLadder") {
+          if (state.location?.world === "underworld") travelTo({ world: "desert" });
+          return;
+        }
         if (target.kind === "horse") {
           if (state.location || !state.bridgeUnlocked || state.horseAction) return;
           if ((target.action === "dismount") !== state.riding) return;
