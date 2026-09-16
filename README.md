@@ -213,3 +213,5 @@ När Ökentemplet är avklarat öppnas ett stort hål väster om templet. Sanden
 Den gyllene rotporten med en uppåtpil nära landningsplatsen leder tillbaka till öknen, på säkert avstånd från hålet. Platsen sparas och hålet förblir upplåst efter omladdning. Debugmenyn har en genväg till Underjorden som förbereder de tidigare templen inom testsessionen.
 
 `UnderworldArea` bygger grottmiljön med instansierade smådetaljer. `src/game/underworld/` innehåller schaktet och passagepunkterna. Fallövergången pausar under dialoger och avbryts vid områdesbyte eller återställning.
+
+Längst in i underjorden står Ganondorf, byggd av geometriska former i `src/game/entities/Ganondorf.ts`. Han är tills vidare en passiv NPC med en lugn vilorörelse; slutbossens uppgift, dialog och strid är ännu inte införda.

@@ -3,6 +3,7 @@ import { type Area, type Passage, disposeTree } from "./Area";
 import { CollisionSystem } from "./CollisionSystem";
 import { material, mesh } from "./models";
 import { UNDERWORLD_RETURN } from "./underworld/layout";
+import { Ganondorf } from "./entities/Ganondorf";
 
 /** A quiet cavern to explore: broad paths, luminous roots and no hazards. */
 export class UnderworldArea implements Area {
@@ -21,6 +22,7 @@ export class UnderworldArea implements Area {
     fog: { color: "#081b20", density: 0.027 },
   };
   private motes: THREE.InstancedMesh;
+  private ganondorf = new Ganondorf();
   private dummy = new THREE.Object3D();
   private glow = new THREE.MeshStandardMaterial({
     color: "#95e7d6",
@@ -29,6 +31,11 @@ export class UnderworldArea implements Area {
   });
   constructor() {
     this.root.name = "underworld";
+    this.ganondorf.root.position.set(0, 0, -22);
+    const bossScale = 1.4;
+    this.ganondorf.root.scale.setScalar(bossScale);
+    this.root.add(this.ganondorf.root);
+    this.collision.addEllipse(0, -22, 0.85 * bossScale, 0.7 * bossScale);
     const stone = material("#284549"),
       bark = material("#365951");
     const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
@@ -232,6 +239,7 @@ export class UnderworldArea implements Area {
     return [];
   }
   update(_dt: number, time: number) {
+    this.ganondorf.update(time);
     this.glow.emissiveIntensity = 1.2 + Math.sin(time * 0.8) * 0.15;
     for (let i = 0; i < this.motes.count; i++) {
       // Each speck falls steadily, then reappears above the cavern floor.
