@@ -9,7 +9,7 @@ export class UnderworldArea implements Area {
   root = new THREE.Group();
   collision = new CollisionSystem(15, 19, -7);
   spawn = { x: 0, z: 4 };
-  cameraMode = "glade" as const;
+  cameraMode = "follow" as const;
   rupees = [];
   environment = {
     background: "#081b20",

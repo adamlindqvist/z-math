@@ -30,7 +30,7 @@ export interface Area {
   root: THREE.Group;
   collision: CollisionSystem;
   spawn: { x: number; z: number };
-  cameraMode: "glade" | "room";
+  cameraMode: "glade" | "room" | "follow";
   rupees: Collectible[];
   passages(state: GameState): Passage[];
   pushHint?(state: GameState, position: THREE.Vector3): PushHint | null;

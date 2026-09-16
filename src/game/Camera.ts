@@ -3,17 +3,23 @@ export class GameCamera {
   camera = new PerspectiveCamera(39, 1, 0.1, 120);
   private focus = new Vector3(-1, 0, 0);
   private offset = new Vector3(8.33, 12.6, 14.28);
-  private mode: "glade" | "room" = "glade";
-  setMode(mode: "glade" | "room", position: Vector3) {
+  private mode: "glade" | "room" | "follow" = "glade";
+  // Caverns keep the same framing as the forward stretches of outdoor worlds.
+  setMode(mode: "glade" | "room" | "follow", position: Vector3) {
     this.mode = mode;
     this.focus.copy(
       mode === "room"
         ? new Vector3(0, 0, 0)
-        : new Vector3(
-            position.x,
-            0,
-            position.z * 0.3 + 0.9 + Math.max(0, position.z - 4) * 0.7,
-          ),
+        : mode === "follow"
+          ? new Vector3(position.x, 0, position.z - 1.9)
+          : new Vector3(
+              position.x,
+              0,
+              position.z * 0.3 +
+                0.9 +
+                Math.max(0, position.z - 4) * 0.7 +
+                Math.min(0, position.z + 8) * 0.7,
+            ),
     );
     this.update(position, 1);
   }
@@ -25,11 +31,16 @@ export class GameCamera {
     const desired =
       this.mode === "room"
         ? new Vector3(0, 0, 0)
-        : new Vector3(
-            position.x,
-            0,
-            position.z * 0.3 + 0.9 + Math.max(0, position.z - 4) * 0.7,
-          );
+        : this.mode === "follow"
+          ? new Vector3(position.x, 0, position.z - 1.9)
+          : new Vector3(
+              position.x,
+              0,
+              position.z * 0.3 +
+                0.9 +
+                Math.max(0, position.z - 4) * 0.7 +
+                Math.min(0, position.z + 8) * 0.7,
+            );
     this.focus.lerp(desired, 1 - Math.exp(-dt * 3));
     const zoom =
       this.mode === "room"
