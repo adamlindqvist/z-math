@@ -29,10 +29,10 @@ The project uses React 19, TypeScript with strict type checking, Three.js, Tailw
 
 ## Development guidelines and key behavior
 
-- The game is under development. Do not account for backward compatibility; breaking changes are acceptable.
+- The child is actively playing the game. Preserve existing saved progress across updates so the child does not have to start over.
 - Follow the existing separation between Three.js gameplay logic and the React UI. React should update when game state changes, not on every frame.
 - Preserve one-time rewards and safeguards against collecting the same coin more than once.
-- Progress is saved in `localStorage` under the key `glantans-skatt-v1`, with save-version validation. Save format changes do not need to preserve existing saves. The game must remain playable when storage is unavailable or contains invalid data.
+- Progress is saved in `localStorage` under the key `glantans-skatt-v1`, with save-version validation. Changes to the save format or storage key must preserve existing saves through backward-compatible loading or migration. Add or update persistence tests to verify that existing progress survives such changes. The game must remain playable when storage is unavailable or contains invalid data.
 - Keep 3D rendering lightweight for iPad. Preserve the pixel-ratio cap and clean up listeners, the render loop, geometries, and materials when the game unmounts.
 - Maintain understandable error handling when WebGL is unavailable or the graphics context is lost.
 - Keep changes focused on the task and update the README when usage or project structure changes.
