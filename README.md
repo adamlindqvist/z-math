@@ -205,3 +205,11 @@ Varje värld har sju rupees längs stigarna och en separat kista med tre bildadd
 Framsteg, föremål, öppnade kistor och insamlade rupees sparas med **sparversion 20**. Äldre sparningar börjar om. Vid omladdning visas färgglatt korallrev, öppen snäckport och grön oas direkt utan nya belöningar. Spelet fungerar även när lagring är otillgänglig. Debugmenyn har genvägar till båda världarna och alla nya tempelrum inom den vanliga tillfälliga testsessionen.
 
 `WaterArea` är ett självständigt område. Undervattensstigar finns i `src/game/water/layout.ts`, miljöbygget i `src/game/water/scenery.ts` och landmärken och fiskar i `src/game/water/landmarks.ts`. `DesertArea` är ett eget område: en bred, oregelbunden klippdal med en rundslinga runt en central oas. Öknens platser och klippkontur finns i `src/game/desert/layout.ts`. En sammanhängande stenkant avgränsar dalen; återvägen använder vattenvärldens öppna snäckport, sedd från ökensidan. Öknens sammanhängande sandmark, sanddyner, sandstensbåge, soltempelruin och instansierade växt- och keramikdetaljer byggs i `src/game/desert/scenery.ts`. Gemensamma passagepunkter finns i `src/game/nature/layout.ts`, och djurmodeller i `src/game/nature/models.ts`. Miljöprofilens valfria dimma återställs vid områdesbyten. Templets tema `sand` kompletterar det befintliga temat `water`.
+
+### Underjorden
+
+När Ökentemplet är avklarat öppnas ett stort hål väster om templet. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Inga tempel, fiender eller nya utmaningar ingår ännu.
+
+Den gyllene rotporten med en uppåtpil nära landningsplatsen leder tillbaka till öknen, på säkert avstånd från hålet. Platsen sparas och hålet förblir upplåst efter omladdning. Debugmenyn har en genväg till Underjorden som förbereder de tidigare templen inom testsessionen.
+
+`UnderworldArea` bygger grottmiljön med instansierade smådetaljer. `src/game/underworld/` innehåller schaktet och passagepunkterna. Fallövergången pausar under dialoger och avbryts vid områdesbyte eller återställning.

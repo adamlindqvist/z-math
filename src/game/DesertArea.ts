@@ -1,3 +1,5 @@
+import { buildUnderworldHole } from "./underworld/hole";
+import { UNDERWORLD_HOLE } from "./underworld/layout";
 import { shellGate } from "./water/landmarks";
 import { SeaModels } from "./water/scenery";
 import * as THREE from "three";
@@ -34,6 +36,8 @@ export class DesertArea implements Area {
     ground: "#caa66b",
   };
   rupees: Collectible[];
+  private updateHole;
+  private holeReady = false;
   private chest;
   private gullan = animal("desert");
   private oasis = new THREE.Group();
@@ -45,10 +49,14 @@ export class DesertArea implements Area {
   private reacting: WorldObjectId | null = null;
   private reactionTime = 2;
   private elapsed = 0;
-  constructor() {
+  constructor(animateHoleOpening = false) {
     const state = gameStore.getState();
     this.root.name = "desert-world";
-    desertGround(this.root);
+    this.updateHole = buildUnderworldHole(
+      this.root,
+      desertGround(this.root),
+      natureRestored(state.dungeons, "desert") && !animateHoleOpening,
+    );
     this.oasis.name = "restored-oasis";
     this.root.add(this.oasis, this.particles);
     const { x, z } = DESERT_OASIS;
@@ -149,8 +157,17 @@ export class DesertArea implements Area {
       );
     this.update(0, 0);
   }
-  passages(_state: GameState): Passage[] {
+  passages(state: GameState): Passage[] {
     return [
+      ...(this.holeReady && natureRestored(state.dungeons, "desert")
+        ? [
+            {
+              ...UNDERWORLD_HOLE,
+              fall: true,
+              destination: { world: "underworld" as const },
+            },
+          ]
+        : []),
       { ...DESERT_ENTRY, destination: { world: "water" } },
       { ...DESERT_TEMPLE, destination: { dungeon: "desert", room: "light" } },
     ];
@@ -191,6 +208,13 @@ export class DesertArea implements Area {
       step = state.overlay ? 0 : dt;
     this.elapsed += step;
     const restored = natureRestored(state.dungeons, "desert");
+    this.holeReady = this.updateHole(step, restored);
+    const holeRock = this.root.getObjectByName("underworld-hole-rock");
+    if (holeRock) holeRock.visible = !restored || !this.holeReady;
+    this.collision.dynamic =
+      restored && !this.holeReady
+        ? [{ ...UNDERWORLD_HOLE, halfX: 2.5, halfZ: 2.5 }]
+        : [];
     this.gullan.eyes.setTempleCompleted(restored);
     this.oasis.visible = restored;
     this.plants.forEach((p) =>

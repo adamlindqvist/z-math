@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { gameStore, type Target } from "../store/gameStore";
 import type { Area, Interaction } from "./Area";
 export class InteractionSystem {
+  private fall: { world: Area; passage: import("./Area").Passage; elapsed: number; resetId: number } | null = null;
+  get falling() { return this.fall !== null; }
   ring: THREE.Mesh;
   arrow: THREE.Mesh;
   constructor(scene: THREE.Scene) {
@@ -35,8 +37,25 @@ export class InteractionSystem {
     this.arrow.visible = false;
     scene.add(this.arrow);
   }
-  update(position: THREE.Vector3, world: Area, time: number) {
+  update(position: THREE.Vector3, world: Area, time: number, dt = 0) {
     const state = gameStore.getState();
+    if (this.fall && (this.fall.world !== world || this.fall.resetId !== state.resetId)) {
+      this.fall = null;
+      position.y = 0;
+    }
+    if (this.fall) {
+      this.ring.visible = this.arrow.visible = false;
+      gameStore.setTarget(null);
+      if (state.overlay || state.motion) return;
+      this.fall.elapsed += dt;
+      position.y = -5 * Math.pow(Math.min(1, this.fall.elapsed / 1.1), 2);
+      if (this.fall.elapsed >= 1.1) {
+        gameStore.travelTo(this.fall.passage.destination);
+        this.fall = null;
+        position.y = 0;
+      }
+      return;
+    }
     const choices = world
       .interactions(state, position)
       .map((o) => ({
@@ -66,6 +85,7 @@ export class InteractionSystem {
     }
     if (!state.overlay && !state.motion && !state.riding) {
       const passage = world.passages(state).find((p) => {
+        if (p.radius) return Math.hypot(position.x - p.x, position.z - p.z) < p.radius - 0.35;
         const rotation = p.rotation ?? 0;
         const dx = position.x - p.x,
           dz = position.z - p.z;
@@ -74,7 +94,8 @@ export class InteractionSystem {
         return Math.abs(across) < 0.55 && Math.abs(depth) < 0.28;
       });
       if (passage) {
-        gameStore.travelTo(passage.destination);
+        if (passage.fall) this.fall = { world, passage, elapsed: 0, resetId: state.resetId };
+        else gameStore.travelTo(passage.destination);
         this.ring.visible = false;
         this.arrow.visible = false;
         return;

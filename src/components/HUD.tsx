@@ -31,8 +31,9 @@ export function HUD() {
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
   const hint =
+    state.location?.world === "underworld" ? "Utforska! Guldporten leder upp igen." :
     state.location?.world === "water" ? (natureRestored(state.dungeons, "water") ? "Snäckporten till öknen är öppen!" : "Hjälp Ella. Hitta Vattentemplet!") :
-    state.location?.world === "desert" ? (natureRestored(state.dungeons, "desert") ? "Oasen är grön! Hälsa på Gullan!" : "Hjälp Gullan. Hitta Ökentemplet!") :
+    state.location?.world === "desert" ? (natureRestored(state.dungeons, "desert") ? "Ett hål har öppnats vid templet!" : "Hjälp Gullan. Hitta Ökentemplet!") :
     state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? "Den stora porten är öppen!" : "Eldtemplet ligger till höger!") :
     state.location?.world === "volcano" ? (state.minibosses.stone_giant === 3 ? "Vulkanens ingång är öppen!" : "Besegra Stenjätten. Öppna vulkanen!") :
     state.location === null && state.bridgeUnlocked ? (rabbitsHome(state.rabbits) ? "Gå till den lysande portalen!" : state.followingRabbits.length ? "Gå till kaninhagen!" : "Hitta kaninerna!") :
@@ -91,7 +92,7 @@ export function HUD() {
           </div>
           <div>
             <p className="text-base font-bold text-[#536d5e] max-[600px]:text-sm">
-              {state.location?.world === "water" ? "Vattenvärlden" : state.location?.world === "desert" ? "Ökenvärlden" : state.location?.world === "volcano-interior" ? "Vulkanens inre" : state.location?.world === "volcano" ? "Vulkanvärlden" : state.location?.castle
+              {state.location?.world === "underworld" ? "Underjorden" : state.location?.world === "water" ? "Vattenvärlden" : state.location?.world === "desert" ? "Ökenvärlden" : state.location?.world === "volcano-interior" ? "Vulkanens inre" : state.location?.world === "volcano" ? "Vulkanvärlden" : state.location?.castle
                 ? state.location.castle === "hall"
                   ? "Slottets entréhall"
                   : state.location.castle === "throne" ? "Kungasalen" : "Bosses butik"

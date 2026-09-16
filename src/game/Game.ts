@@ -1,3 +1,4 @@
+import { UnderworldArea } from "./UnderworldArea";
 import { DayNightCycle } from "./DayNightCycle";
 import { WaterArea } from "./WaterArea";
 import { DesertArea } from "./DesertArea";
@@ -40,7 +41,7 @@ export class Game {
     if (document.hidden) this.cancelTap();
   };
   private pointerDown = (e: PointerEvent) => {
-    if (e.button !== 0 || gameStore.getState().overlay) return;
+    if (e.button !== 0 || this.interactions.falling || gameStore.getState().overlay) return;
     if (this.tap) {
       this.cancelTap();
       return;
@@ -57,6 +58,7 @@ export class Game {
     this.tap = null;
     if (
       !tap ||
+      this.interactions.falling ||
       tap.id !== e.pointerId ||
       e.timeStamp - tap.time > 500 ||
       Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 12 ||
@@ -185,8 +187,10 @@ export class Game {
   private createArea(): Area {
     const location = gameStore.getState().location;
     this.areaKey = JSON.stringify(location);
+    if (location?.world === "underworld") return new UnderworldArea();
     if (location?.world === "water") return new WaterArea(this.previousLocation?.dungeon === "water" && this.previousLocation.room === "treasure");
-    if (location?.world === "desert") return new DesertArea();
+    if (location?.world === "desert")
+      return new DesertArea(this.previousLocation?.dungeon === "desert");
     if (location?.world === "volcano-interior") return new VolcanoInteriorArea();
     if (location?.world === "volcano") return new VolcanoArea();
     if (location?.castle === "throne") return new ThroneRoomArea();
@@ -235,7 +239,7 @@ export class Game {
     this.camera.setMode(this.world.cameraMode, this.player.position);
     this.renderer.domElement.setAttribute(
       "aria-label",
-      (gameStore.getState().location?.world === "water" ? "Undervattensvärlden med korallrev, bottenstigar och elefanten Ella" : gameStore.getState().location?.world === "desert" ? "Ökenvärlden med en oas och giraffen Gullan" : gameStore.getState().location?.world === "volcano-interior" ? "Vulkanens inre med Eldtemplet till höger och en stor port framåt" : gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
+      (gameStore.getState().location?.world === "underworld" ? "Underjorden med lysande svampar, stora rötter och en gyllene väg upp till öknen" : gameStore.getState().location?.world === "water" ? "Undervattensvärlden med korallrev, bottenstigar och elefanten Ella" : gameStore.getState().location?.world === "desert" ? "Ökenvärlden med en oas och giraffen Gullan" : gameStore.getState().location?.world === "volcano-interior" ? "Vulkanens inre med Eldtemplet till höger och en stor port framåt" : gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
         ? "Slottets entréhall"
         : gameStore.getState().location?.castle === "shop"
           ? "Bosses butik"
@@ -280,7 +284,7 @@ export class Game {
     }
     this.world.update(dt, this.time, this.player.position);
     const riding = this.world.riding?.update(dt, this.player, this.input) ?? false;
-    if (!riding && !gameStore.getState().overlay && !gameStore.getState().motion)
+    if (!this.interactions.falling && !riding && !gameStore.getState().overlay && !gameStore.getState().motion)
       this.player.update(
         dt,
         this.input,
@@ -289,8 +293,8 @@ export class Game {
         this.world.tryPush?.bind(this.world),
         state.debugNoclip,
       );
-    this.interactions.update(this.player.position, this.world, this.time);
-    this.camera.update(this.player.position, dt);
+    this.interactions.update(this.player.position, this.world, this.time, dt);
+    this.camera.update(this.interactions.falling ? new THREE.Vector3(this.player.position.x, 0, this.player.position.z) : this.player.position, dt);
     this.dayNight.update(dt, state, document.hidden);
     if (!state.location) {
       this.dayNight.apply(this.sun, this.ambient);

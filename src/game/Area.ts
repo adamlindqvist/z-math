@@ -9,6 +9,8 @@ export interface Interaction {
   z: number;
 }
 export interface Passage {
+  radius?: number;
+  fall?: boolean;
   rotation?: number;
   x: number;
   z: number;

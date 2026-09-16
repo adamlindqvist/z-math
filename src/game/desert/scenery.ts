@@ -67,6 +67,7 @@ export function desertGround(root: THREE.Group) {
   ground.name = "wind-sculpted-sand";
   ground.receiveShadow = true;
   root.add(ground);
+  return ground;
 }
 
 /** Repeated details are instanced, so extra richness costs few draw calls on iPad. */
@@ -151,12 +152,26 @@ export function desertScenery(
     );
   }
   for (const x of [-12, -10.7, -9.4, -8]) rock(x, 23, 1.1, 1.4);
-  for (const [x, z, s, h] of [
-    [-11, 7, 1.6, 2.3],
-    [5, 2, 1.4, 2],
-    [12, 13, 1.3, 1.8],
-  ])
-    rock(x, z, s, h);
+  for (const [x, z, s, h] of [[-11, 7, 1.6, 2.3]]) rock(x, z, s, h);
+
+  // The portal replaces this shelf only after the temple has been completed.
+  // Rebuild the same three-piece rock used by the canyon scatter and keep it
+  // named so DesertArea can hide it when the shaft opens.
+  const holeRock = new THREE.Group();
+  holeRock.name = "underworld-hole-rock";
+  for (let j = 0; j < 3; j++) {
+    const piece = new THREE.Mesh(
+      stone,
+      j === 1 ? palette.rose : j === 2 ? palette.cap : palette.sandstone,
+    );
+    piece.position.set(12 + j * 0.08, 1.8 * (0.22 + j * 0.26), 13);
+    piece.scale.set(1.3 * (1 - j * 0.16), 1.8 * 0.32, 1.3 * (0.8 - j * 0.1));
+    piece.rotation.set(0, 12, 0.07 * j);
+    piece.castShadow = true;
+    piece.receiveShadow = true;
+    holeRock.add(piece);
+  }
+  root.add(holeRock);
 
   // A wind-carved arch on the horizon, beyond the playable boundary.
   for (const side of [-1, 1]) {

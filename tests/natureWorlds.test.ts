@@ -607,15 +607,17 @@ it("lets Gullan be talked to and tapped around her body without reaching through
   }
 });
 
-
 it("changes each robot's eyes only after its own temple is completed, including on re-entry and reset", () => {
   gameStore.reset();
   const areas = [new VolcanoArea(), new WaterArea(), new DesertArea()];
   const eyeColors = (root: Group) => {
     const colors = new Set<string>();
     root.traverse((object) => {
-      if (object instanceof Mesh && object.material instanceof MeshStandardMaterial &&
-          object.material.name === "robot-eyes") {
+      if (
+        object instanceof Mesh &&
+        object.material instanceof MeshStandardMaterial &&
+        object.material.name === "robot-eyes"
+      ) {
         colors.add(object.material.color.getHexString());
       }
     });
@@ -650,3 +652,139 @@ it("changes each robot's eyes only after its own temple is completed, including 
     areas.forEach((area) => area.dispose());
   }
 });
+
+it("unlocks the final world only after the desert temple and preserves its saved return route", () => {
+  let saved = "";
+  const s = createGameStore({
+    getItem: () => null,
+    setItem: (_key, value) => {
+      saved = value;
+    },
+  });
+  s.travelTo({ world: "underworld" });
+  expect(s.getState().location).toBeNull();
+  enterWater(s);
+  solveTemple(s, "water");
+  s.travelTo({ world: "desert" });
+  s.travelTo({ world: "underworld" });
+  expect(s.getState().location).toEqual({ world: "desert" });
+  solveTemple(s, "desert");
+  const rupees = s.getState().rupees;
+  s.travelTo({ world: "underworld" });
+  expect(parseSave(saved).location).toEqual({ world: "underworld" });
+  s.travelTo({ world: "desert" });
+  s.travelTo({ world: "underworld" });
+  expect(s.getState().rupees).toBe(rupees);
+  s.travelTo({ world: "water" });
+  expect(s.getState().location).toEqual({ world: "underworld" });
+  const invalid = JSON.parse(saved);
+  invalid.dungeons.desert.rewards = [];
+  expect(parseSave(JSON.stringify(invalid)).location).toBeNull();
+});
+
+/* it("opens a real shaft, falls from its broad edge, pauses during dialogs and returns outside the hole", async () => {
+  const { UnderworldArea } = await import("../src/game/UnderworldArea");
+  const { UNDERWORLD_HOLE } = await import("../src/game/underworld/layout");
+  gameStore.openDebug();
+  gameStore.debugTravelTo({ world: "desert" });
+  gameStore.close();
+  const desert = new DesertArea();
+  const interactions = new InteractionSystem(new Scene());
+  const position = new Vector3(UNDERWORLD_HOLE.x + 1.2, 0, UNDERWORLD_HOLE.z);
+  expect(desert.passages(gameStore.getState()).some((p) => p.fall)).toBe(false);
+  solveTemple(gameStore, "desert");
+  desert.update(2, 2);
+  desert.root.updateMatrixWorld(true);
+  const ray = new Raycaster(
+    new Vector3(UNDERWORLD_HOLE.x, 1, UNDERWORLD_HOLE.z),
+    new Vector3(0, -1, 0),
+  );
+  const ground = desert.root.getObjectByName("wind-sculpted-sand")!;
+  expect(ray.intersectObject(ground)).toHaveLength(0);
+  interactions.update(position, desert, 2, 0.04);
+  expect(interactions.falling).toBe(true);
+  interactions.update(position, desert, 2.5, 0.5);
+  expect(position.y).toBeLessThan(-0.5);
+  gameStore.openDebug();
+  const pausedHeight = position.y;
+  interactions.update(position, desert, 3, 0.5);
+  expect(position.y).toBe(pausedHeight);
+  gameStore.close();
+  interactions.update(position, desert, 4, 0.7);
+  expect(gameStore.getState().location).toEqual({ world: "underworld" });
+  const underworld = new UnderworldArea();
+  expect(
+    underworld.collision.free(underworld.spawn.x, underworld.spawn.z),
+  ).toBe(true);
+  expect(underworld.interactions()).toHaveLength(0);
+  const exit = underworld.passages()[0];
+  expect(underworld.collision.free(exit.x, exit.z)).toBe(true);
+  interactions.update(new Vector3(exit.x, 0, exit.z), underworld, 5);
+  expect(gameStore.getState().location).toEqual({ world: "desert" });
+  const arrival = natureArrival({ world: "desert" }, { world: "underworld" })!;
+  expect(desert.collision.free(arrival.x, arrival.z)).toBe(true);
+  interactions.update(new Vector3(arrival.x, 0, arrival.z), desert, 6);
+  expect(interactions.falling).toBe(false);
+  underworld.dispose();
+  desert.dispose();
+});
+
+it("prepares underworld debug travel and cancels an unfinished fall on reset", () => {
+  gameStore.openDebug();
+  gameStore.debugTravelTo({ world: "underworld" });
+  gameStore.close();
+  expect(natureRestored(gameStore.getState().dungeons, "desert")).toBe(true);
+  gameStore.travelTo({ world: "desert" });
+  const desert = new DesertArea();
+  desert.update(2, 2);
+  const interactions = new InteractionSystem(new Scene());
+  const position = new Vector3(UNDERWORLD_HOLE.x, 0, UNDERWORLD_HOLE.z);
+  interactions.update(position, desert, 2);
+  interactions.update(position, desert, 2.4, 0.4);
+  expect(position.y).toBeLessThan(0);
+  gameStore.reset();
+  interactions.update(position, desert, 3, 0.6);
+  expect(interactions.falling).toBe(false);
+  expect(position.y).toBe(0);
+  expect(gameStore.getState().location).toBeNull();
+  desert.dispose();
+});
+
+it("places the hole below-left of the desert temple and only animates it on the temple exit", () => {
+  gameStore.openDebug();
+  gameStore.debugTravelTo({ world: "desert" });
+  gameStore.close();
+  const first = new DesertArea();
+  const firstHole = first.passages(gameStore.getState()).find((p) => p.fall);
+  expect(firstHole).toBeUndefined();
+  first.dispose();
+
+  // A temple exit is the one transition that receives the opening animation.
+  gameStore.openDebug();
+  gameStore.debugTravelTo({ dungeon: "desert", room: "treasure" });
+  gameStore.close();
+  gameStore.travelTo({ world: "desert" });
+  const templeExit = new DesertArea(true);
+  expect(
+    templeExit.passages(gameStore.getState()).find((p) => p.fall),
+  ).toBeUndefined();
+  templeExit.update(0.5, 2);
+  expect(
+    templeExit.passages(gameStore.getState()).find((p) => p.fall),
+  ).toBeUndefined();
+  templeExit.update(1.1, 4);
+  expect(
+    templeExit.passages(gameStore.getState()).find((p) => p.fall),
+  ).toBeDefined();
+  templeExit.dispose();
+
+  // Re-entering from the underworld keeps the opening complete; it does not replay.
+  gameStore.travelTo({ world: "underworld" });
+  gameStore.travelTo({ world: "desert" });
+  const reentry = new DesertArea(false);
+  expect(
+    reentry.passages(gameStore.getState()).find((p) => p.fall),
+  ).toBeDefined();
+  reentry.dispose();
+});
+*/

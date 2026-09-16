@@ -257,7 +257,7 @@ export const natureRestored = (progress: Record<string, DungeonProgress>, world:
 export type Location =
   | { dungeon: string; room: string; castle?: never; world?: never }
   | { castle: "hall" | "shop" | "throne"; dungeon?: never; room?: never; world?: never }
-  | { world: "volcano" | "volcano-interior" | "water" | "desert"; dungeon?: never; room?: never; castle?: never }
+  | { world: "volcano" | "volcano-interior" | "water" | "desert" | "underworld"; dungeon?: never; room?: never; castle?: never }
   | null;
 export interface DungeonProgress {
   answers: Record<string, number>;

@@ -667,12 +667,13 @@ export function createGameStore(
       }
       if (destination?.world === "volcano-interior" || found?.dungeon.id === "fire")
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
-      const natureWorld = destination?.world === "water" || destination?.world === "desert" ? destination.world : found?.dungeon.entranceWorld;
+      const natureWorld = destination?.world === "underworld" ? "desert" : destination?.world === "water" || destination?.world === "desert" ? destination.world : found?.dungeon.entranceWorld;
       if (natureWorld === "water" || natureWorld === "desert") {
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
         update = { ...update, ...solveThrough("fire", 2, { ...state, ...update }) };
         if (natureWorld === "desert") update = { ...update, ...solveThrough("water", 2, { ...state, ...update }) };
       }
+      if (destination?.world === "underworld") update = { ...update, ...solveThrough("desert", 2, { ...state, ...update }) };
       set({
         ...update,
         location: destination,
@@ -812,6 +813,8 @@ export function createGameStore(
         (state.location?.world === "volcano-interior" && next?.dungeon.id === "fire" && currentIndex === -1 && next.room === next.dungeon.rooms[0]) ||
         (found?.dungeon.id === "fire" && destination?.world === "volcano-interior" && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons.fire))));
       const natureAdjacent =
+        (state.location?.world === "desert" && destination?.world === "underworld" && natureRestored(state.dungeons, "desert")) ||
+        (state.location?.world === "underworld" && destination?.world === "desert") ||
         (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons)) ||
         (state.location?.world === "water" && destination?.world === "volcano-interior") ||
         (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water")) ||
@@ -1427,7 +1430,7 @@ function validLocation(
   if (value && typeof value === "object" && "world" in value)
     return (
       Object.keys(value).length === 1 &&
-      (value.world === "volcano" || value.world === "volcano-interior" || value.world === "water" || value.world === "desert")
+      (value.world === "volcano" || value.world === "volcano-interior" || value.world === "water" || value.world === "desert" || value.world === "underworld")
     );
   if (value && typeof value === "object" && "castle" in value)
     return (
@@ -1558,6 +1561,7 @@ function secretInLocation(definition: (typeof WORLD_SECRETS)[number], location: 
 
 /** Check prerequisites even when a save is currently back in an earlier world. */
 function validNatureProgress(p: Progress) {
+  if (p.location?.world === "underworld" && !natureRestored(p.dungeons, "desert")) return false;
   const touched = (world: "water" | "desert") => {
     const d = DUNGEONS.find(d => d.id === world)!;
     return p.location?.world === world || p.location?.dungeon === world || p.chests[`${world}-01`] ||

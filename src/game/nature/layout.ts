@@ -1,3 +1,4 @@
+import { DESERT_RETURN } from "../underworld/layout";
 import {
   DESERT_PICKUPS,
   DESERT_SPAWN,
@@ -23,6 +24,7 @@ export function natureArrival(location: Location, previous: Location) {
   if (location?.world === "volcano-interior" && previous?.world === "water")
     return { x: 0, z: -7 };
   if (location?.world !== "water" && location?.world !== "desert") return null;
+  if (location.world === "desert" && previous?.world === "underworld") return { ...DESERT_RETURN };
   if (previous?.dungeon === location.world)
     return location.world === "desert"
       ? { ...DESERT_TEMPLE_ARRIVAL }
