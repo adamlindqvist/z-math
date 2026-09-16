@@ -100,7 +100,7 @@ export function MathQuiz() {
       </h2>
       {question.groups && (
         <div
-          className="my-3 flex items-center justify-center gap-3"
+          className="my-3 flex items-center justify-center gap-2"
           aria-label="Bilder att räkna"
         >
           {question.groups.map((count, group) => (
@@ -110,22 +110,31 @@ export function MathQuiz() {
                   +
                 </span>
               )}
-              <div className="flex max-w-60 flex-wrap justify-center gap-2 rounded-[22px] bg-[#fff0be] p-3 max-[600px]:gap-1 max-[600px]:p-2 max-[600px]:[&_svg]:size-8">
-                {Array.from({ length: count }, (_, i) => (
-                  <Apple
-                    key={i}
-                    size={40}
-                    fill="#e77b62"
-                    className="text-[#9f3f2d]"
-                    aria-label="Äpple"
-                  />
-                ))}
+              <div className="flex min-w-0 max-w-60 flex-1 flex-wrap justify-center gap-2 rounded-[22px] bg-[#fff0be] p-3 max-[600px]:gap-1 max-[600px]:p-2">
+                {Array.from({ length: count }, (_, i) => {
+                  const removed = i >= count - (question.removedCount ?? 0);
+                  return (
+                    <span
+                      key={i}
+                      className="relative inline-flex size-10 shrink-0 max-[600px]:size-8"
+                      role="img"
+                      aria-label={removed ? "Borttaget äpple" : "Äpple"}
+                    >
+                      <Apple
+                        aria-hidden="true"
+                        className={`size-full text-[#9f3f2d] ${removed ? "opacity-40" : ""}`}
+                        fill="#e77b62"
+                      />
+                      {removed && <X aria-hidden="true" className="absolute inset-0 size-full text-ink" strokeWidth={3} />}
+                    </span>
+                  );
+                })}
               </div>
             </Fragment>
           ))}
         </div>
       )}
-      <p>{challenge ? "Tryck på rätt antal." : "Tryck på rätt svar."}</p>
+      <p>{question.category === "subtraction" ? "Hur många är kvar?" : "Tryck på rätt antal."}</p>
       <div
         className={`grid gap-4 max-[600px]:gap-2.5 ${question.answerDots ? "grid-cols-3" : "grid-cols-2"}`}
       >

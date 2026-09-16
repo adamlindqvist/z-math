@@ -1,7 +1,7 @@
 import type { MathQuestion } from "./types";
+import type { MathLevel } from "./progression";
 
 let sequence = 0;
-
 const shuffle = (values: number[], random: () => number) => {
   for (let i = values.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
@@ -10,97 +10,71 @@ const shuffle = (values: number[], random: () => number) => {
   return values;
 };
 
-/**
- * Picks a variant that has not been asked yet. When every variant is used up
- * the oldest entries are forgotten one by one, so the questions still spread
- * out as far as the pool allows instead of repeating the most recent ones.
- */
-function pickVariant<T>(
-  variants: T[],
-  key: (variant: T) => string,
-  asked: readonly string[],
-  random: () => number,
-): T {
-  for (let dropped = 0; dropped <= asked.length; dropped++) {
-    const used = new Set(asked.slice(dropped));
-    const available = variants.filter((variant) => !used.has(key(variant)));
-    if (available.length)
-      return available[Math.floor(random() * available.length)];
-  }
-  return variants[Math.floor(random() * variants.length)];
+type Category = "counting" | "addition" | "subtraction";
+interface Variant {
+  key: string;
+  category: Category;
+  a: number;
+  b: number;
+  max: number;
 }
 
-const additionVariants = Array.from({ length: 11 }, (_, a) =>
-  Array.from({ length: 11 - a }, (_, b) => [a, b] as const),
-).flat();
+const pools = new Map<MathLevel, Variant[]>();
+for (const level of [1, 2, 3, 4] as const) {
+  const variants: Variant[] = [];
+  const add = (category: Category, a: number, b: number, max: number) =>
+    variants.push({ key: `${category}-${a}-${b}`, category, a, b, max });
+  if (level === 1) for (let a = 1; a <= 5; a++) add("counting", a, 0, 5);
+  const max = level === 1 ? 5 : 10;
+  for (let a = 1; a < max; a++)
+    for (let b = 1; a + b <= max; b++) add("addition", a, b, max);
+  if (level >= 3) {
+    const subtractionMax = level === 3 ? 5 : 10;
+    for (let a = 1; a <= subtractionMax; a++)
+      for (let b = 1; b <= a; b++) add("subtraction", a, b, subtractionMax);
+  }
+  pools.set(level, variants);
+}
 
-const additionKey = ([a, b]: readonly [number, number]) => `addition-${a}-${b}`;
-
-export function generateAdditionQuestion(
+/** Prefer unseen content across categories; once exhausted, reuse oldest first. */
+export function generateQuestion(
+  level: MathLevel,
   random: () => number = Math.random,
   asked: readonly string[] = [],
 ): MathQuestion {
-  const [a, b] = pickVariant(additionVariants, additionKey, asked, random);
-  const correctAnswer = a + b;
-  const candidates = Array.from({ length: 11 }, (_, i) => i).filter(
+  const variants = pools.get(level)!;
+  let available: Variant[] = [];
+  for (let dropped = 0; dropped <= asked.length; dropped++) {
+    const used = new Set(asked.slice(dropped));
+    available = variants.filter((v) => !used.has(v.key));
+    if (available.length) break;
+  }
+  // Equal category probability while both categories have unseen questions.
+  const categories = [...new Set(available.map((v) => v.category))];
+  const category = categories[Math.floor(random() * categories.length)];
+  const candidates = available.filter((v) => v.category === category);
+  const { a, b, key, max } =
+    candidates[Math.floor(random() * candidates.length)];
+  const correctAnswer = category === "subtraction" ? a - b : a + b;
+  const min = category === "subtraction" ? 0 : 1;
+  const wrong = Array.from({ length: max - min + 1 }, (_, i) => i + min).filter(
     (n) => n !== correctAnswer,
   );
   return {
-    id: `addition-${a}-${b}-${sequence++}`,
-    key: additionKey([a, b]),
-    question: `${a} + ${b} = ?`,
-    answers: shuffle(
-      [correctAnswer, ...shuffle(candidates, random).slice(0, 3)],
-      random,
-    ),
+    id: `${key}-${sequence++}`,
+    key,
+    category,
+    difficulty: level,
+    question:
+      category === "counting"
+        ? "Hur många?"
+        : `${a} ${category === "addition" ? "+" : "−"} ${b} = ?`,
     correctAnswer,
-    difficulty: 1,
-    category: "addition",
-  };
-}
-
-const templeVariants: Record<
-  "counting" | "addition",
-  readonly (readonly number[])[]
-> = {
-  counting: Array.from({ length: 5 }, (_, i) => [i + 1]),
-  addition: Array.from({ length: 4 }, (_, i) =>
-    Array.from({ length: 4 - i }, (_, j) => [i + 1, j + 1]),
-  ).flat(),
-};
-
-const templeKey = (kind: "counting" | "addition", groups: readonly number[]) =>
-  `temple-${kind}-${groups.join("-")}`;
-
-export function generateTempleQuestion(
-  kind: "counting" | "addition",
-  random: () => number = Math.random,
-  asked: readonly string[] = [],
-): MathQuestion {
-  const groups = pickVariant(
-    [...templeVariants[kind]],
-    (variant) => templeKey(kind, variant),
-    asked,
-    random,
-  );
-  const correctAnswer = groups.reduce((sum, n) => sum + n, 0);
-  return {
-    id: `${templeKey(kind, groups)}-${sequence++}`,
-    key: templeKey(kind, groups),
-    category: kind,
-    difficulty: 1,
-    question: kind === "counting" ? "Hur många?" : "Hur många tillsammans?",
-    correctAnswer,
-    groups: [...groups],
+    groups: category === "addition" ? [a, b] : [a],
+    ...(category === "subtraction" ? { removedCount: b } : {}),
     answerDots: true,
     answers: shuffle(
-      [
-        correctAnswer,
-        ...shuffle(
-          [1, 2, 3, 4, 5].filter((n) => n !== correctAnswer),
-          random,
-        ).slice(0, 2),
-      ],
+      [correctAnswer, ...shuffle(wrong, random).slice(0, 2)],
       random,
     ),
   };

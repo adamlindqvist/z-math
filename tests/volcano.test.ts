@@ -168,8 +168,9 @@ describe("Vulkanvärlden", () => {
     const keys = new Set<string>();
     for (let i = 0; i < 3; i++) {
       const q = s.getState().question!;
-      expect(q.groups).toHaveLength(2);
-      expect(q.correctAnswer).toBeLessThanOrEqual(5);
+      expect(q.groups!.length).toBeGreaterThanOrEqual(1);
+      expect(q.difficulty).toBe(s.getState().mathProgress.level);
+      expect(q.correctAnswer).toBeLessThanOrEqual(10);
       expect(q.answerDots).toBe(true);
       expect(q.answers).toHaveLength(3);
       expect(keys.has(q.key)).toBe(false);

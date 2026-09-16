@@ -37,7 +37,8 @@ it("requires the bridge, allows retries and gives the shield and five rupees exa
   begin(s); expect(s.getState().quizCorrectAnswers).toBe(0);
   for (let i = 0; i < 3; i++) {
     const q = s.getState().question!;
-    expect(q.category).toBe("addition");
+    expect(["counting", "addition"]).toContain(q.category);
+    expect(q.difficulty).toBe(s.getState().mathProgress.level);
     expect(q.correctAnswer).toBeLessThanOrEqual(5);
     s.answer(q.correctAnswer); s.answer(q.correctAnswer); s.finishQuiz();
     if (i < 2) expect(s.getState().chests[id]).toBe(false);

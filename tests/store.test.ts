@@ -102,3 +102,131 @@ describe("progress", () => {
     expect(store.getState().savingAvailable).toBe(false);
   });
 });
+
+describe("shared math progression", () => {
+  function answer(store: ReturnType<typeof createGameStore>, correct = true) {
+    const q = store.getState().question!;
+    store.answer(correct ? q.correctAnswer : q.answers.find(n => n !== q.correctAnswer)!);
+  }
+  function temple(store: ReturnType<typeof createGameStore>) {
+    store.travelTo({ dungeon: "moss", room: "light" });
+    store.setTarget({ kind: "challenge", id: "light-lock", label: "Räkna" });
+    store.interact();
+  }
+  function savedAt(level: number, streak: number) {
+    const storage = memory();
+    createGameStore(storage).collect("path-1");
+    const save = JSON.parse(storage.getItem(SAVE_KEY)!);
+    save.mathProgress = { level, streak };
+    storage.setItem(SAVE_KEY, JSON.stringify(save));
+    return storage;
+  }
+
+  it("shares five consecutive answers between chest, reload and temple; ignores duplicate answers", () => {
+    const storage = memory();
+    let store = createGameStore(storage);
+    openQuiz(store);
+    for (let i = 0; i < 3; i++) {
+      answer(store);
+      answer(store);
+      store.finishQuiz();
+    }
+    expect(store.getState().mathProgress).toEqual({ level: 1, streak: 3 });
+    expect(store.getState().rupees).toBe(5);
+    store = createGameStore(storage);
+    temple(store);
+    answer(store);
+    store.finishQuiz();
+    const fifth = store.getState().question!;
+    answer(store);
+    expect(store.getState().mathProgress).toEqual({ level: 2, streak: 0 });
+    expect(store.getState().question).toBe(fifth);
+    expect(fifth.difficulty).toBe(1);
+    store.finishQuiz();
+    expect(store.getState().question!.difficulty).toBe(2);
+    expect(createGameStore(storage).getState().mathProgress).toEqual({ level: 2, streak: 0 });
+  });
+
+  it.each(["chest", "temple"])("breaks the streak without losing level or stars in a %s", kind => {
+    const storage = savedAt(2, 2);
+    const store = createGameStore(storage);
+    if (kind === "chest") openQuiz(store); else temple(store);
+    answer(store);
+    store.finishQuiz();
+    answer(store, false);
+    answer(store);
+    expect(store.getState()).toMatchObject({
+      mathProgress: { level: 2, streak: 0 }, quizCorrectAnswers: 1, feedback: "retry",
+    });
+    expect(createGameStore(storage).getState().mathProgress).toEqual({ level: 2, streak: 0 });
+    store.replaceQuestion();
+    expect(store.getState().question!.difficulty).toBe(2);
+    answer(store);
+    expect(store.getState().mathProgress.streak).toBe(1);
+  });
+
+  it.each([1, 2, 3, 4])("advances only after five correct at level %i and caps level four", level => {
+    const storage = savedAt(level, 3);
+    const store = createGameStore(storage);
+    openQuiz(store);
+    answer(store);
+    expect(store.getState().mathProgress).toEqual({ level, streak: 4 });
+    store.finishQuiz();
+    answer(store);
+    expect(store.getState().mathProgress).toEqual({ level: Math.min(4, level + 1), streak: level === 4 ? 5 : 0 });
+    store.finishQuiz();
+    expect(store.getState().question!.difficulty).toBe(Math.min(4, level + 1));
+  });
+
+  it("retains streak on closing and restores the default on full reset", () => {
+    const storage = savedAt(3, 2);
+    const store = createGameStore(storage);
+    openQuiz(store);
+    answer(store);
+    store.finishQuiz();
+    store.close();
+    openQuiz(store);
+    expect(store.getState().mathProgress).toEqual({ level: 3, streak: 3 });
+    store.reset();
+    expect(createGameStore(storage).getState().mathProgress).toEqual({ level: 1, streak: 0 });
+  });
+
+  it.each([undefined, null, {}, { level: 0, streak: 0 }, { level: 5, streak: 0 },
+    { level: 2, streak: 5 }, { level: 2, streak: -1 }, { level: 1.5, streak: 0 },
+    { level: 2, streak: 1.5 }, { level: 4, streak: "2" }])(
+    "defaults missing or invalid math progress without losing a valid version 20 save: %j", value => {
+      const storage = savedAt(2, 3);
+      const save = JSON.parse(storage.getItem(SAVE_KEY)!);
+      expect(save.version).toBe(20);
+      save.mathProgress = value;
+      const parsed = parseSave(JSON.stringify(save));
+      expect(parsed.mathProgress).toEqual({ level: 1, streak: 0 });
+      expect(parsed.rupees).toBe(1);
+      expect(parsed.collected).toEqual(["path-1"]);
+    },
+  );
+
+  it("keeps playing and progressing when writes fail", () => {
+    const store = createGameStore({ getItem: () => null, setItem: () => { throw Error(); } });
+    temple(store);
+    for (let i = 0; i < 5; i++) { answer(store); store.finishQuiz(); }
+    expect(store.getState().mathProgress).toEqual({ level: 2, streak: 0 });
+    expect(store.getState().savingAvailable).toBe(false);
+  });
+
+  it("restores real math progress after debug play and never writes debug answers", () => {
+    const storage = savedAt(2, 4);
+    const store = createGameStore(storage);
+    const saved = storage.getItem(SAVE_KEY);
+    store.openDebug();
+    store.debugTravelTo({ dungeon: "moss", room: "light" });
+    store.closeDebug();
+    store.setTarget({ kind: "challenge", id: "light-lock", label: "Räkna" });
+    store.interact();
+    answer(store);
+    expect(store.getState().mathProgress.level).toBe(3);
+    expect(storage.getItem(SAVE_KEY)).toBe(saved);
+    store.debugEndSession();
+    expect(store.getState().mathProgress).toEqual({ level: 2, streak: 4 });
+  });
+});

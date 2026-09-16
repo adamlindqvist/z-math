@@ -20,6 +20,7 @@ function dialogText(dialog: HTMLDivElement | null): string {
   return parts
     .join(". ")
     .replace(/\+/g, " plus ")
+    .replace(/−/g, " minus ")
     .replace(/=/g, " är lika med ");
 }
 

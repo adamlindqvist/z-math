@@ -72,10 +72,13 @@ import {
   type DungeonProgress,
 } from "../game/dungeons/definitions";
 import { useSyncExternalStore } from "react";
+import { generateQuestion } from "../math/questionGenerators";
 import {
-  generateAdditionQuestion,
-  generateTempleQuestion,
-} from "../math/questionGenerators";
+  freshMathProgress,
+  parseMathProgress,
+  recordMathAnswer,
+  type MathProgress,
+} from "../math/progression";
 import type { MathQuestion } from "../math/types";
 export const SAVE_KEY = "glantans-skatt-v1";
 export const SAVE_VERSION = 20;
@@ -138,6 +141,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  mathProgress: MathProgress;
   rabbits: RabbitProgress;
   minibosses: MinibossProgress;
   puzzles: PuzzlesProgress;
@@ -187,6 +191,7 @@ export interface GameState extends Progress {
 }
 const fresh = (): Progress => ({
   ...freshInventory(),
+  mathProgress: freshMathProgress(),
   rabbits: freshRabbits(),
   minibosses: freshMinibosses(),
   puzzles: freshPuzzles(),
@@ -281,6 +286,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      mathProgress: parseMathProgress(p.mathProgress),
       rabbits: p.rabbits,
       minibosses: p.minibosses,
       puzzles: p.puzzles,
@@ -367,6 +373,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            mathProgress: state.mathProgress,
             rabbits: state.rabbits,
             minibosses: state.minibosses,
             puzzles: state.puzzles,
@@ -398,23 +405,8 @@ export function createGameStore(
     feedback: null,
     askedQuestions: [...state.askedQuestions, question.key],
   });
-  const chestQuestion = (asked: readonly string[] = []): MathQuestion => {
-    const definition: ChestDefinition | undefined = state.activeChest
-      ? CHESTS[state.activeChest]
-      : undefined;
-    return definition?.pictureQuiz
-      ? generateTempleQuestion(definition.pictureQuiz, Math.random, asked)
-      : generateAdditionQuestion(Math.random, asked);
-  };
-  const nextQuestion = (): MathQuestion | null => {
-    if (state.dungeonQuiz) {
-      const c = resolveRoom(state.location)?.room.challenge;
-      return c
-        ? generateTempleQuestion(c.kind, Math.random, state.askedQuestions)
-        : null;
-    }
-    return chestQuestion(state.askedQuestions);
-  };
+  const quizQuestion = (asked: readonly string[] = []): MathQuestion =>
+    generateQuestion(state.mathProgress.level, Math.random, asked);
   // The chest flag, currency and associated discovery are committed together.
   const chestAward = (id: ChestId): Partial<GameState> => {
     if (state.chests[id]) return {};
@@ -1090,7 +1082,7 @@ export function createGameStore(
           const c = found.room.challenge;
           const answers = state.dungeons[found.dungeon.id].answers[c.id];
           if (answers < c.required) {
-            const templeQuestion = generateTempleQuestion(c.kind);
+            const templeQuestion = quizQuestion();
             set(
               {
                 overlay: "quiz",
@@ -1136,7 +1128,7 @@ export function createGameStore(
         !state.chests[state.activeChest] &&
         CHESTS[state.activeChest].opening === "quiz"
       ) {
-        const question = chestQuestion();
+        const question = quizQuestion();
         set({
           overlay: "quiz",
           question,
@@ -1162,7 +1154,7 @@ export function createGameStore(
         const progress = state.dungeons[found.dungeon.id];
         if (progress.answers[c.id] >= c.required) return;
         if (answer !== state.question.correctAnswer) {
-          set({ feedback: "retry" }, false, "retry");
+          set({ feedback: "retry", mathProgress: recordMathAnswer(state.mathProgress, false) }, true, "retry");
           return;
         }
         const count = progress.answers[c.id] + 1;
@@ -1175,6 +1167,7 @@ export function createGameStore(
         set(
           {
             ...receiveItems(state, itemAward, true),
+            mathProgress: recordMathAnswer(state.mathProgress, true),
             rewardItems: itemAward,
             quizCorrectAnswers: count,
             feedback: complete ? "complete" : "correct",
@@ -1205,17 +1198,18 @@ export function createGameStore(
       )
         return;
       if (answer !== state.question.correctAnswer) {
-        set({ feedback: "retry" }, false, "retry");
+        set({ feedback: "retry", mathProgress: recordMathAnswer(state.mathProgress, false) }, true, "retry");
         return;
       }
       const quizCorrectAnswers = state.quizCorrectAnswers + 1;
       if (quizCorrectAnswers < REQUIRED_CORRECT_ANSWERS) {
-        set({ quizCorrectAnswers, feedback: "correct" }, false, "correct");
+        set({ quizCorrectAnswers, feedback: "correct", mathProgress: recordMathAnswer(state.mathProgress, true) }, true, "correct");
         return;
       }
       set(
         {
           ...chestAward(state.activeChest),
+          mathProgress: recordMathAnswer(state.mathProgress, true),
           rewardItems: [
             ...((CHESTS[state.activeChest] as ChestDefinition).items ?? []),
           ],
@@ -1230,19 +1224,14 @@ export function createGameStore(
     // buttons never gets the child to the next star.
     replaceQuestion: () => {
       if (state.overlay !== "quiz" || state.feedback !== "retry") return;
-      const question = nextQuestion();
-      if (question) set(askQuestion(question));
+      set(askQuestion(quizQuestion(state.askedQuestions)));
     },
     finishQuiz: () => {
       if (state.dungeonQuiz) {
         const c = resolveRoom(state.location)?.room.challenge;
         if (!c) return;
         if (state.feedback === "correct")
-          set(
-            askQuestion(
-              generateTempleQuestion(c.kind, Math.random, state.askedQuestions),
-            ),
-          );
+          set(askQuestion(quizQuestion(state.askedQuestions)));
         else if (state.feedback === "complete")
           set({
             overlay: state.rewardItems.length ? "itemReward" : null,
@@ -1257,7 +1246,7 @@ export function createGameStore(
         return;
       }
       if (state.feedback === "correct")
-        set(askQuestion(chestQuestion(state.askedQuestions)));
+        set(askQuestion(quizQuestion(state.askedQuestions)));
       else if (state.feedback === "complete")
         set({
           overlay: state.rewardItems.length ? "itemReward" : null,
@@ -1387,6 +1376,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    mathProgress: { ...state.mathProgress },
     rabbits: { ...state.rabbits },
     minibosses: { ...state.minibosses },
     puzzles: {

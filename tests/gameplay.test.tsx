@@ -372,7 +372,7 @@ describe("playable controls and interface", () => {
     click("Öppna");
     click("Räkna!");
     const q = gameStore.getState().question!;
-    expect(host.querySelectorAll('[data-testid="answer"]')).toHaveLength(4);
+    expect(host.querySelectorAll('[data-testid="answer"]')).toHaveLength(3);
     const wrong = q.answers.find((n) => n !== q.correctAnswer)!;
     act(() =>
       Array.from(
@@ -761,7 +761,7 @@ describe("dialog action placement", () => {
     click("Öppna");
     click("Räkna!");
     expect(bar()).toBeNull();
-    expect(panel().querySelectorAll('[data-testid="answer"]')).toHaveLength(4);
+    expect(panel().querySelectorAll('[data-testid="answer"]')).toHaveLength(3);
     act(() => {
       gameStore.close();
       gameStore.pause();

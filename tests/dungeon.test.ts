@@ -14,7 +14,6 @@ import { portal } from "../src/game/dungeons/models";
 import { disposeTree } from "../src/game/Area";
 import { DungeonArea } from "../src/game/dungeons/DungeonArea";
 import { InteractionSystem } from "../src/game/InteractionSystem";
-import { generateTempleQuestion } from "../src/math/questionGenerators";
 import { GameCamera } from "../src/game/Camera";
 
 type Store = ReturnType<typeof createGameStore>;
@@ -75,20 +74,6 @@ describe("Gläntans tempel rules and persistence", () => {
       "Stensalen",
       "Skattkammaren",
     ]);
-  });
-  it("generates visible counts, positive sums at most five, and three distinct answers", () => {
-    for (const kind of ["counting", "addition"] as const)
-      for (let i = 0; i < 500; i++) {
-        const q = generateTempleQuestion(kind);
-        expect(q.groups).toHaveLength(kind === "counting" ? 1 : 2);
-        expect(q.groups!.every((n) => n >= 1)).toBe(true);
-        expect(q.groups!.reduce((sum, n) => sum + n, 0)).toBe(q.correctAnswer);
-        expect(q.correctAnswer).toBeLessThanOrEqual(5);
-        expect(q.answers).toHaveLength(3);
-        expect(new Set(q.answers).size).toBe(3);
-        expect(q.answers).toContain(q.correctAnswer);
-        expect(q.answers.every((n) => n >= 1 && n <= 5)).toBe(true);
-      }
   });
   it("enters directly, prevents skipped rooms, persists individual answers and resumes after cancellation", () => {
     const storage = memory(),

@@ -8,6 +8,8 @@ export interface MathQuestion {
   answers: number[];
   correctAnswer: number;
   groups?: number[];
+  /** Cross out this many objects in the single subtraction group. */
+  removedCount?: number;
   answerDots?: boolean;
   difficulty: number;
   category: MathCategory;

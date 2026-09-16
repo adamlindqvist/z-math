@@ -114,3 +114,9 @@ it("mutes effects only for the active utterance and restores after errors", () =
   expect(block).toHaveBeenLastCalledWith("speech", false);
   block.mockRestore();
 });
+
+it("pronounces the subtraction sign in Swedish", () => {
+  render("5 − 2 = ?");
+  read();
+  expect(synth.speak.mock.calls[0][0].text).toContain("5  minus  2  är lika med  ?");
+});

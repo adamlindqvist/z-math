@@ -39,7 +39,11 @@ describe("royal secret persistence",()=>{
     const writes=vi.spyOn(storage,"setItem"); open(s);
     expect(s.getState()).toMatchObject({overlay:"locked",rupees:0,chests:{"royal-treasure":false}});
     solveQuiz(s);
-    expect(writes).toHaveBeenCalledTimes(1);
+    const snapshots = writes.mock.calls.map(([, raw]) => parseSave(raw));
+    expect(snapshots.map(p => p.mathProgress.streak)).toEqual([1, 2, 3]);
+    expect(snapshots.map(p => p.rupees)).toEqual([0, 0, 20]);
+    expect(snapshots.map(p => p.chests["royal-treasure"])).toEqual([false, false, true]);
+    expect(snapshots.map(p => p.items.includes("royal-crown"))).toEqual([false, false, true]);
     expect(s.getState()).toMatchObject({rupees:20,items:expect.arrayContaining(["royal-crown"]),equipment:{head:"royal-crown"},chests:{"royal-treasure":true},overlay:"itemReward",question:null});
     open(s); s.close(); open(s);
     expect(s.getState()).toMatchObject({rupees:20,overlay:"empty"});
