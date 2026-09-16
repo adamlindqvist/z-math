@@ -1,3 +1,4 @@
+import { HorseRiding } from "./horse/HorseRiding";
 import { RabbitFarm } from "./rabbits/RabbitFarm";
 import { rabbitsHome } from "./rabbits/definitions";
 import { buildVolcanoPortal, VOLCANO_ENTRANCE } from "./volcanoPortal";
@@ -33,6 +34,7 @@ export class World implements Area {
   interactions() {
     const state = gameStore.getState();
     return [
+      ...(state.bridgeUnlocked && !state.riding ? [{ target: { kind: "horse" as const, action: "mount" as const, label: "Rid" }, x: this.riding.horse.root.position.x, z: this.riding.horse.root.position.z }] : []),
       ...this.farm.interactions(),
       ...this.rocks
         .filter(
@@ -191,7 +193,10 @@ export class World implements Area {
     life: number;
   }[] = [];
   private burstShown = { ...gameStore.getState().chests };
+  riding: HorseRiding;
   constructor() {
+    this.riding = new HorseRiding(this.collision);
+    this.root.add(this.riding.horse.root);
     this.farm = new RabbitFarm(this.root, this.collision);
     buildSouthGlade(this.root, this.collision);
     this.volcanoPortal.update(rabbitsHome(gameStore.getState().rabbits), 0);
@@ -213,6 +218,7 @@ export class World implements Area {
     this.root.add(this.fireShieldChest.root);
     this.collision.add(FIRE_SHIELD_CHEST_POSITION.x, FIRE_SHIELD_CHEST_POSITION.z, 0.56, 0.41);
     this.collision.dynamic = [
+      ...this.riding.obstacle(),
       ...this.rocks.flatMap((rock) => rock.obstacle()),
       ...(!gameStore.getState().bridgeUnlocked
         ? [{ ...gladePosition(0, 7.9), halfX: gladeDistance(1.5), halfZ: 0.35 }]
@@ -675,6 +681,7 @@ export class World implements Area {
     });
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
+    this.riding.resetIfNeeded();
     this.updatePondFish(time);
     this.farm.update(dt, time, playerPosition);
     this.volcanoPortal.update(rabbitsHome(gameStore.getState().rabbits), time);
@@ -733,6 +740,7 @@ export class World implements Area {
         gameStore.revealSecret(id);
     }
     this.collision.dynamic = [
+      ...this.riding.obstacle(),
       ...this.rocks.flatMap((rock) => rock.obstacle(playerPosition)),
       ...(!state.bridgeUnlocked
         ? [{ ...gladePosition(0, 7.9), halfX: gladeDistance(1.5), halfZ: 0.35 }]

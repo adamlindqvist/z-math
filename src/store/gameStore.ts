@@ -104,6 +104,7 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "horse"; action: "mount" | "dismount"; label: string }
   | { kind: "farmer"; label: string }
   | { kind: "rabbit"; id: RabbitId; label: string }
   | { kind: "runeStone"; boss: MinibossId; value: number; label: string }
@@ -151,6 +152,9 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  riding: boolean;
+  horseAction: "mount" | "dismount" | null;
+  ridingMessage: string;
   followingRabbits: RabbitId[];
   rabbitCare: { id: RabbitId; action: "feed" | "pet"; sequence: number } | null;
   rabbitNextCare: Record<RabbitId, "feed" | "pet">;
@@ -307,6 +311,9 @@ export function createGameStore(
     savingAvailable = false;
   }
   let state: GameState = {
+    riding: false,
+    horseAction: null,
+    ridingMessage: "",
     followingRabbits: [],
     rabbitCare: null,
     rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" },
@@ -350,7 +357,7 @@ export function createGameStore(
     sound?: SoundEvent,
   ) => {
     if (("location" in update && JSON.stringify(update.location) !== JSON.stringify(state.location)) || "resetId" in update) {
-      update = { ...update, followingRabbits: [], rabbitCare: null, rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" } };
+      update = { ...update, riding: false, horseAction: null, ridingMessage: "", followingRabbits: [], rabbitCare: null, rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" } };
     }
     state = { ...state, ...update };
     if (persist && storage && !state.debugActive) {
@@ -794,7 +801,7 @@ export function createGameStore(
       });
     },
     travelTo: (destination: Location) => {
-      if (state.overlay || state.motion) return;
+      if (state.overlay || state.motion || state.riding) return;
       const found = resolveRoom(state.location);
       const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
       const next = resolveRoom(destination);
@@ -903,10 +910,19 @@ export function createGameStore(
     finishRabbitCare: (sequence: number) => {
       if (state.rabbitCare?.sequence === sequence) set({ rabbitCare: null });
     },
+    setRiding: (riding: boolean, ridingMessage = "") => {
+      set({ riding, ridingMessage, horseAction: null, target: null });
+    },
     interact: () => {
       if (state.overlay || state.motion || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "horse") {
+          if (state.location || !state.bridgeUnlocked || state.horseAction) return;
+          if ((target.action === "dismount") !== state.riding) return;
+          set({ horseAction: target.action });
+          return;
+        }
         if (target.kind === "worldObject") {
           const definition = WORLD_OBJECTS[target.id];
           if (!definition || !sameLocation(state.location, definition.location))

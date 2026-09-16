@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import { Scene } from "three";
+import { disposeTree } from "../src/game/Area";
 import { Input } from "../src/game/Input";
 import { Player } from "../src/game/Player";
 import { World } from "../src/game/World";
@@ -855,4 +856,79 @@ it("shows rabbit picture progress, farmer help and the one-time portal reward", 
   click("Mata");
   expect(gameStore.getState().rabbitCare?.action).toBe("feed");
   expect(gameStore.getState().rupees).toBe(10);
+});
+
+it("mounts and dismounts with E or simultaneous touch and cancels interrupted touches", () => {
+  const world = new World();
+  const player = new Player();
+  const scene = new Scene();
+  const interactions = new InteractionSystem(scene);
+  const sync = () => act(() => {
+    world.update(0, 0, player.position);
+    world.riding.update(0, player, input);
+    interactions.update(player.position, world, 0);
+  });
+  try {
+    act(() => {
+      gameStore.grantItems(["temple-sword", "temple-shield"]);
+      gameStore.setTarget("bokoblin"); gameStore.interact();
+      player.position.copy(world.riding.horse.root.position); player.position.z += 1;
+    });
+    sync();
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
+    Object.assign(joystick, {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 160, height: 160 }),
+    });
+    pointer(joystick, "pointerdown", 1, 122, 80);
+    const mountButton = button("Rid");
+    pointer(mountButton, "pointerdown", 2, 400, 80);
+    pointer(mountButton, "pointercancel", 2, 400, 80);
+    pointer(mountButton, "pointerup", 2, 400, 80);
+    sync();
+    expect(gameStore.getState().riding).toBe(false);
+    pointer(mountButton, "pointerdown", 3, 400, 80);
+    pointer(mountButton, "pointerup", 3, 400, 80);
+    sync();
+    expect(gameStore.getState().riding).toBe(true);
+    expect(input.direction().x).toBe(1);
+    act(() => mountButton.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })));
+    sync();
+    expect(gameStore.getState().riding).toBe(true);
+    expect(button("Kliv av")).toBeDefined();
+    const ridingPosition = player.position.clone();
+    player.position.copy(world.chest.root.position); player.position.z += 1.5;
+    sync();
+    expect(button("Kliv av")).toBeUndefined();
+    pointer(button("Öppna"), "pointerdown", 6, 400, 80);
+    pointer(button("Öppna"), "pointerup", 6, 400, 80);
+    expect(gameStore.getState()).toMatchObject({ riding: true, overlay: "locked" });
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    act(() => gameStore.close()); sync();
+    key("KeyE"); key("KeyE", false);
+    expect(gameStore.getState()).toMatchObject({ riding: true, overlay: "locked" });
+    act(() => gameStore.close());
+    player.position.copy(ridingPosition); sync();
+    expect(button("Kliv av")).toBeDefined();
+    act(() => window.dispatchEvent(new Event("blur")));
+    pointer(joystick, "pointermove", 1, 122, 80);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    key("KeyE"); sync(); key("KeyE", false);
+    expect(gameStore.getState().riding).toBe(false);
+    sync(); key("KeyE"); sync(); key("KeyE", false);
+    expect(gameStore.getState().riding).toBe(true);
+    pointer(button("Kliv av"), "pointerdown", 4, 400, 80);
+    pointer(button("Kliv av"), "lostpointercapture", 4, 400, 80);
+    pointer(button("Kliv av"), "pointerup", 4, 400, 80);
+    sync();
+    expect(gameStore.getState().riding).toBe(true);
+    pointer(button("Kliv av"), "pointerdown", 5, 400, 80);
+    pointer(button("Kliv av"), "pointerup", 5, 400, 80);
+    sync();
+    expect(gameStore.getState().riding).toBe(false);
+  } finally {
+    world.dispose();
+    disposeTree(player.root);
+    disposeTree(scene);
+  }
 });

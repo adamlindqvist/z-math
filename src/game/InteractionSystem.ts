@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { gameStore, type Target } from "../store/gameStore";
-import type { Area } from "./Area";
+import type { Area, Interaction } from "./Area";
 export class InteractionSystem {
   ring: THREE.Mesh;
   arrow: THREE.Mesh;
@@ -43,10 +43,15 @@ export class InteractionSystem {
         ...o,
         distance: Math.hypot(position.x - o.x, position.z - o.z),
       }))
-      .filter((o) => o.distance < 1.85 && world.collision.visible(position, o))
+      .filter((o) => o.distance < 1.85 && reachable(world, position, o))
       .sort((a, b) => a.distance - b.distance);
     const nearest = !state.overlay && !state.motion ? choices[0] : undefined;
-    gameStore.setTarget(nearest?.target ?? null);
+    gameStore.setTarget(
+      nearest?.target ??
+        (state.riding && !state.overlay && !state.motion
+          ? { kind: "horse", action: "dismount", label: "Kliv av" }
+          : null),
+    );
     this.ring.visible = !!nearest;
     const push = world.pushHint?.(state, position);
     this.arrow.visible = !!push;
@@ -59,7 +64,7 @@ export class InteractionSystem {
       this.ring.position.z = nearest.z;
       this.ring.scale.setScalar(1 + Math.sin(time * 3) * 0.05);
     }
-    if (!state.overlay && !state.motion) {
+    if (!state.overlay && !state.motion && !state.riding) {
       const passage = world.passages(state).find((p) => {
         const rotation = p.rotation ?? 0;
         const dx = position.x - p.x,
@@ -75,17 +80,19 @@ export class InteractionSystem {
         return;
       }
     }
-    if (!gameStore.getState().overlay)
-      world.rupees.forEach((rupee) => {
-        if (
-          rupee.root.visible &&
-          Math.hypot(
-            position.x - rupee.root.position.x,
-            position.z - rupee.root.position.z,
-          ) < 0.57
-        )
-          gameStore.collect(rupee.id);
-      });
+    if (!gameStore.getState().overlay) this.collect(position, world);
+  }
+  private collect(position: THREE.Vector3, world: Area) {
+    world.rupees.forEach((rupee) => {
+      if (
+        rupee.root.visible &&
+        Math.hypot(
+          position.x - rupee.root.position.x,
+          position.z - rupee.root.position.z,
+        ) < 0.57
+      )
+        gameStore.collect(rupee.id);
+    });
   }
 }
 
@@ -108,7 +115,18 @@ export function pickInteraction(
     .find((i) => JSON.stringify(i.target) === JSON.stringify(target));
   return choice &&
     Math.hypot(position.x - choice.x, position.z - choice.z) < 1.85 &&
-    world.collision.visible(position, choice)
+    reachable(world, position, choice)
     ? target
     : null;
+}
+
+// Mounting checks scenery without letting the parked horse block itself.
+function reachable(world: Area, position: THREE.Vector3, choice: Interaction) {
+  if (
+    typeof choice.target === "object" &&
+    choice.target?.kind === "horse" &&
+    choice.target.action === "mount"
+  )
+    return world.riding?.canMountFrom(position) ?? false;
+  return world.collision.visible(position, choice);
 }

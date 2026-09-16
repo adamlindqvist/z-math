@@ -66,7 +66,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
         <div
           className="relative grid size-40 touch-none place-items-center rounded-full border-4 border-cream bg-[#d4edcfbb] shadow-[inset_0_0_0_12px_#ffffff40,0_5px_0_#345d3826] select-none"
           data-testid="joystick"
-          aria-label="Dra för att gå"
+          aria-label={state.riding ? "Dra för att rida" : "Dra för att gå"}
           onPointerDown={(e) => {
             if (active.current !== null) return;
             active.current = e.pointerId;
@@ -89,7 +89,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             className="pointer-events-none absolute grid size-[76px] place-items-center rounded-full bg-cream text-forest shadow-[0_5px_0_#345d3844] [&_svg]:size-9"
             style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }}
           >
-            <Footprints size={23} />
+            {state.riding ? <span aria-hidden="true" className="text-4xl">🐴</span> : <Footprints size={23} />}
           </div>
         </div>
       
@@ -133,7 +133,9 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           disabled={!state.target || !!state.motion}
         >
           <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
-            {typeof state.target === "object" && state.target?.kind === "rabbit" ? (
+            {typeof state.target === "object" && state.target?.kind === "horse" ? (
+              state.riding ? <Footprints /> : <span aria-hidden="true" className="text-4xl">🐴</span>
+            ) : typeof state.target === "object" && state.target?.kind === "rabbit" ? (
               state.target.label === "Mata" ? <Carrot /> : state.target.label === "Följ med" ? <Rabbit /> : <Hand />
             ) : state.target === "npc" ? (
               <MessageCircle size={23} />
@@ -160,6 +162,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
                   : "Gå och leta"}
           </span>
           <kbd>E</kbd>
+          {state.ridingMessage && <span role="status" className="pointer-events-none absolute right-0 bottom-full mb-3 max-w-[280px] rounded-2xl bg-cream px-4 py-2 text-lg text-ink">{state.ridingMessage}</span>}
         </button>
       )}
     </div>

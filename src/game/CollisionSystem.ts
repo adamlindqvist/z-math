@@ -60,13 +60,18 @@ export class CollisionSystem {
     }
     return true;
   }
-  move(position: { x: number; z: number }, dx: number, dz: number) {
+  move(
+    position: { x: number; z: number },
+    dx: number,
+    dz: number,
+    radius = 0.32,
+  ) {
     // Small steps prevent tunnelling and allow sliding along solid edges.
     const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.15));
     for (let i = 0; i < steps; i++) {
-      if (this.free(position.x + dx / steps, position.z))
+      if (this.free(position.x + dx / steps, position.z, radius))
         position.x += dx / steps;
-      if (this.free(position.x, position.z + dz / steps))
+      if (this.free(position.x, position.z + dz / steps, radius))
         position.z += dz / steps;
     }
   }

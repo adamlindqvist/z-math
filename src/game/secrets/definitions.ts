@@ -41,12 +41,13 @@ export const WORLD_SECRETS = [
     requiresBridge: true,
     waypoints: [
       gladePosition(0, 21),
-      gladePosition(4, 17.4),
+      gladePosition(4.8, 18.8),
       gladePosition(-2, 18.7),
-      gladePosition(2, 23),
-      gladePosition(4, 14.8),
+      // Approach the northeast treasure above the horse paddock.
+      gladePosition(-1.5, 14.1),
+      gladePosition(4, 14),
     ],
-    chestPosition: gladePosition(4, 14.4),
+    chestPosition: gladePosition(4, 13.4),
   },
   {
     id: "strange-rock-01",

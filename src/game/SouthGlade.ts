@@ -1,3 +1,4 @@
+import { buildHorsePaddock, HORSE_HOME } from "./horse/Horse";
 import { FARM_YARD } from "./rabbits/definitions";
 import { GLADE_SCALE, gladeDistance } from "./gladeLayout";
 import {
@@ -163,7 +164,14 @@ export function buildSouthGlade(root: THREE.Group, collision: CollisionSystem) {
   );
   clearing.castShadow = false;
   collision.add(gladeDistance(3.5), gladeDistance(23), 0.56, 0.41);
-  gladeFlowers(root, collision, [...points, ...farmPath], {
+  buildHorsePaddock(root, collision);
+  const horsePath = gladePath(root, new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.5, 0.082, 16.1),
+    new THREE.Vector3(1.3, 0.082, 16.1),
+    new THREE.Vector3(2.7, 0.082, 16.1),
+  ]), path);
+  const paddockClearance = [-1, 0, 1].flatMap(x => [-0.7, 0.7].map(z => new THREE.Vector3(HORSE_HOME.x + x, 0, HORSE_HOME.z + z)));
+  gladeFlowers(root, collision, [...points, ...farmPath, ...horsePath, ...paddockClearance], {
     seed: 37,
     count: 110,
     minX: -8,

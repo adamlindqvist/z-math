@@ -197,6 +197,8 @@ export class Game {
   }
   private mountArea() {
     this.cancelTap();
+    if (gameStore.getState().riding || gameStore.getState().horseAction)
+      gameStore.setRiding(false);
     this.scene.add(this.world.root);
     applyAreaEnvironment(this.scene, this.sun, this.ambient, this.world.environment);
     const entrance = DUNGEONS.find(
@@ -277,7 +279,8 @@ export class Game {
       this.mountArea();
     }
     this.world.update(dt, this.time, this.player.position);
-    if (!gameStore.getState().overlay && !gameStore.getState().motion)
+    const riding = this.world.riding?.update(dt, this.player, this.input) ?? false;
+    if (!riding && !gameStore.getState().overlay && !gameStore.getState().motion)
       this.player.update(
         dt,
         this.input,

@@ -23,6 +23,7 @@ export interface PushHint {
   dz: number;
 }
 export interface Area {
+  riding?: import("./horse/HorseRiding").HorseRiding;
   environment?: import("./environment").AreaEnvironment;
   root: THREE.Group;
   collision: CollisionSystem;
