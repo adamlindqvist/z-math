@@ -280,7 +280,7 @@ export class VolcanoArea implements Area {
     const trunk = material("#493c46");
     for (const [x, z] of [
       [-10, 2],
-      [-6, 6],
+      [-9.5, 7], // Keep the foreground of the glade return portal clear.
       [10, 3],
       [-7, -6],
       [7, -6],
