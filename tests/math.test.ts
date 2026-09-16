@@ -74,6 +74,28 @@ describe("adaptive questions", () => {
     },
   );
 
+  it.each([
+    [1, "counting", 5],
+    [1, "addition", 10],
+    [2, "counting", 10],
+    [2, "addition", 45],
+    [3, "subtraction", 15],
+    [4, "subtraction", 55],
+  ] as const)(
+    "keeps level %i %s questions distinct until the pool is exhausted",
+    (level, category, size) => {
+      const asked: string[] = [];
+      const random = seeded(49);
+      for (let i = 0; i < size * 2; i++) {
+        const q = generateQuestion(level, random, asked, category);
+        expect(q.category).toBe(category);
+        expect(asked.slice(-(size - 1))).not.toContain(q.key);
+        asked.push(q.key);
+      }
+      expect(new Set(asked).size).toBe(size);
+    },
+  );
+
   it("preserves content identity across level changes", () => {
     const first = generateQuestion(2, () => 0);
     const next = generateQuestion(3, () => 0, [first.key]);

@@ -406,7 +406,12 @@ export function createGameStore(
     askedQuestions: [...state.askedQuestions, question.key],
   });
   const quizQuestion = (asked: readonly string[] = []): MathQuestion =>
-    generateQuestion(state.mathProgress.level, Math.random, asked);
+    generateQuestion(
+      state.mathProgress.level,
+      Math.random,
+      asked,
+      asked.length ? state.question?.category : undefined,
+    );
   // The chest flag, currency and associated discovery are committed together.
   const chestAward = (id: ChestId): Partial<GameState> => {
     if (state.chests[id]) return {};

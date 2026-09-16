@@ -41,8 +41,25 @@ export function generateQuestion(
   level: MathLevel,
   random: () => number = Math.random,
   asked: readonly string[] = [],
+  fixedCategory?: MathQuestion["category"],
 ): MathQuestion {
-  const variants = pools.get(level)!;
+  // Counting can remain active when the child levels up within a quiz,
+  // although new quizzes at that level introduce arithmetic instead.
+  const pool =
+    fixedCategory === "counting"
+      ? Array.from({ length: level === 1 ? 5 : 10 }, (_, i): Variant => ({
+          key: `counting-${i + 1}-0`,
+          category: "counting",
+          a: i + 1,
+          b: 0,
+          max: level === 1 ? 5 : 10,
+        }))
+      : pools.get(level)!;
+  const variants = fixedCategory
+    ? pool.filter((v) => v.category === fixedCategory)
+    : pool;
+  if (!variants.length)
+    throw new Error("Frågetypen saknar frågor på denna nivå.");
   let available: Variant[] = [];
   for (let dropped = 0; dropped <= asked.length; dropped++) {
     const used = new Set(asked.slice(dropped));

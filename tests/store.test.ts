@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createGameStore, parseSave, SAVE_KEY } from "../src/store/gameStore";
 const memory = () => {
   const data = new Map<string, string>();
@@ -121,6 +121,57 @@ describe("shared math progression", () => {
     storage.setItem(SAVE_KEY, JSON.stringify(save));
     return storage;
   }
+
+  it.each([
+    [1, 0, "counting"], [1, 0.999999, "addition"],
+    [2, 0, "addition"], [3, 0.999999, "subtraction"],
+  ] as const)("keeps %s/%s/%s through level changes, retries and pool exhaustion", (level, initialRandom, category) => {
+    for (const kind of ["chest", "temple"]) {
+      const storage = savedAt(level, 4);
+      const store = createGameStore(storage);
+      const random = vi.spyOn(Math, "random").mockReturnValue(initialRandom);
+      try {
+        if (kind === "chest") openQuiz(store); else temple(store);
+        expect(store.getState().question!.category).toBe(category);
+        random.mockReturnValue(initialRandom === 0 ? 0.999999 : 0);
+        answer(store);
+        store.finishQuiz();
+        expect(store.getState().mathProgress.level).toBe(level + 1);
+        for (let i = 0; i < 60; i++) {
+          const question = store.getState().question!;
+          expect(question.category).toBe(category);
+          expect(question.difficulty).toBe(level + 1);
+          answer(store, false);
+          store.replaceQuestion();
+          expect(store.getState().question!.key).not.toBe(question.key);
+        }
+        answer(store);
+        store.finishQuiz();
+        expect(store.getState().question!.category).toBe(category);
+      } finally {
+        random.mockRestore();
+      }
+    }
+  });
+
+  it("chooses a fresh type for the next quiz using the earned level", () => {
+    const store = createGameStore(savedAt(2, 4));
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.999999);
+    try {
+      openQuiz(store);
+      expect(store.getState().question!.category).toBe("addition");
+      for (let i = 0; i < 3; i++) {
+        expect(store.getState().question!.category).toBe("addition");
+        answer(store);
+        store.finishQuiz();
+      }
+      temple(store);
+      expect(store.getState().question!.category).toBe("subtraction");
+      expect(store.getState().question!.difficulty).toBe(3);
+    } finally {
+      random.mockRestore();
+    }
+  });
 
   it("shares five consecutive answers between chest, reload and temple; ignores duplicate answers", () => {
     const storage = memory();
