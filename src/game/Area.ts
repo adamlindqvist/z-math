@@ -7,6 +7,8 @@ export interface Interaction {
   target: Target;
   x: number;
   z: number;
+  /** Optional broad interaction rectangle, useful for large world objects. */
+  reach?: { halfX: number; halfZ: number };
 }
 export interface Passage {
   radius?: number;

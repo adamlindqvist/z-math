@@ -216,6 +216,13 @@ it("offers a reachable stone, pauses the roll, opens the water passage and keeps
     expect(area.collision.free(YUNOBO_ROCK.x, YUNOBO_ROCK.z)).toBe(false);
     interactions.update(position, area, 0);
     expect(gameStore.getState().target).toMatchObject({ kind: "yunoboRock" });
+    // The large boulder can be activated from farther back and from either side.
+    const broadPositions = [new Vector3(-2.2, 0, -2.6), new Vector3(2.2, 0, -2.6)];
+    for (const broad of broadPositions) {
+      interactions.update(broad, area, 0);
+      expect(gameStore.getState().target).toMatchObject({ kind: "yunoboRock" });
+    }
+    interactions.update(position, area, 0);
     gameStore.interact();
     companion.update(0.4, position, area); area.update(0.4, 0.4);
     gameStore.pause();

@@ -62,7 +62,7 @@ export class InteractionSystem {
         ...o,
         distance: Math.hypot(position.x - o.x, position.z - o.z),
       }))
-      .filter((o) => o.distance < 1.85 && reachable(world, position, o))
+      .filter((o) => inReach(position, o) && reachable(world, position, o))
       .sort((a, b) => a.distance - b.distance);
     const nearest = !state.overlay && !state.motion ? choices[0] : undefined;
     gameStore.setTarget(
@@ -135,10 +135,18 @@ export function pickInteraction(
     .interactions(gameStore.getState(), position)
     .find((i) => JSON.stringify(i.target) === JSON.stringify(target));
   return choice &&
-    Math.hypot(position.x - choice.x, position.z - choice.z) < 1.85 &&
+    inReach(position, choice) &&
     reachable(world, position, choice)
     ? target
     : null;
+}
+
+function inReach(position: THREE.Vector3, choice: Interaction) {
+  if (choice.reach) {
+    return Math.abs(position.x - choice.x) <= choice.reach.halfX &&
+      Math.abs(position.z - choice.z) <= choice.reach.halfZ;
+  }
+  return Math.hypot(position.x - choice.x, position.z - choice.z) < 1.85;
 }
 
 // Mounting checks scenery without letting the parked horse block itself.

@@ -102,6 +102,9 @@ export class YunoboRock {
   interactions(state: GameState): Interaction[] {
     return hasYunobo(state.dungeons) && !state.yunobo.rockBroken ? [{
       x: YUNOBO_ROCK.x, z: YUNOBO_ROCK.z + 0.85,
+      // The boulder spans the whole passage, so the child can activate it
+      // from several steps back and anywhere across the path.
+      reach: { halfX: 2.5, halfZ: 2.6 },
       target: { kind: "yunoboRock", label: "Hjälp, Yunobo!" },
     }] : [];
   }
