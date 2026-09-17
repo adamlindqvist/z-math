@@ -227,7 +227,7 @@ export class VolcanoArea implements Area {
       1.7,
     );
     this.robotLizard = new RobotLizard(mountain);
-    this.robotLizard.eyes.setTempleCompleted(volcanoGateOpen(gameStore.getState().dungeons));
+    this.robotLizard.setTempleCompleted(volcanoGateOpen(gameStore.getState().dungeons));
     this.root.add(this.robotLizard.root);
     const crater = mesh(
       new THREE.CylinderGeometry(1.05, 0.7, 0.6, 12, 1, true),
@@ -364,7 +364,7 @@ export class VolcanoArea implements Area {
     });
   }
   update(dt: number, time: number, playerPosition?: THREE.Vector3) {
-    this.robotLizard.eyes.setTempleCompleted(volcanoGateOpen(gameStore.getState().dungeons));
+    this.robotLizard.setTempleCompleted(volcanoGateOpen(gameStore.getState().dungeons));
     this.robotLizard.update(dt);
     this.miniboss.update(dt, playerPosition);
     const state = gameStore.getState();

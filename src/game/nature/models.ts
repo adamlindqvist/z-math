@@ -114,6 +114,7 @@ export function animal(kind: "water" | "desert") {
       ball(head, bronze, side * 0.25, 0.18, 0.53, 0.15, 0.17, 0.085);
       ball(head, white, side * 0.25, 0.18, 0.59, 0.115);
       ball(head, eyes, side * 0.25, 0.18, 0.69, 0.06);
+      eyes.addLaser(head, side * 0.25, 0.18, 0.74);
       ball(head, white, side * 0.25 - 0.018, 0.205, 0.735, 0.022);
     }
     for (let i = 0; i < 7; i++) {
@@ -231,6 +232,7 @@ export function animal(kind: "water" | "desert") {
       ball(head, bronze, side * 0.17, 2.07, 0, 0.085);
       ball(head, white, side * 0.23, 1.6, 0.55, 0.12);
       ball(head, eyes, side * 0.23, 1.6, 0.65, 0.065);
+      eyes.addLaser(head, side * 0.23, 1.6, 0.705);
       ball(head, white, side * 0.23 - 0.018, 1.625, 0.697, 0.025);
     }
   }

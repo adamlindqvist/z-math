@@ -11,6 +11,7 @@ export class RobotLizard {
   private tail = new THREE.Group();
   private legs: THREE.Group[] = [];
   private elapsed = 0;
+  private templeCompleted = false;
   private ray = new THREE.Raycaster();
   private hits: THREE.Intersection[] = [];
   private normalMatrix = new THREE.Matrix3();
@@ -55,6 +56,7 @@ export class RobotLizard {
       const lens = mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.04, 8),
         light, this.body, side * 0.172, 0.42, 0.6);
       lens.rotation.z = Math.PI / 2;
+      this.eyes.addLaser(this.body, side * 0.192, 0.42, 0.6);
       for (const z of [-0.23, 0.23]) {
         mesh(new THREE.CylinderGeometry(0.15, 0.16, 0.23, 8),
           shell, this.body, side * 0.3, 0.4, z);
@@ -122,10 +124,17 @@ export class RobotLizard {
     this.update(0);
   }
 
-  private surfacePoint(angle: number, point: THREE.Vector3, normal?: THREE.Vector3) {
+  setTempleCompleted(completed: boolean) {
+    this.eyes.setTempleCompleted(completed);
+    if (this.templeCompleted === completed) return;
+    this.templeCompleted = completed;
+    this.elapsed = 0;
+    this.update(0);
+  }
+
+  private surfacePoint(angle: number, point: THREE.Vector3, normal?: THREE.Vector3, height = 1.65 + Math.sin(angle * 2) * 0.85) {
     // Probe the actual rock mesh, including its irregular facets and world scale.
     // Stay below the rim while climbing up and down twice on each circuit.
-    const height = 1.65 + Math.sin(angle * 2) * 0.85;
     this.ray.ray.origin.set(Math.cos(angle) * 6, height - 1.7, Math.sin(angle) * 6)
       .applyMatrix4(this.mountain.matrixWorld);
     this.ray.ray.direction.set(-Math.cos(angle), 0, -Math.sin(angle))
@@ -139,6 +148,25 @@ export class RobotLizard {
   }
 
   update(dt: number) {
+    if (this.templeCompleted) {
+      // Rest just below the crater rim, facing along the upper slope.
+      // Both probes use the same height so the lasers point out horizontally.
+      this.surfacePoint(Math.PI / 2, this.root.position, this.normal, 3.12);
+      this.surfacePoint(Math.PI / 2 + 0.005, this.ahead, undefined, 3.12);
+      this.forward.subVectors(this.ahead, this.root.position).normalize();
+      this.forward.addScaledVector(this.normal, -this.forward.dot(this.normal)).normalize();
+      this.right.crossVectors(this.normal, this.forward).normalize();
+      this.basis.makeBasis(this.right, this.normal, this.forward);
+      this.root.quaternion.setFromRotationMatrix(this.basis);
+      this.root.position.addScaledVector(this.normal, 0.07);
+      this.body.position.y = 0;
+      this.legs.forEach((leg) => {
+        leg.rotation.x = 0;
+        leg.position.y = 0.27;
+      });
+      this.tail.rotation.y = 0;
+      return;
+    }
     this.elapsed += dt;
     const angle = Math.PI / 2 + this.elapsed * 0.13;
     this.surfacePoint(angle, this.root.position, this.normal);

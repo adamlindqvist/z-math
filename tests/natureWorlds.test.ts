@@ -607,7 +607,7 @@ it("lets Gullan be talked to and tapped around her body without reaching through
   }
 });
 
-it("changes each robot's eyes only after its own temple is completed, including on re-entry and reset", () => {
+it("lights each robot's two forward lasers only after its own temple is completed, including on re-entry and reset", () => {
   gameStore.reset();
   const areas = [new VolcanoArea(), new WaterArea(), new DesertArea()];
   const eyeColors = (root: Group) => {
@@ -623,31 +623,72 @@ it("changes each robot's eyes only after its own temple is completed, including 
     });
     return [...colors];
   };
-  const check = (colors: string[]) => {
+  const checkLasers = (root: Group, completed: boolean) => {
+    const beams: Group[] = [];
+    root.traverse((object) => {
+      if (object instanceof Group && object.name === "robot-eye-laser") beams.push(object);
+    });
+    expect(beams).toHaveLength(2);
+    for (const beam of beams) {
+      expect(beam.visible).toBe(completed);
+      for (const part of beam.children) {
+        expect(part).toBeInstanceOf(Mesh);
+        const mesh = part as Mesh;
+        mesh.geometry.computeBoundingBox();
+        const bounds = mesh.geometry.boundingBox!;
+        expect(bounds.min.z).toBeCloseTo(0);
+        expect(bounds.max.z).toBeGreaterThan(500);
+        expect(mesh.castShadow).toBe(false);
+      }
+    }
+  };
+  const check = (completed: boolean[]) => {
     areas.forEach((area, i) => {
       area.update(0, 0);
-      expect(eyeColors(area.root)).toEqual([colors[i]]);
+      expect(eyeColors(area.root)).toEqual(["ff3030"]);
+      checkLasers(area.root, completed[i]);
     });
   };
   try {
-    check(["ff3030", "ff3030", "ff3030"]);
+    check([false, false, false]);
     enterWater(gameStore);
-    check(["308cff", "ff3030", "ff3030"]);
+    check([true, false, false]);
+    const lizard = areas[0].root.getObjectByName("robot-lizard")!;
+    const pose = () => {
+      const transforms: number[][] = [];
+      lizard.traverse((object) => transforms.push([
+        ...object.position.toArray(), ...object.quaternion.toArray(),
+      ]));
+      return transforms;
+    };
+    expect(lizard.position.y).toBeGreaterThan(3.5);
+    const restingPose = pose();
+    areas[0].update(12, 12);
+    expect(pose()).toEqual(restingPose);
     solveTemple(gameStore, "water");
-    check(["308cff", "308cff", "ff3030"]);
+    check([true, true, false]);
     gameStore.travelTo({ world: "desert" });
     solveTemple(gameStore, "desert");
-    check(["308cff", "308cff", "308cff"]);
+    check([true, true, true]);
     for (const Area of [VolcanoArea, WaterArea, DesertArea]) {
       const revisited = new Area();
       try {
-        expect(eyeColors(revisited.root)).toEqual(["308cff"]);
+        expect(eyeColors(revisited.root)).toEqual(["ff3030"]);
+        checkLasers(revisited.root, true);
+        if (revisited instanceof VolcanoArea) {
+          const resting = revisited.root.getObjectByName("robot-lizard")!;
+          expect(resting.position.toArray()).toEqual(lizard.position.toArray());
+          expect(resting.quaternion.toArray()).toEqual(lizard.quaternion.toArray());
+        }
       } finally {
         revisited.dispose();
       }
     }
     gameStore.reset();
-    check(["ff3030", "ff3030", "ff3030"]);
+    check([false, false, false]);
+    const crawlingPosition = lizard.position.clone();
+    areas[0].update(2, 14);
+    expect(lizard.position.distanceTo(crawlingPosition)).toBeGreaterThan(0.1);
   } finally {
     areas.forEach((area) => area.dispose());
   }
