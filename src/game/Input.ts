@@ -21,7 +21,7 @@ export class Input {
       )
     )
       e.preventDefault();
-    if (gameStore.getState().overlay) return;
+    if (gameStore.getState().overlay || gameStore.getState().yunoboHelping) return;
     this.keys.add(e.code);
     if (["KeyE", "Space"].includes(e.code) && !e.repeat) gameStore.interact();
   };
@@ -46,7 +46,7 @@ export class Input {
       const state = gameStore.getState();
       const location = JSON.stringify(state.location);
       if (
-        state.overlay ||
+        state.overlay || state.yunoboHelping ||
         location !== this.location ||
         state.resetId !== this.resetId
       )

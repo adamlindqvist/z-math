@@ -34,7 +34,7 @@ export function HUD() {
     state.location?.world === "underworld" ? "Stegen leder upp till öknen." :
     state.location?.world === "water" ? (natureRestored(state.dungeons, "water") ? "Snäckporten till öknen är öppen!" : "Hjälp Ella. Hitta Vattentemplet!") :
     state.location?.world === "desert" ? (natureRestored(state.dungeons, "desert") ? "Ett hål har öppnats vid templet!" : "Hjälp Gullan. Hitta Ökentemplet!") :
-    state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? "Den stora porten är öppen!" : "Eldtemplet ligger till höger!") :
+    state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? state.yunoboHelping ? "Yunobo hjälper dig!" : !state.yunobo.rockBroken ? "Gå till stenen med elden!" : "Fina blommor! Porten är öppen!" : "Eldtemplet ligger till höger!") :
     state.location?.world === "volcano" ? (state.minibosses.stone_giant === 3 ? "Vulkanens ingång är öppen!" : "Besegra Stenjätten. Öppna vulkanen!") :
     state.location === null && state.bridgeUnlocked ? (rabbitsHome(state.rabbits) ? "Gå till den lysande portalen!" : state.followingRabbits.length ? "Gå till kaninhagen!" : "Hitta kaninerna!") :
     state.location?.castle === "throne"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { YunoboPicture } from "./YunoboPicture";
 import type { RefObject, PointerEvent } from "react";
 import { Carrot, Rabbit, Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
 import type { Game } from "../game/Game";
@@ -32,7 +33,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
   const locationKey = JSON.stringify(state.location);
   useEffect(() => {
     reset();
-  }, [state.overlay, locationKey, state.resetId]);
+  }, [state.overlay, state.yunoboHelping, locationKey, state.resetId]);
   useEffect(() => {
     const hidden = () => {
       if (document.hidden) reset();
@@ -45,7 +46,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
     };
   }, []);
   const move = (e: PointerEvent<HTMLDivElement>) => {
-    if (active.current !== e.pointerId || gameStore.getState().overlay) return;
+    if (active.current !== e.pointerId || gameStore.getState().overlay || gameStore.getState().yunoboHelping) return;
     const rect = e.currentTarget.getBoundingClientRect();
     let x = e.clientX - rect.left - rect.width / 2,
       y = e.clientY - rect.top - rect.height / 2;
@@ -130,10 +131,10 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
             )
               activate();
           }}
-          disabled={!state.target || !!state.motion}
+          disabled={!state.target || !!state.motion || state.yunoboHelping}
         >
           <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
-            {typeof state.target === "object" && state.target?.kind === "horse" ? (
+            {typeof state.target === "object" && state.target?.kind === "yunoboRock" ? <YunoboPicture /> : typeof state.target === "object" && state.target?.kind === "horse" ? (
               state.riding ? <Footprints /> : <span aria-hidden="true" className="text-4xl">🐴</span>
             ) : typeof state.target === "object" && state.target?.kind === "rabbit" ? (
               state.target.label === "Mata" ? <Carrot /> : state.target.label === "Följ med" ? <Rabbit /> : <Hand />

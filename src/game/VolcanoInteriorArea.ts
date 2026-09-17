@@ -7,6 +7,8 @@ import { box, material, mesh } from "./models";
 import { portal } from "./dungeons/models";
 import { DUNGEONS, volcanoGateOpen } from "./dungeons/definitions";
 import { gameStore, type GameState } from "../store/gameStore";
+import { YunoboRock } from "./companions/YunoboRock";
+import { YUNOBO_ROCK } from "./companions/definitions";
 
 /** A small crossroads: return south, temple east, water world north. */
 export class VolcanoInteriorArea implements Area {
@@ -18,9 +20,11 @@ export class VolcanoInteriorArea implements Area {
   environment = CAVE_ENVIRONMENT;
   private gate = new THREE.Group();
   private opening = 0;
+  private yunoboRock = new YunoboRock();
   private glow = new THREE.MeshStandardMaterial({ color: "#ffa34f", emissive: "#fa671e", emissiveIntensity: 0.7 });
   constructor() {
     this.root.name = "volcano-interior";
+    this.root.add(this.yunoboRock.root);
     const stone = material("#554951"), floor = material("#75665e"), trim = material("#877568");
     const strata = [stone, material("#65555a"), material("#493f47")];
     const outline = new THREE.Shape();
@@ -120,13 +124,15 @@ export class VolcanoInteriorArea implements Area {
       { ...fire.entrance, destination: { dungeon: "fire", room: fire.rooms[0].id } },
     ];
   }
-  interactions(_state: GameState) { return []; }
+  interactions(state: GameState) { return this.yunoboRock.interactions(state); }
   update(dt: number, time: number) {
     const open = volcanoGateOpen(gameStore.getState().dungeons);
     this.opening = open ? Math.min(1, this.opening + dt * 0.6) : 0;
     // Keep the raised stone doors visible above a player-height opening.
     this.gate.position.y = this.opening * 2.6;
     this.collision.dynamic = this.opening < 1 ? [{ x: 0, z: -4.8, halfX: 2.5, halfZ: 0.3 }] : [];
+    this.yunoboRock.update(dt, time);
+    if (this.yunoboRock.blocking) this.collision.dynamic.push({ ...YUNOBO_ROCK, halfX: 0.65, halfZ: 0.55 });
     this.glow.emissiveIntensity = 0.7 + Math.sin(time * 1.4) * 0.15;
   }
   dispose() { disposeTree(this.root); }

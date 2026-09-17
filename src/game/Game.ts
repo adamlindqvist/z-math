@@ -20,6 +20,7 @@ import { GameCamera } from "./Camera";
 import { Input } from "./Input";
 import { InteractionSystem, pickInteraction } from "./InteractionSystem";
 import { gameStore } from "../store/gameStore";
+import { YunoboCompanion } from "./companions/YunoboCompanion";
 export class Game {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
@@ -82,6 +83,7 @@ export class Game {
   };
   private previousDungeon: string | null = null;
   player = new Player();
+  private yunobo = new YunoboCompanion();
   camera = new GameCamera();
   input = new Input();
   interactions: InteractionSystem;
@@ -158,6 +160,7 @@ export class Game {
     this.updateSun();
     this.world = this.createArea();
     this.scene.add(this.player.root);
+    this.scene.add(this.yunobo.root);
     this.mountArea();
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
@@ -231,6 +234,7 @@ export class Game {
         : this.world.spawn);
     this.player.reset();
     this.player.position.set(spawn.x, 0, spawn.z);
+    this.yunobo.reset(this.player.position, this.world);
     if (gameStore.getState().location?.dungeon === "fire" && gameStore.getState().location?.room === "light" && spawn.x < 0)
       this.player.root.rotation.y = Math.PI / 2;
     if (gameStore.getState().location?.world === "volcano-interior" && this.previousLocation?.dungeon === "fire")
@@ -284,7 +288,7 @@ export class Game {
     }
     this.world.update(dt, this.time, this.player.position);
     const riding = this.world.riding?.update(dt, this.player, this.input) ?? false;
-    if (!this.interactions.falling && !riding && !gameStore.getState().overlay && !gameStore.getState().motion)
+    if (!this.interactions.falling && !riding && !gameStore.getState().overlay && !gameStore.getState().motion && !gameStore.getState().yunoboHelping)
       this.player.update(
         dt,
         this.input,
@@ -294,6 +298,9 @@ export class Game {
         state.debugNoclip,
       );
     this.interactions.update(this.player.position, this.world, this.time, dt);
+    // Area switches are mounted next frame; don't animate in the old coordinate system.
+    if (this.areaKey === JSON.stringify(gameStore.getState().location))
+      this.yunobo.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
     this.camera.update(this.interactions.falling ? new THREE.Vector3(this.player.position.x, 0, this.player.position.z) : this.player.position, dt);
     this.dayNight.update(dt, state, document.hidden);
     if (!state.location) {

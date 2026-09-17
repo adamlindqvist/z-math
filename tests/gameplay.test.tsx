@@ -77,6 +77,36 @@ afterEach(() => {
 });
 
 describe("playable controls and interface", () => {
+  it("greets Yunobo with one clear exit and clears held movement during his help", () => {
+    act(() => {
+      gameStore.openDebug(); gameStore.debugTravelTo({ world: "water" }); gameStore.closeDebug();
+      gameStore.greetYunobo();
+    });
+    expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Din kompis Yunobo!");
+    expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+    click("Nu går vi!");
+    expect(gameStore.getState().yunobo.greeted).toBe(true);
+    act(() => {
+      gameStore.travelTo({ world: "volcano-interior" });
+      gameStore.setTarget({ kind: "yunoboRock", label: "Hjälp, Yunobo!" });
+    });
+    const joystick = host.querySelector('[data-testid="joystick"]')!;
+    Object.assign(joystick, {
+      setPointerCapture: vi.fn(),
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 160, height: 160 }),
+    });
+    pointer(joystick, "pointerdown", 1, 122, 80);
+    expect(input.direction().x).toBeGreaterThan(0);
+    const action = button("Hjälp, Yunobo!");
+    pointer(action, "pointerdown", 2, 400, 80);
+    pointer(action, "pointerup", 2, 400, 80);
+    expect(gameStore.getState().yunoboHelping).toBe(true);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    act(() => gameStore.finishYunoboHelp());
+    pointer(joystick, "pointermove", 1, 122, 80);
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    act(() => gameStore.debugEndSession());
+  });
   it("uses the available close button for Escape and never also pauses", () => {
     const close = vi.fn();
     const render = (disabled: boolean, present = true) => act(() => root.render(

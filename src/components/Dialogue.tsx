@@ -1,4 +1,6 @@
 import { AnimalPicture } from "./AnimalPicture";
+import { YunoboPicture } from "./YunoboPicture";
+import { Heart } from "lucide-react";
 import { natureRestored } from "../game/dungeons/definitions";
 import { RabbitPictures } from "./RabbitPictures";
 import { rabbitsHome } from "../game/rabbits/definitions";
@@ -176,6 +178,12 @@ export function Dialogue() {
     overlay === "debug"
   )
     return null;
+  if (overlay === "yunobo") return <Modal label="Din nya kompis Yunobo" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
+    <YunoboPicture large />
+    <h2>Din kompis Yunobo!</h2>
+    <p>Jag följer med dig!<br />Jag kan krossa stenar.</p>
+    <Heart aria-hidden="true" className="mx-auto size-12 fill-[#ff9eac] text-[#c75570]" />
+  </Modal>;
   if (overlay === "elephant" || overlay === "giraffe") {
     const elephant = overlay === "elephant", restored = natureRestored(dungeons, elephant ? "water" : "desert");
     return <Modal label={elephant ? "Elefanten Ella" : "Giraffen Gullan"} action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>

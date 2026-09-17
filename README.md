@@ -103,6 +103,14 @@ Vulkanens inre har ojämna basaltväggar, ljusare stengångar och glödande spri
 
 `Area.environment` är en valfri profil för bakgrund och befintligt hemisfär-/riktat ljus. `Game` tillämpar profilen vid varje områdesbyte och återställer standardljuset och transparent bakgrund för områden utan profil. Grottan har varm belysning och mörkbrun bakgrund. Inga extra ljuskällor eller texturer används; gemensam grottgeometri finns i `src/game/caveScenery.ts`.
 
+### Kompisen Yunobo
+
+Eldtemplets slutskatt låser också upp Yunobo. När belöningsdialogen är stängd vinkar han, visar ett hjärta och hälsar med **Nu går vi!**. Han följer hjälten mellan världar och tempel utan att blockera vägen eller påverka pussel. Han följer spelarens fotspår och återansluter nära hjälten om han kommer för långt bort. Dialoger och paus stoppar följandet.
+
+I Vulkanens inre finns en sprucken sten med en eldsymbol bredvid stigen från templet. Gå nära och tryck på stenen eller **Hjälp, Yunobo!** (E på tangentbord). Yunobo rullar sönder stenen och avslöjar lysande blommor. Hjälten står stilla under den korta animationen; efteråt fortsätter följet. Stenen är frivillig, ger inga rupees och kan bara krossas en gång. Den stora portens villkor är oförändrat.
+
+Yunobo låses upp från den befintliga tempelbelöningen även i pågående spel. Sparversion **20** och nyckeln `glantans-skatt-v1` behålls; det nya valfria fältet `yunobo` sparar hälsningen och den krossade stenen. Sparningar utan fältet behåller alla tidigare framsteg. Följet och stenhjälpen finns i `src/game/companions/`, modellen i `src/game/entities/Yunobo.ts`. Detta första steg omfattar Yunobo; de andra kompisarna och slutbossmötet är ännu inte införda.
+
 ### Stenjätten
 
 Gå till den stora stenringen i Vulkanvärldens sydöstra del. Stenjätten vaknar när du närmar dig. Gå nära runstenarna och tryck på en sten eller handknappen (E på tangentbord) för att välja två olika tal som tillsammans blir jättens runa: **5 → 7 → 9**. Alla passande par av talen 1–6 fungerar. Siffror och räkningsprickar syns på stenarna. Tryck igen på vald sten eller **Ångra** för att avmarkera. Fel svar visar summan och återställer valet utan straff; rätt svar skickar energi till jätten och spräcker rustningen.

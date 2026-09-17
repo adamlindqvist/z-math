@@ -1,4 +1,5 @@
 import type { DayPeriod } from "../game/DayNightCycle";
+import { freshYunobo, hasYunobo, parseYunobo, type YunoboProgress } from "../game/companions/definitions";
 import { NATURE_RUPEES } from "../game/nature/layout";
 import { RABBITS, freshRabbits, rabbitsHome, validRabbits, type RabbitId, type RabbitProgress } from "../game/rabbits/definitions";
 import {
@@ -107,6 +108,7 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "yunoboRock"; label: string }
   | { kind: "underworldLadder"; label: string }
   | { kind: "horse"; action: "mount" | "dismount"; label: string }
   | { kind: "farmer"; label: string }
@@ -122,6 +124,7 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "yunobo"
   | "elephant"
   | "giraffe"
   | "farmer"
@@ -141,6 +144,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  yunobo: YunoboProgress;
   mathProgress: MathProgress;
   rabbits: RabbitProgress;
   minibosses: MinibossProgress;
@@ -157,6 +161,7 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  yunoboHelping: boolean;
   riding: boolean;
   horseAction: "mount" | "dismount" | null;
   ridingMessage: string;
@@ -190,6 +195,7 @@ export interface GameState extends Progress {
   debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
+  yunobo: freshYunobo(),
   ...freshInventory(),
   mathProgress: freshMathProgress(),
   rabbits: freshRabbits(),
@@ -286,6 +292,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      yunobo: parseYunobo(p.yunobo, hasYunobo(p.dungeons)),
       mathProgress: parseMathProgress(p.mathProgress),
       rabbits: p.rabbits,
       minibosses: p.minibosses,
@@ -318,6 +325,7 @@ export function createGameStore(
     savingAvailable = false;
   }
   let state: GameState = {
+    yunoboHelping: false,
     riding: false,
     horseAction: null,
     ridingMessage: "",
@@ -364,6 +372,7 @@ export function createGameStore(
     sound?: SoundEvent,
   ) => {
     if (("location" in update && JSON.stringify(update.location) !== JSON.stringify(state.location)) || "resetId" in update) {
+      update.yunoboHelping = false;
       update = { ...update, riding: false, horseAction: null, ridingMessage: "", followingRabbits: [], rabbitCare: null, rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" } };
     }
     state = { ...state, ...update };
@@ -373,6 +382,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            yunobo: state.yunobo,
             mathProgress: state.mathProgress,
             rabbits: state.rabbits,
             minibosses: state.minibosses,
@@ -479,7 +489,7 @@ export function createGameStore(
     };
   };
   const travelTo = (destination: Location) => {
-    if (state.overlay || state.motion || state.riding) return;
+    if (state.overlay || state.motion || state.riding || state.yunoboHelping) return;
     const found = resolveRoom(state.location);
     const currentIndex = found ? found.dungeon.rooms.indexOf(found.room) : -1;
     const next = resolveRoom(destination);
@@ -694,6 +704,13 @@ export function createGameStore(
     setTarget: (target: Target) => {
       if (JSON.stringify(target) !== JSON.stringify(state.target))
         set({ target });
+    },
+    greetYunobo: () => {
+      if (!hasYunobo(state.dungeons) || state.yunobo.greeted || state.overlay || state.motion || state.riding) return;
+      set({ overlay: "yunobo", target: null }, false, "discovery");
+    },
+    finishYunoboHelp: () => {
+      if (state.yunoboHelping && !state.overlay) set({ yunoboHelping: false }, false, "discovery");
     },
     openDebug: () => {
       if (!state.overlay && !state.motion) set({ overlay: "debug" });
@@ -916,9 +933,14 @@ export function createGameStore(
       set({ riding, ridingMessage, horseAction: null, target: null });
     },
     interact: () => {
-      if (state.overlay || state.motion || !state.target) return;
+      if (state.overlay || state.motion || state.yunoboHelping || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "yunoboRock") {
+          if (state.location?.world !== "volcano-interior" || !hasYunobo(state.dungeons) || state.yunobo.rockBroken) return;
+          set({ yunobo: { ...state.yunobo, rockBroken: true }, yunoboHelping: true, target: null }, true, "stone");
+          return;
+        }
         if (target.kind === "underworldLadder") {
           if (state.location?.world === "underworld") travelTo({ world: "desert" });
           return;
@@ -1115,6 +1137,7 @@ export function createGameStore(
     },
     close: () =>
       set({
+        ...(state.overlay === "yunobo" ? { yunobo: { ...state.yunobo, greeted: true } } : {}),
         overlay: null,
         rewardItems: [],
         reward: state.overlay === "itemReward" ? 0 : state.reward,
@@ -1124,7 +1147,7 @@ export function createGameStore(
         feedback: null,
         askedQuestions: [],
         quizCorrectAnswers: 0,
-      }),
+      }, state.overlay === "yunobo"),
     beginQuiz: () => {
       if (state.dungeonQuiz) return;
       if (
@@ -1381,6 +1404,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    yunobo: { ...state.yunobo },
     mathProgress: { ...state.mathProgress },
     rabbits: { ...state.rabbits },
     minibosses: { ...state.minibosses },
