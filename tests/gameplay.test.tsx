@@ -111,7 +111,10 @@ describe("playable controls and interface", () => {
   });
   it("greets Yunobo with one clear exit and clears held movement during his help", () => {
     act(() => {
-      gameStore.openDebug(); gameStore.debugTravelTo({ world: "water" }); gameStore.closeDebug();
+      gameStore.openDebug(); gameStore.debugTravelTo({ dungeon: "fire", room: "treasure" }); gameStore.closeDebug();
+      gameStore.setTarget({ kind: "challenge", id: "fire-treasure-lock", label: "Öppna" }); gameStore.interact();
+      while (gameStore.getState().question) { gameStore.answer(gameStore.getState().question!.correctAnswer); gameStore.finishQuiz(); }
+      gameStore.close();
       gameStore.greetYunobo();
     });
     expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Din kompis Yunobo!");

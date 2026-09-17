@@ -63,6 +63,7 @@ function enterWater(s: Store) {
   defeatGiant(s);
   s.travelTo({ world: "volcano-interior" });
   solveTemple(s, "fire");
+  s.setTarget({ kind: "yunoboRock", label: "Hjälp, Yunobo!" }); s.interact(); s.finishYunoboHelp();
   s.travelTo({ world: "water" });
 }
 afterEach(() => gameStore.reset());
@@ -78,6 +79,7 @@ it("enforces the full world chain and both temple return routes without duplicat
   s.travelTo({ world: "water" });
   expect(s.getState().location?.world).toBe("volcano-interior");
   solveTemple(s, "fire");
+  s.setTarget({ kind: "yunoboRock", label: "Hjälp, Yunobo!" }); s.interact(); s.finishYunoboHelp();
   s.travelTo({ world: "water" });
   s.travelTo({ world: "desert" });
   expect(s.getState().location?.world).toBe("water");

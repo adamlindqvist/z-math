@@ -28,6 +28,51 @@ function completeGlade(s: Store) {
 }
 afterEach(() => { gameStore.debugEndSession(); gameStore.reset(); });
 
+it("waits and waves beside the Glade entrance, then joins only after the temple reward", () => {
+  gameStore.reset();
+  const area = new World(), tulin = new TulinCompanion();
+  const entrance = DUNGEONS.find(d => d.id === "moss")!.entrance;
+  const position = new Vector3(entrance.x, 0, entrance.z + 3);
+  try {
+    tulin.reset(position, area);
+    expect(tulin.root.visible).toBe(true);
+    const waitingPosition = tulin.root.position.clone();
+    expect(Math.abs(waitingPosition.x - entrance.x)).toBeGreaterThan(1.5);
+    expect(waitingPosition.z).toBeGreaterThan(entrance.z);
+    expect(area.collision.free(waitingPosition.x, waitingPosition.z)).toBe(true);
+    const wing = tulin.root.getObjectByName("tulin-right-wing")!;
+    const initialWave = wing.rotation.z;
+    position.z += 4;
+    tulin.update(0.2, position, area);
+    expect(wing.rotation.z).not.toBe(initialWave);
+    expect(tulin.root.position).toEqual(waitingPosition);
+    expect(gameStore.getState().overlay).toBeNull();
+    expect(hasTulin(gameStore.getState().dungeons)).toBe(false);
+    const approach = new Vector3(entrance.x, 0, entrance.z + 3);
+    area.collision.move(approach, 0, -3);
+    expect(approach.z).toBeCloseTo(entrance.z);
+    gameStore.pause();
+    const pausedWave = wing.rotation.z;
+    tulin.update(1, position, area);
+    expect(wing.rotation.z).toBe(pausedWave);
+    gameStore.close();
+    gameStore.travelTo({ dungeon: "moss", room: "light" });
+    tulin.update(1, position, area);
+    expect(tulin.root.visible).toBe(false);
+    gameStore.travelTo(null);
+    tulin.reset(position, area);
+    expect(tulin.root.position).toEqual(waitingPosition);
+    completeGlade(gameStore);
+    gameStore.close();
+    gameStore.travelTo(null);
+    tulin.update(0.1, position, area);
+    expect(tulin.root.visible).toBe(true);
+    expect(tulin.root.position.distanceTo(position)).toBeLessThan(1.5);
+    tulin.update(1, position, area);
+    expect(gameStore.getState().overlay).toBe("tulin");
+  } finally { disposeTree(tulin.root); area.dispose(); }
+});
+
 it("blows the bridge guard away once, freezes the gust on pause and never replays an open bridge", () => {
   completeGlade(gameStore); gameStore.close(); gameStore.greetTulin(); gameStore.close();
   gameStore.travelTo(null);

@@ -14,8 +14,8 @@ export interface YunoboProgress {
 }
 export const freshYunobo = (): YunoboProgress => ({ greeted: false, rockBroken: false });
 export const hasYunobo = (dungeons: Record<string, DungeonProgress>) => volcanoGateOpen(dungeons);
-// Off the main paths, reachable immediately after returning from the temple.
-export const YUNOBO_ROCK = { x: 2.1, z: -2.1 };
+// Fills the northern passage to the water world.
+export const YUNOBO_ROCK = { x: 0, z: -4.8 };
 
 /** This optional addition to version 20 never invalidates an existing adventure. */
 export function parseYunobo(value: unknown, unlocked: boolean): YunoboProgress {

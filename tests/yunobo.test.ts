@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "vitest";
-import { Scene, Vector3 } from "three";
+import { InstancedMesh, Scene, Vector3 } from "three";
 import { createGameStore, gameStore, parseSave, SAVE_VERSION } from "../src/store/gameStore";
 import { DUNGEONS } from "../src/game/dungeons/definitions";
 import { hasYunobo, YUNOBO_ROCK } from "../src/game/companions/definitions";
@@ -32,6 +32,56 @@ function help(s: ReturnType<typeof createGameStore>) {
   s.setTarget({ kind: "yunoboRock", label: "Hjälp, Yunobo!" }); s.interact();
 }
 afterEach(() => gameStore.reset());
+
+it("waves beside the Fire Temple without blocking paths or joining before the reward", () => {
+  gameStore.reset();
+  completeRabbitQuest(gameStore);
+  gameStore.travelTo({ world: "volcano" }); defeatGiant(gameStore);
+  gameStore.travelTo({ world: "volcano-interior" });
+  const area = new VolcanoInteriorArea(), companion = new YunoboCompanion();
+  const position = new Vector3(0, 0, 3);
+  const rotations = () => {
+    const values: number[] = [];
+    companion.root.traverse(object => values.push(object.rotation.x, object.rotation.y, object.rotation.z));
+    return values;
+  };
+  try {
+    companion.reset(position, area);
+    expect(companion.root.visible).toBe(true);
+    const waitingPosition = companion.root.position.clone();
+    expect(waitingPosition.x).toBeGreaterThan(2);
+    expect(waitingPosition.z).toBeGreaterThan(1.5);
+    expect(area.collision.free(waitingPosition.x, waitingPosition.z, 0.7)).toBe(true);
+    const initialPose = rotations();
+    position.z -= 2;
+    companion.update(0.2, position, area);
+    expect(rotations()).not.toEqual(initialPose);
+    expect(companion.root.position).toEqual(waitingPosition);
+    expect(hasYunobo(gameStore.getState().dungeons)).toBe(false);
+    expect(gameStore.getState().overlay).toBeNull();
+    for (let x = 0; x <= 5.35; x += 0.1) expect(area.collision.free(x, 0)).toBe(true);
+    for (let z = 4; z >= -3; z -= 0.1) expect(area.collision.free(0, z)).toBe(true);
+    gameStore.pause();
+    const pausedPose = rotations();
+    companion.update(1, position, area);
+    expect(rotations()).toEqual(pausedPose);
+    gameStore.close();
+    gameStore.travelTo({ dungeon: "fire", room: DUNGEONS.find(d => d.id === "fire")!.rooms[0].id });
+    companion.update(0.1, position, area);
+    expect(companion.root.visible).toBe(false);
+    gameStore.travelTo({ world: "volcano-interior" });
+    companion.reset(position, area);
+    expect(companion.root.visible).toBe(true);
+    expect(companion.root.position).toEqual(waitingPosition);
+    gameStore.reset();
+    completeFire(gameStore);
+    gameStore.travelTo({ world: "volcano-interior" });
+    companion.update(0.1, position, area);
+    expect(companion.root.position.distanceTo(position)).toBeLessThan(1.5);
+    companion.update(1, position, area);
+    expect(gameStore.getState().overlay).toBe("yunobo");
+  } finally { disposeTree(companion.root); area.dispose(); }
+});
 
 it("walks continuously across footsteps at different frame rates and alternates its legs", () => {
   completeFire(gameStore); greet(gameStore);
@@ -152,7 +202,7 @@ it("keeps Yunobo playable when saving fails and isolates debug progress", () => 
   expect(debug.getState().yunoboHelping).toBe(false);
 });
 
-it("offers a reachable stone, pauses the roll, reveals flowers and keeps the main paths clear", () => {
+it("offers a reachable stone, pauses the roll, opens the water passage and keeps the temple path clear", () => {
   completeFire(gameStore); greet(gameStore); gameStore.travelTo({ world: "volcano-interior" });
   const area = new VolcanoInteriorArea();
   const companion = new YunoboCompanion();
@@ -161,7 +211,8 @@ it("offers a reachable stone, pauses the roll, reveals flowers and keeps the mai
   try {
     companion.reset(position, area);
     for (let x = 0; x < 5; x += 0.1) expect(area.collision.free(x, 0)).toBe(true);
-    for (let z = 4; z > -8; z -= 0.1) expect(area.collision.free(0, z)).toBe(true);
+    for (let z = 4; z > -3.7; z -= 0.1) expect(area.collision.free(0, z)).toBe(true);
+    expect(area.passages().some(p => p.destination?.world === "water")).toBe(false);
     expect(area.collision.free(YUNOBO_ROCK.x, YUNOBO_ROCK.z)).toBe(false);
     interactions.update(position, area, 0);
     expect(gameStore.getState().target).toMatchObject({ kind: "yunoboRock" });
@@ -176,6 +227,8 @@ it("offers a reachable stone, pauses the roll, reveals flowers and keeps the mai
     expect(gameStore.getState().yunoboHelping).toBe(false);
     expect(area.collision.free(YUNOBO_ROCK.x, YUNOBO_ROCK.z)).toBe(true);
     expect(area.interactions(gameStore.getState())).toEqual([]);
+    expect(area.passages().some(p => p.destination?.world === "water")).toBe(true);
+    for (let z = 4; z > -8; z -= 0.1) expect(area.collision.free(0, z)).toBe(true);
     const returned = new VolcanoInteriorArea();
     expect(returned.collision.free(YUNOBO_ROCK.x, YUNOBO_ROCK.z)).toBe(true);
     returned.dispose();
@@ -208,4 +261,54 @@ it("follows through a bend without blocking the hero, stops for dialogs, and rej
     gameStore.reset(); companion.update(0.1, position, area);
     expect(companion.root.visible).toBe(false);
   } finally { area.dispose(); disposeTree(companion.root); }
+});
+
+it("preserves access for an older save already in the water world", () => {
+  let raw = "";
+  const storage = { getItem: () => raw, setItem: (_key: string, value: string) => { raw = value; } };
+  const s = createGameStore(storage);
+  completeFire(s); greet(s); s.travelTo({ world: "volcano-interior" }); help(s); s.finishYunoboHelp();
+  s.travelTo({ world: "water" });
+  const legacy = JSON.parse(raw);
+  legacy.yunobo.rockBroken = false;
+  raw = JSON.stringify(legacy);
+  const restored = createGameStore(storage);
+  expect(restored.getState().location).toEqual({ world: "water" });
+  expect(restored.getState().yunobo.rockBroken).toBe(true);
+  expect(restored.getState().items).toEqual(s.getState().items);
+  expect(restored.getState().rupees).toBe(s.getState().rupees);
+  restored.travelTo({ world: "volcano-interior" }); restored.travelTo({ world: "water" });
+  expect(restored.getState().location).toEqual({ world: "water" });
+});
+
+it("bursts into moving debris and dust at impact, pauses, then clears without replaying", () => {
+  completeFire(gameStore); greet(gameStore); gameStore.travelTo({ world: "volcano-interior" });
+  const area = new VolcanoInteriorArea();
+  try {
+    const burst = area.root.getObjectByName("yunobo-rock-burst")!;
+    const pieces = burst.children[0] as InstancedMesh;
+    const positions = () => Array.from(pieces.instanceMatrix.array);
+    expect(burst.visible).toBe(false);
+    help(gameStore); area.update(0.4, 0.4);
+    expect(burst.visible).toBe(false);
+    gameStore.finishYunoboHelp(); area.update(0.016, 0.416);
+    expect(burst.visible).toBe(true);
+    expect(area.collision.free(YUNOBO_ROCK.x, YUNOBO_ROCK.z)).toBe(true);
+    const impact = positions();
+    area.update(0.3, 0.716);
+    expect(positions()).not.toEqual(impact);
+    gameStore.pause();
+    const paused = positions();
+    area.update(5, 5.716);
+    expect(positions()).toEqual(paused);
+    expect(burst.visible).toBe(true);
+    gameStore.close(); area.update(2, 7.716);
+    expect(burst.visible).toBe(false);
+    const returned = new VolcanoInteriorArea();
+    try {
+      returned.update(0.1, 8);
+      expect(returned.root.getObjectByName("yunobo-rock-burst")!.visible).toBe(false);
+      expect(returned.collision.free(YUNOBO_ROCK.x, YUNOBO_ROCK.z)).toBe(true);
+    } finally { returned.dispose(); }
+  } finally { area.dispose(); }
 });

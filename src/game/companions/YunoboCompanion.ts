@@ -4,6 +4,7 @@ import { Yunobo } from "../entities/Yunobo";
 import type { Area } from "../Area";
 import { gameStore } from "../../store/gameStore";
 import { hasYunobo, YUNOBO_ROCK } from "./definitions";
+import { DUNGEONS } from "../dungeons/definitions";
 
 /** Follow the player's recorded footsteps, never push or interact with the world. */
 export class YunoboCompanion {
@@ -15,17 +16,36 @@ export class YunoboCompanion {
   private helpTime = 0;
   private helpStart = new THREE.Vector3();
   private mounted = false;
+  private waiting = false;
   reset(position: THREE.Vector3, area: Area) {
     this.following.reset(position, area);
     this.helpTime = this.greeting = 0;
     this.mounted = true;
-    this.root.visible = hasYunobo(gameStore.getState().dungeons);
-    this.model.animate(this.elapsed, 0, false);
+    const state = gameStore.getState();
+    const unlocked = hasYunobo(state.dungeons);
+    this.waiting = !unlocked && state.location?.world === "volcano-interior";
+    this.root.visible = unlocked || this.waiting;
+    if (this.waiting) {
+      const entrance = DUNGEONS.find(d => d.id === "fire")!.entrance;
+      // Leave the eastward approach and the central path clear.
+      this.root.position.set(entrance.x - 1.8, 0, entrance.z + 2);
+      this.root.rotation.y = entrance.rotation ?? 0;
+    }
+    this.model.animate(this.elapsed, 0, this.waiting);
   }
   update(dt: number, position: THREE.Vector3, area: Area, falling = false) {
     const state = gameStore.getState();
     const unlocked = hasYunobo(state.dungeons);
-    if (!this.mounted || (unlocked && !this.root.visible && !falling)) this.reset(position, area);
+    const waiting = !unlocked && state.location?.world === "volcano-interior";
+    if (!this.mounted || waiting !== this.waiting || (unlocked && !this.root.visible && !falling)) this.reset(position, area);
+    if (this.waiting) {
+      this.root.visible = !falling;
+      if (!falling && !state.overlay && !state.motion) {
+        this.elapsed += dt;
+        this.model.animate(this.elapsed, 0, true, 0, dt);
+      }
+      return;
+    }
     this.root.visible = unlocked && !falling;
     if (!unlocked || falling || state.overlay || state.motion) return;
     this.elapsed += dt;

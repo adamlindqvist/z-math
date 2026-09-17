@@ -226,6 +226,8 @@ describe("Eldtemplet", () => {
       quiz(gameStore, "fire-treasure-lock");
       gameStore.close();
       gameStore.travelTo({ world: "volcano-interior" });
+      gameStore.setTarget({ kind: "yunoboRock", label: "Hjälp, Yunobo!" });
+      gameStore.interact(); gameStore.finishYunoboHelp();
       gameStore.travelTo({ world: "water" });
       gameStore.travelTo({ dungeon: "water", room: "light" });
       quiz(gameStore, "water-light-lock");

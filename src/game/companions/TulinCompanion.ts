@@ -5,6 +5,7 @@ import { CompanionTrail } from "./CompanionTrail";
 import { hasTulin } from "./definitions";
 import { gameStore } from "../../store/gameStore";
 import { gladeDistance } from "../gladeLayout";
+import { DUNGEONS } from "../dungeons/definitions";
 
 export class TulinCompanion {
   readonly model = new Tulin();
@@ -12,6 +13,7 @@ export class TulinCompanion {
   // Fly to the other side at arrival and farther behind so Yunobo stays visible.
   private following = new CompanionTrail(this.root, 2.4, 1);
   private mounted = false;
+  private waiting = false;
   private elapsed = 0;
   private greeting = 0;
   private bridgeUnlocked = gameStore.getState().bridgeUnlocked;
@@ -36,13 +38,31 @@ export class TulinCompanion {
     this.gustTime = null;
     this.wind.visible = false;
     this.mounted = true;
-    this.root.visible = hasTulin(gameStore.getState().dungeons);
-    this.model.animate(this.elapsed, 0, false);
+    const state = gameStore.getState();
+    const unlocked = hasTulin(state.dungeons);
+    this.waiting = !unlocked && !state.location && area.cameraMode === "glade";
+    this.root.visible = unlocked || this.waiting;
+    if (this.waiting) {
+      const entrance = DUNGEONS.find(d => d.id === "moss")!.entrance;
+      // Stand beside the approach, outside both the doorway and its stepping stones.
+      this.root.position.set(entrance.x - 2, 0, entrance.z + 1.4);
+      this.root.rotation.y = 0;
+    }
+    this.model.animate(this.elapsed, 0, this.waiting, false, this.waiting);
   }
   update(dt: number, position: THREE.Vector3, area: Area, falling = false) {
     const state = gameStore.getState();
     const unlocked = hasTulin(state.dungeons);
-    if (!this.mounted || (unlocked && !this.root.visible && !falling)) this.reset(position, area);
+    const waiting = !unlocked && !state.location && area.cameraMode === "glade";
+    if (!this.mounted || waiting !== this.waiting || (unlocked && !this.root.visible && !falling)) this.reset(position, area);
+    if (this.waiting) {
+      this.root.visible = !falling;
+      if (!falling && !state.overlay && !state.motion) {
+        this.elapsed += dt;
+        this.model.animate(this.elapsed, 0, true, false, true);
+      }
+      return;
+    }
     if (!this.bridgeUnlocked && state.bridgeUnlocked && !state.location) {
       this.gustTime = 0;
       this.gustStart.copy(this.root.position);

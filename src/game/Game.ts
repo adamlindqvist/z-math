@@ -247,7 +247,7 @@ export class Game {
     this.camera.setMode(this.world.cameraMode, this.player.position);
     this.renderer.domElement.setAttribute(
       "aria-label",
-      (gameStore.getState().location?.world === "underworld" ? "Underjorden med lysande svampar, stora rötter och en trästege upp till ett solbelyst hål mot öknen" : gameStore.getState().location?.world === "water" ? "Undervattensvärlden med korallrev, bottenstigar och elefanten Ella" : gameStore.getState().location?.world === "desert" ? "Ökenvärlden med en oas och giraffen Gullan" : gameStore.getState().location?.world === "volcano-interior" ? "Vulkanens inre med Eldtemplet till höger och en stor port framåt" : gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
+      (gameStore.getState().location?.world === "underworld" ? "Underjorden med lysande svampar, stora rötter och en trästege upp till ett solbelyst hål mot öknen" : gameStore.getState().location?.world === "water" ? "Undervattensvärlden med korallrev, bottenstigar och elefanten Ella" : gameStore.getState().location?.world === "desert" ? "Ökenvärlden med en oas och giraffen Gullan" : gameStore.getState().location?.world === "volcano-interior" ? "Vulkanens inre med Eldtemplet till höger och en stor sten framför vägen till Vattenvärlden" : gameStore.getState().location?.world === "volcano" ? "Vulkanvärlden med askstigar, lava och en portal till gläntan" : gameStore.getState().location?.castle === "hall"
         ? "Slottets entréhall"
         : gameStore.getState().location?.castle === "shop"
           ? "Bosses butik"

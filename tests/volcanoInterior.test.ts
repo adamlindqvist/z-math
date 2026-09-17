@@ -42,14 +42,14 @@ it("requires the giant, opens the physical entrance, and saves the interior inde
   const invalid = JSON.parse(raw); invalid.minibosses.stone_giant = 2;
   expect(parseSave(JSON.stringify(invalid)).location).toBeNull();
 });
-it("connects the hub paths and opens the great gate only after the temple reward", () => {
+it("connects the hub paths and opens the water passage only after Yunobo breaks the rock", () => {
   completeRabbitQuest(gameStore);
   gameStore.travelTo({ world: "volcano" }); defeatGiant(gameStore);
   gameStore.travelTo({ world: "volcano-interior" });
   const hub = new VolcanoInteriorArea();
   expect(hub.collision.free(0, -4.8)).toBe(false);
   // Walk the center aisle and the right turn with player-sized clearance.
-  for (let z = 4; z >= -3.8; z -= 0.1) expect(hub.collision.free(0, z)).toBe(true);
+  for (let z = 4; z >= -3.7; z -= 0.1) expect(hub.collision.free(0, z)).toBe(true);
   for (let x = 0; x <= 5.35; x += 0.1) expect(hub.collision.free(x, 0)).toBe(true);
   expect(hub.collision.free(3.95, 0)).toBe(true);
   const fire = DUNGEONS.find((d) => d.id === "fire")!;
@@ -79,17 +79,18 @@ it("connects the hub paths and opens the great gate only after the temple reward
   expect(volcanoGateOpen(gameStore.getState().dungeons)).toBe(true);
   gameStore.close(); gameStore.travelTo({ world: "volcano-interior" });
   hub.update(2, 2);
+  expect(hub.collision.free(0, -4.8)).toBe(false);
+  expect(hub.passages().some(p => p.destination?.world === "water")).toBe(false);
+  gameStore.travelTo({ world: "water" });
+  expect(gameStore.getState().location?.world).toBe("volcano-interior");
+  gameStore.setTarget({ kind: "yunoboRock", label: "Hjälp, Yunobo!" }); gameStore.interact();
+  hub.update(0.5, 2.5);
+  expect(hub.collision.free(0, -4.8)).toBe(false);
+  gameStore.finishYunoboHelp(); hub.update(0, 3);
   expect(hub.collision.free(0, -4.8)).toBe(true);
-  const gate = hub.root.getObjectByName("great-volcano-gate")!;
-  expect(gate.visible).toBe(true);
-  expect(gate.position.y).toBeCloseTo(2.6);
-  hub.update(10, 12);
-  expect(gate.visible).toBe(true);
-  expect(gate.position.y).toBeCloseTo(2.6);
-  const revisited = new VolcanoInteriorArea(); revisited.update(2, 2);
+  expect(hub.root.getObjectByName("great-volcano-gate")).toBeUndefined();
+  const revisited = new VolcanoInteriorArea();
   expect(revisited.collision.free(0, -4.8)).toBe(true);
-  expect(revisited.root.getObjectByName("great-volcano-gate")!.visible).toBe(true);
-  expect(revisited.root.getObjectByName("great-volcano-gate")!.position.y).toBeCloseTo(2.6);
   expect(revisited.passages().map(p => p.destination)).toContainEqual({ world: "water" });
   expect(revisited.passages().length).toBe(3);
   revisited.dispose(); hub.dispose(); room.dispose();
@@ -98,7 +99,11 @@ it("connects the hub paths and opens the great gate only after the temple reward
 it("keeps both door approaches and the full revealed corridor walkable", () => {
   const hub = new VolcanoInteriorArea();
   try {
-    for (let z = 4; z <= 5.35; z += 0.05)
+    const exit = hub.passages().find(p => p.destination?.world === "volcano")!;
+    const arch = hub.root.getObjectByName("daylight-cave-exit")!;
+    expect(arch.position.x).toBe(exit.x);
+    expect(arch.position.z).toBe(exit.z);
+    for (let z = 4; z <= exit.z; z += 0.05)
       expect(hub.collision.free(0, z), `return approach ${z}`).toBe(true);
     // The same floor remains traversable when the moving gate is gone.
     hub.collision.dynamic = [];

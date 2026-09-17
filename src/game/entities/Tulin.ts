@@ -150,14 +150,19 @@ export class Tulin {
     this.root.scale.setScalar(0.76);
     this.animate(0, 0, false);
   }
-  animate(time: number, speed: number, greeting: boolean, gust = false) {
-    this.flight.position.y = 0.75 + Math.sin(time * 2.5) * 0.055;
+  animate(time: number, speed: number, greeting: boolean, gust = false, waiting = false) {
+    this.flight.position.y = waiting ? -0.08 : 0.75 + Math.sin(time * 2.5) * 0.055;
     this.flight.rotation.x = Math.min(speed / 4, 1) * 0.12;
     this.wings.forEach((wing, i) => {
-      wing.rotation.z = (i === 0 ? -1 : 1) * (0.12 + Math.sin(time * (gust ? 15 : 7)) * (gust ? 0.7 : 0.45));
+      // Turn the raised wing's feather fan toward the player before lifting it.
+      wing.rotation.order = "ZYX";
+      wing.rotation.x = waiting && i === 1 ? Math.PI / 2 : 0;
+      wing.rotation.z = waiting
+        ? (i === 0 ? 1.1 : 0.85 + Math.sin(time * 5) * 0.35)
+        : (i === 0 ? -1 : 1) * (0.12 + Math.sin(time * (gust ? 15 : 7)) * (gust ? 0.7 : 0.45));
     });
-    this.feet.forEach((foot, i) => { foot.rotation.x = 0.2 + Math.sin(time * 2.5 + i) * 0.07; });
+    this.feet.forEach((foot, i) => { foot.rotation.x = waiting ? 0 : 0.2 + Math.sin(time * 2.5 + i) * 0.07; });
     this.heart.visible = greeting;
-    this.heart.position.set(0, 2.95 + Math.sin(time * 3) * 0.08, 0);
+    this.heart.position.set(0, (waiting ? 2.35 : 2.95) + Math.sin(time * 3) * 0.08, 0);
   }
 }

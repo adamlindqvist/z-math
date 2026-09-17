@@ -297,7 +297,9 @@ export function parseSave(raw: string | null): Progress {
       return fresh();
     return {
       tulin: parseTulin(p.tulin, hasTulin(p.dungeons)),
-      yunobo: parseYunobo(p.yunobo, hasYunobo(p.dungeons)),
+      yunobo: { ...parseYunobo(p.yunobo, hasYunobo(p.dungeons)),
+        rockBroken: parseYunobo(p.yunobo, hasYunobo(p.dungeons)).rockBroken || touchedNatureWorld(p, "water") || touchedNatureWorld(p, "desert"),
+      },
       mathProgress: parseMathProgress(p.mathProgress),
       rabbits: p.rabbits,
       minibosses: p.minibosses,
@@ -508,7 +510,7 @@ export function createGameStore(
     const natureAdjacent =
       (state.location?.world === "desert" && destination?.world === "underworld" && natureRestored(state.dungeons, "desert")) ||
       (state.location?.world === "underworld" && destination?.world === "desert") ||
-      (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons)) ||
+      (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons) && state.yunobo.rockBroken) ||
       (state.location?.world === "water" && destination?.world === "volcano-interior") ||
       (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water")) ||
       (state.location?.world === "desert" && destination?.world === "water") ||
@@ -759,6 +761,7 @@ export function createGameStore(
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
       const natureWorld = destination?.world === "underworld" ? "desert" : destination?.world === "water" || destination?.world === "desert" ? destination.world : found?.dungeon.entranceWorld;
       if (natureWorld === "water" || natureWorld === "desert") {
+        update.yunobo = { ...state.yunobo, rockBroken: true };
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
         update = { ...update, ...solveThrough("fire", 2, { ...state, ...update }) };
         if (natureWorld === "desert") update = { ...update, ...solveThrough("water", 2, { ...state, ...update }) };
@@ -1596,16 +1599,17 @@ function secretInLocation(definition: (typeof WORLD_SECRETS)[number], location: 
     : location === null;
 }
 
+function touchedNatureWorld(p: Progress, world: "water" | "desert") {
+  const d = DUNGEONS.find(d => d.id === world)!;
+  return p.location?.world === world || p.location?.dungeon === world || p.chests[`${world}-01`] ||
+    NATURE_RUPEES.some(r => r.world === world && p.collected.includes(r.id)) ||
+    d.rooms.some(r => r.challenge ? p.dungeons[world].answers[r.challenge.id] > 0 : r.stones?.some((stone, i) => p.dungeons[world].stones[r.id][i] !== stone.start));
+}
+
 /** Check prerequisites even when a save is currently back in an earlier world. */
 function validNatureProgress(p: Progress) {
   if (p.location?.world === "underworld" && !natureRestored(p.dungeons, "desert")) return false;
-  const touched = (world: "water" | "desert") => {
-    const d = DUNGEONS.find(d => d.id === world)!;
-    return p.location?.world === world || p.location?.dungeon === world || p.chests[`${world}-01`] ||
-      NATURE_RUPEES.some(r => r.world === world && p.collected.includes(r.id)) ||
-      d.rooms.some(r => r.challenge ? p.dungeons[world].answers[r.challenge.id] > 0 : r.stones?.some((stone, i) => p.dungeons[world].stones[r.id][i] !== stone.start));
-  };
-  if ((touched("water") || touched("desert")) && (!p.bridgeUnlocked || !rabbitsHome(p.rabbits) || !minibossDefeated(p.minibosses, "stone_giant") || !volcanoGateOpen(p.dungeons))) return false;
-  if (touched("desert") && !natureRestored(p.dungeons, "water")) return false;
+  if ((touchedNatureWorld(p, "water") || touchedNatureWorld(p, "desert")) && (!p.bridgeUnlocked || !rabbitsHome(p.rabbits) || !minibossDefeated(p.minibosses, "stone_giant") || !volcanoGateOpen(p.dungeons))) return false;
+  if (touchedNatureWorld(p, "desert") && !natureRestored(p.dungeons, "water")) return false;
   return ([ ["water", "water-shield"], ["desert", "sun-hat"] ] as const).every(([world, item]) => natureRestored(p.dungeons, world) === p.items.includes(item));
 }
