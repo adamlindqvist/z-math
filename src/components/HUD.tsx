@@ -54,7 +54,7 @@ export function HUD() {
                 : "Gå in i Eldtemplet!"
               : "Gå över bron till kistan!"
             : hasBridgeEquipment(state)
-              ? "Gå till bron. Skräm iväg grisen!"
+              ? "Gå till bron. Tulin hjälper dig!"
               : state.chests.glade
                 ? "Hitta svärd och sköld i Gläntans tempel!"
                 : state.talkedToNpc

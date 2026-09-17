@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { YunoboPicture } from "./YunoboPicture";
+import { TulinPicture } from "./TulinPicture";
 import type { RefObject, PointerEvent } from "react";
 import { Carrot, Rabbit, Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
 import type { Game } from "../game/Game";
@@ -134,7 +135,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           disabled={!state.target || !!state.motion || state.yunoboHelping}
         >
           <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
-            {typeof state.target === "object" && state.target?.kind === "yunoboRock" ? <YunoboPicture /> : typeof state.target === "object" && state.target?.kind === "horse" ? (
+            {state.target === "bokoblin" && hasBridgeEquipment(state) ? <TulinPicture small /> : typeof state.target === "object" && state.target?.kind === "yunoboRock" ? <YunoboPicture /> : typeof state.target === "object" && state.target?.kind === "horse" ? (
               state.riding ? <Footprints /> : <span aria-hidden="true" className="text-4xl">🐴</span>
             ) : typeof state.target === "object" && state.target?.kind === "rabbit" ? (
               state.target.label === "Mata" ? <Carrot /> : state.target.label === "Följ med" ? <Rabbit /> : <Hand />
@@ -156,7 +157,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
                 : state.target.label
               : state.target === "bokoblin"
                 ? hasBridgeEquipment(state)
-                  ? "Skräm iväg"
+                  ? "Blås, Tulin!"
                   : "Gris"
                 : state.target === "npc"
                   ? "Prata"

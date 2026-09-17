@@ -77,6 +77,38 @@ afterEach(() => {
 });
 
 describe("playable controls and interface", () => {
+  it("calls Tulin from the bridge action button without needing equipped weapons", () => {
+    act(() => {
+      gameStore.openDebug(); gameStore.debugTravelTo({ dungeon: "moss", room: "treasure" });
+      gameStore.debugCompleteCurrentRoom(); gameStore.closeDebug(); gameStore.travelTo(null);
+      gameStore.unequipItem("weapon"); gameStore.unequipItem("shield");
+      gameStore.setTarget("bokoblin");
+    });
+    expect(button("Blås, Tulin!").querySelector("svg")).not.toBeNull();
+    click("Blås, Tulin!");
+    expect(gameStore.getState().bridgeUnlocked).toBe(true);
+    expect(host.textContent).not.toContain("Skräm iväg");
+    act(() => gameStore.debugEndSession());
+  });
+  it("introduces Tulin with a picture and clears held movement before continuing", () => {
+    act(() => {
+      gameStore.openDebug(); gameStore.debugTravelTo({ dungeon: "moss", room: "treasure" });
+      gameStore.debugCompleteCurrentRoom(); gameStore.closeDebug();
+    });
+    key("KeyW");
+    expect(input.direction().y).toBeLessThan(0);
+    act(() => gameStore.greetTulin());
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    const dialog = host.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Din kompis Tulin!");
+    expect(dialog?.querySelector("svg")).not.toBeNull();
+    expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+    click("Nu går vi!");
+    expect(gameStore.getState().tulin.greeted).toBe(true);
+    expect(gameStore.getState().overlay).toBeNull();
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    act(() => gameStore.debugEndSession());
+  });
   it("greets Yunobo with one clear exit and clears held movement during his help", () => {
     act(() => {
       gameStore.openDebug(); gameStore.debugTravelTo({ world: "water" }); gameStore.closeDebug();

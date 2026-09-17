@@ -65,7 +65,7 @@ Nivå och svit sparas efter varje svar, även vid fel eller avbrutet quiz. Befin
 - I Stensalen: matcha sol, löv och måne. Gå mot stenen från vänster eller höger för att knuffa den längs spåret. Pilen visar riktningen. Ingen actionknapp behövs. Stenar på rätt symbol kan flyttas igen tills alla tre ligger rätt; då låses alla och porten öppnas. Knappen med återställningspilen börjar om med den olösta stengåtan.
 - I Skattkammaren öppnar fem mattefrågor kistan och ger fem Rupees en gång. Gå genom porten så teleporteras du tillbaka till gläntan. Den låga porten bakom dig leder alltid tillbaka.
 - Rätt mattesvar och stenknuffar i templet sparas direkt. Efter omladdning börjar du vid det sparade rummets säkra startpunkt. Lösta rum förblir lösta tills du börjar om med hela äventyret.
-- Följ stigen söderut till träbron. Grisen vaktar bron tills du har fått både svärd och sköld i Gläntans tempel. Tryck på **Skräm iväg** så springer grisen undan och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
+- Följ stigen söderut till träbron. Grisen vaktar bron tills du har fått både svärd och sköld i Gläntans tempel. Tryck på **Blås, Tulin!** så flyger Tulin fram och blåser bort grisen med en synlig vindpust. Grisen lyfts och blåser åt sidan, och bron öppnas permanent. Den första kistan behöver inte vara öppnad.
 - Gå över bron till södra gläntan. Den nya kistan har tre mattefrågor och ger fem rupees en gång, oberoende av den första kistan. Fel svar kostar inget; stänger du ett pågående kistquiz börjar dess tre frågor om nästa gång.
 - I trähagen öster om södra brofästet väntar en gyllene häst. Gå nära och tryck **E** eller **Rid**. Styr med samma joystick eller tangenter för att trava i båda gläntorna. När något finns nära används **E / handlingsknappen** för att interagera, även till häst. Annars visas **Kliv av**, som placerar dig säkert bredvid hästen; om det är trångt, rid lite åt sidan. Kliv av före områdesbyten. Hästen stannar där du lämnar den tills gläntan laddas om, då väntar den i hagen igen.
 - Frågor upprepas inte inom samma quiz förrän frågepoolen för den aktuella nivån och frågetypen är slut. Därefter återanvänds de äldsta frågorna först.
@@ -103,13 +103,19 @@ Vulkanens inre har ojämna basaltväggar, ljusare stengångar och glödande spri
 
 `Area.environment` är en valfri profil för bakgrund och befintligt hemisfär-/riktat ljus. `Game` tillämpar profilen vid varje områdesbyte och återställer standardljuset och transparent bakgrund för områden utan profil. Grottan har varm belysning och mörkbrun bakgrund. Inga extra ljuskällor eller texturer används; gemensam grottgeometri finns i `src/game/caveScenery.ts`.
 
+### Kompisen Tulin
+
+Gläntans tempels slutskatt låser upp Tulin. När belöningsdialogen stängts visar han ett hjärta och hälsar med **Nu går vi!**. Den lilla vita fågelkompisen flyger med vingslag bakom hjälten genom världar och tempel. Tulin och Yunobo följer på olika avstånd och börjar på varsin sida om hjälten så att båda syns. De blockerar inte spelaren eller påverkar pussel. Dialoger och paus stoppar följande och animationer.
+
+Tulin låses även upp i befintliga spel där Gläntans slutskatt redan är öppnad. Det valfria fältet `tulin` sparar hälsningen inom samma sparversion **20** och lagringsnyckel. Befintliga framsteg och Yunobos status behålls. Tulin hjälper vid bron: **Blås, Tulin!** får honom att blåsa bort Bokoblinen. Vindpusten och flykten pausas vid dialoger och spelas inte igen när en redan upplåst bro laddas. Modellen finns i `src/game/entities/Tulin.ts`; båda kompisarna använder det mjuka följandet i `src/game/companions/CompanionTrail.ts`.
+
 ### Kompisen Yunobo
 
 Eldtemplets slutskatt låser också upp Yunobo. När belöningsdialogen är stängd vinkar han, visar ett hjärta och hälsar med **Nu går vi!**. Han följer hjälten mellan världar och tempel utan att blockera vägen eller påverka pussel. Han följer spelarens fotspår och återansluter nära hjälten om han kommer för långt bort. Dialoger och paus stoppar följandet.
 
 I Vulkanens inre finns en sprucken sten med en eldsymbol bredvid stigen från templet. Gå nära och tryck på stenen eller **Hjälp, Yunobo!** (E på tangentbord). Yunobo rullar sönder stenen och avslöjar lysande blommor. Hjälten står stilla under den korta animationen; efteråt fortsätter följet. Stenen är frivillig, ger inga rupees och kan bara krossas en gång. Den stora portens villkor är oförändrat.
 
-Yunobo låses upp från den befintliga tempelbelöningen även i pågående spel. Sparversion **20** och nyckeln `glantans-skatt-v1` behålls; det nya valfria fältet `yunobo` sparar hälsningen och den krossade stenen. Sparningar utan fältet behåller alla tidigare framsteg. Följet och stenhjälpen finns i `src/game/companions/`, modellen i `src/game/entities/Yunobo.ts`. Detta första steg omfattar Yunobo; de andra kompisarna och slutbossmötet är ännu inte införda.
+Yunobo låses upp från den befintliga tempelbelöningen även i pågående spel. Sparversion **20** och nyckeln `glantans-skatt-v1` behålls; det valfria fältet `yunobo` sparar hälsningen och den krossade stenen. Sparningar utan fältet behåller alla tidigare framsteg. Följet och stenhjälpen finns i `src/game/companions/`, modellen i `src/game/entities/Yunobo.ts`. Sidon, Riju och slutbossmötet är ännu inte införda.
 
 ### Stenjätten
 
@@ -159,7 +165,7 @@ Den nya layouten har kontrollerats i Brave/Chromium med simulerad touch i 768 ×
 
 ### Väska och utrustning
 
-Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Gläntans tempels sista mattelås ger fem rupees, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du skrämma iväg grisen vid bron; de behöver inte vara påtagna. Strid ingår inte.
+Tryck på **Väska** för att se dina föremål. Spelet pausas medan väskan är öppen. Stäng med knappen eller Escape. Gröna kläder finns från start. Gläntans tempels sista mattelås ger fem rupees, ett svärd och en sköld en gång. Svärdet och skölden tas på automatiskt och kan sedan tas av och på i väskan. De syns på figuren. När du äger båda kan du be Tulin blåsa bort grisen vid bron; föremålen behöver inte vara påtagna. Strid ingår inte.
 
 Föremålsregistret i `src/items/definitions.ts` definierar namn, bildsymboler och kategorier. Spelstatus sparar ägda föremål och utrustning. Nya belöningar anges med `items` i utmaningsdefinitionerna; `grantItems` kan användas av framtida insamlingshändelser. Övriga föremål visas utan användningsknapp. Nya kläder anger `garment` i föremålsregistret.
 

@@ -1,12 +1,12 @@
 import { AnimalPicture } from "./AnimalPicture";
 import { YunoboPicture } from "./YunoboPicture";
+import { TulinPicture } from "./TulinPicture";
 import { Heart } from "lucide-react";
 import { natureRestored } from "../game/dungeons/definitions";
 import { RabbitPictures } from "./RabbitPictures";
 import { rabbitsHome } from "../game/rabbits/definitions";
 import { Gem, DoorOpen } from "lucide-react";
 import { SoundButton } from "./SoundButton";
-import { Sword, Shield } from "lucide-react";
 import { ArrowRight, Sprout, RotateCcw, Play, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { MouseEvent, ReactNode } from "react";
@@ -178,6 +178,12 @@ export function Dialogue() {
     overlay === "debug"
   )
     return null;
+  if (overlay === "tulin") return <Modal label="Din nya kompis Tulin" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
+    <TulinPicture />
+    <h2>Din kompis Tulin!</h2>
+    <p>Jag följer med dig!<br />Vi är ett lag!</p>
+    <Heart aria-hidden="true" className="mx-auto size-12 fill-[#ff9eac] text-[#c75570]" />
+  </Modal>;
   if (overlay === "yunobo") return <Modal label="Din nya kompis Yunobo" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
     <YunoboPicture large />
     <h2>Din kompis Yunobo!</h2>
@@ -214,12 +220,9 @@ export function Dialogue() {
           </CornerAction>
         }
       >
-        <div className="flex justify-center gap-6 text-forest">
-          <Sword size={64} />
-          <Shield size={64} />
-        </div>
+        <TulinPicture />
         <h2>Grisen vaktar bron</h2>
-        <p>Hitta svärdet och skölden i Gläntans tempel!</p>
+        <p>Klara Gläntans tempel.<br />Tulin kan blåsa bort grisen!</p>
       </Modal>
     );
   if (overlay === "pause" || overlay === "reset")

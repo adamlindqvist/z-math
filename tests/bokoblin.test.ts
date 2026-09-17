@@ -132,11 +132,15 @@ describe("Bokoblin flight", () => {
     expect(bokoblin.root.rotation.y).toBe(-Math.PI / 2);
   });
 
-  it("fades during the original short flight without shrinking", () => {
+  it("is lifted and tilted by the wind without running or shrinking", () => {
     const bokoblin = new Bokoblin(false);
     expect(materials(bokoblin).every((mat) => mat.opacity === 1)).toBe(true);
     bokoblin.update(0.45, true, false);
     expect(bokoblin.root.position.x).toBeCloseTo(1.9);
+    expect(bokoblin.root.position.y).toBeGreaterThan(1.5);
+    expect(bokoblin.root.rotation.z).toBeLessThan(-0.5);
+    expect(bokoblin.root.getObjectByName("left-leg")!.rotation.x).toBeCloseTo(0);
+    expect(bokoblin.root.getObjectByName("right-leg")!.rotation.x).toBeCloseTo(0);
     expect(bokoblin.root.visible).toBe(true);
     expect(bokoblin.root.scale.toArray()).toEqual([1, 1, 1]);
     for (const mat of materials(bokoblin)) {

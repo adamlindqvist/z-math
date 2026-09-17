@@ -1,5 +1,6 @@
 import type { DayPeriod } from "../game/DayNightCycle";
 import { freshYunobo, hasYunobo, parseYunobo, type YunoboProgress } from "../game/companions/definitions";
+import { freshTulin, hasTulin, parseTulin, type TulinProgress } from "../game/companions/definitions";
 import { NATURE_RUPEES } from "../game/nature/layout";
 import { RABBITS, freshRabbits, rabbitsHome, validRabbits, type RabbitId, type RabbitProgress } from "../game/rabbits/definitions";
 import {
@@ -124,6 +125,7 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "tulin"
   | "yunobo"
   | "elephant"
   | "giraffe"
@@ -144,6 +146,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  tulin: TulinProgress;
   yunobo: YunoboProgress;
   mathProgress: MathProgress;
   rabbits: RabbitProgress;
@@ -195,6 +198,7 @@ export interface GameState extends Progress {
   debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
+  tulin: freshTulin(),
   yunobo: freshYunobo(),
   ...freshInventory(),
   mathProgress: freshMathProgress(),
@@ -292,6 +296,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      tulin: parseTulin(p.tulin, hasTulin(p.dungeons)),
       yunobo: parseYunobo(p.yunobo, hasYunobo(p.dungeons)),
       mathProgress: parseMathProgress(p.mathProgress),
       rabbits: p.rabbits,
@@ -382,6 +387,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            tulin: state.tulin,
             yunobo: state.yunobo,
             mathProgress: state.mathProgress,
             rabbits: state.rabbits,
@@ -708,6 +714,10 @@ export function createGameStore(
     greetYunobo: () => {
       if (!hasYunobo(state.dungeons) || state.yunobo.greeted || state.overlay || state.motion || state.riding) return;
       set({ overlay: "yunobo", target: null }, false, "discovery");
+    },
+    greetTulin: () => {
+      if (!hasTulin(state.dungeons) || state.tulin.greeted || state.overlay || state.motion || state.riding || state.encounter || state.yunoboHelping) return;
+      set({ overlay: "tulin", target: null }, false, "discovery");
     },
     finishYunoboHelp: () => {
       if (state.yunoboHelping && !state.overlay) set({ yunoboHelping: false }, false, "discovery");
@@ -1137,6 +1147,7 @@ export function createGameStore(
     },
     close: () =>
       set({
+        ...(state.overlay === "tulin" ? { tulin: { greeted: true } } : {}),
         ...(state.overlay === "yunobo" ? { yunobo: { ...state.yunobo, greeted: true } } : {}),
         overlay: null,
         rewardItems: [],
@@ -1147,7 +1158,7 @@ export function createGameStore(
         feedback: null,
         askedQuestions: [],
         quizCorrectAnswers: 0,
-      }, state.overlay === "yunobo"),
+      }, state.overlay === "yunobo" || state.overlay === "tulin"),
     beginQuiz: () => {
       if (state.dungeonQuiz) return;
       if (
@@ -1404,6 +1415,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    tulin: { ...state.tulin },
     yunobo: { ...state.yunobo },
     mathProgress: { ...state.mathProgress },
     rabbits: { ...state.rabbits },

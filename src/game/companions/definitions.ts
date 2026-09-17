@@ -1,5 +1,13 @@
 import { volcanoGateOpen, type DungeonProgress } from "../dungeons/definitions";
 
+export interface TulinProgress { greeted: boolean }
+export const freshTulin = (): TulinProgress => ({ greeted: false });
+export const hasTulin = (dungeons: Record<string, DungeonProgress>) =>
+  dungeons.moss?.rewards.includes("treasure-lock") ?? false;
+export function parseTulin(value: unknown, unlocked: boolean): TulinProgress {
+  return { greeted: unlocked && !!value && typeof value === "object" && (value as Partial<TulinProgress>).greeted === true };
+}
+
 export interface YunoboProgress {
   greeted: boolean;
   rockBroken: boolean;

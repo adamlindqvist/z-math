@@ -265,19 +265,21 @@ export class Bokoblin {
         this.animateLegs(false);
       }
       this.flight = 0;
+      this.root.rotation.z = 0;
     } else if (!paused) this.flight = Math.min(1, this.flight + step / 0.9);
     const opacity = 1 - this.flight;
     this.root.visible = this.flight < 1;
     if (unlocked) {
       this.root.position.set(
         this.flight * 3.8,
-        Math.sin(this.flight * Math.PI * 8) * 0.08,
+        Math.sin(this.flight * Math.PI) * 1.6 + this.flight * 0.35,
         bridgeZ - this.flight * 1.2,
       );
       this.root.rotation.y = -Math.PI / 2;
+      this.root.rotation.z = -this.flight * 1.2;
       if (!paused) {
-        this.stepTime += step * 18;
-        this.animateLegs(this.flight < 1, true);
+        // The wind lifts the guard with dangling legs; it no longer runs away.
+        this.animateLegs(false);
       }
     } else if (!playerPosition) this.root.rotation.y = 0;
     else if (!paused) {
