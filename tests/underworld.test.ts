@@ -4,7 +4,7 @@ import { gameStore } from "../src/store/gameStore";
 import { InteractionSystem } from "../src/game/InteractionSystem";
 import { UnderworldArea } from "../src/game/UnderworldArea";
 
-it("lets the player reach Ganondorf, walk around him and return without starting a boss encounter", () => {
+it("blocks the approach to Ganondorf until the army is defeated and keeps the exit reachable", () => {
   const area = new UnderworldArea();
   try {
     const boss = area.root.getObjectByName("ganondorf")!;
@@ -17,7 +17,7 @@ it("lets the player reach Ganondorf, walk around him and return without starting
       boss.position.z + 1.6 - player.z,
     );
     expect(player.x).toBeCloseTo(boss.position.x);
-    expect(player.z).toBeCloseTo(boss.position.z + 1.6);
+    expect(player.z).toBeGreaterThan(-17);
     expect(area.collision.free(boss.position.x, boss.position.z)).toBe(false);
     expect(area.collision.free(boss.position.x + 1.3, boss.position.z)).toBe(false);
     for (let i = 0; i < 16; i++) {
@@ -30,7 +30,7 @@ it("lets the player reach Ganondorf, walk around him and return without starting
       ).toBe(true);
     }
     area.update(1, 1);
-    expect(area.interactions()).toHaveLength(1);
+    expect(area.interactions()).toHaveLength(4);
     expect(area.rupees).toEqual([]);
     const exit = area.interactions()[0];
     area.collision.move(player, exit.x - player.x, exit.z - player.z);
@@ -44,7 +44,7 @@ it("lets the player reach Ganondorf, walk around him and return without starting
 });
 
 
-afterEach(() => gameStore.reset());
+afterEach(() => { gameStore.debugEndSession(); gameStore.reset(); });
 
 it("requires an explicit climb action at the ladder and hides it when out of reach", () => {
   gameStore.openDebug();

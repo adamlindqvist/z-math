@@ -1,3 +1,4 @@
+import { ARMY, parseArmy, type ArmyId } from "../game/underworld/army";
 import { freshRiju, hasRiju, parseRiju, type RijuProgress } from "../game/companions/definitions";
 import type { DayPeriod } from "../game/DayNightCycle";
 import { freshYunobo, hasYunobo, parseYunobo, type YunoboProgress } from "../game/companions/definitions";
@@ -114,6 +115,7 @@ export type Target =
   | { kind: "sidonGate"; label: string }
   | { kind: "yunoboRock"; label: string }
   | { kind: "underworldLadder"; label: string }
+  | { kind: "armyBokoblin"; id: ArmyId; label: string }
   | { kind: "horse"; action: "mount" | "dismount"; label: string }
   | { kind: "farmer"; label: string }
   | { kind: "rabbit"; id: RabbitId; label: string }
@@ -151,6 +153,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  defeatedArmy: ArmyId[];
   riju: RijuProgress;
   sidon: SidonProgress;
   tulin: TulinProgress;
@@ -193,6 +196,7 @@ export interface GameState extends Progress {
   askedQuestions: string[];
   quizCorrectAnswers: number;
   dungeonQuiz: string | null;
+  armyQuiz: ArmyId | null;
   activeChest: ChestId | null;
   activeSecret: SecretId | null;
   motion: { index: number; from: number; to: number } | null;
@@ -205,6 +209,7 @@ export interface GameState extends Progress {
   debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
+  defeatedArmy: [],
   riju: freshRiju(),
   sidon: freshSidon(),
   tulin: freshTulin(),
@@ -305,6 +310,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      defeatedArmy: parseArmy(p.defeatedArmy),
       riju: parseRiju(p.riju, hasRiju(p.dungeons)),
       sidon: parseSidon(p.sidon, hasSidon(p.dungeons)),
       tulin: parseTulin(p.tulin, hasTulin(p.dungeons)),
@@ -363,6 +369,7 @@ export function createGameStore(
     askedQuestions: [],
     quizCorrectAnswers: 0,
     dungeonQuiz: null,
+        armyQuiz: null,
     activeChest: null,
     motion: null,
     activeSecret: null,
@@ -393,6 +400,7 @@ export function createGameStore(
       update.yunoboHelping = false;
       update = { ...update, riding: false, horseAction: null, ridingMessage: "", followingRabbits: [], rabbitCare: null, rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" } };
     }
+    if (("overlay" in update && update.overlay !== "quiz") || "location" in update) update.armyQuiz = null;
     state = { ...state, ...update };
     if (persist && storage && !state.debugActive) {
       try {
@@ -400,6 +408,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            defeatedArmy: state.defeatedArmy,
             riju: state.riju,
             sidon: state.sidon,
             tulin: state.tulin,
@@ -804,6 +813,7 @@ export function createGameStore(
         feedback: null,
         askedQuestions: [],
         dungeonQuiz: null,
+        armyQuiz: null,
         activeChest: null,
         reward: 0,
         rewardItems: [],
@@ -868,6 +878,7 @@ export function createGameStore(
         askedQuestions: [],
         quizCorrectAnswers: 0,
         dungeonQuiz: null,
+        armyQuiz: null,
         activeChest: null,
         motion: null,
         activeSecret: null,
@@ -899,6 +910,7 @@ export function createGameStore(
         askedQuestions: [],
         quizCorrectAnswers: 0,
         dungeonQuiz: null,
+        armyQuiz: null,
         activeChest: null,
         motion: null,
         activeSecret: null,
@@ -978,6 +990,14 @@ export function createGameStore(
         if (target.kind === "yunoboRock") {
           if (state.location?.world !== "volcano-interior" || !hasYunobo(state.dungeons) || state.yunobo.rockBroken) return;
           set({ yunobo: { ...state.yunobo, rockBroken: true }, yunoboHelping: true, target: null }, true, "stone");
+          return;
+        }
+        if (target.kind === "armyBokoblin") {
+          if (state.location?.world !== "underworld" || !ARMY.some(b => b.id === target.id) || state.defeatedArmy.includes(target.id)) return;
+          const question = quizQuestion();
+          set({ overlay: "quiz", armyQuiz: target.id, dungeonQuiz: null, activeChest: null,
+            question, askedQuestions: [question.key], feedback: null, quizCorrectAnswers: 0,
+            reward: 0, rewardItems: [], target: null }, false, "interact");
           return;
         }
         if (target.kind === "underworldLadder") {
@@ -1184,6 +1204,7 @@ export function createGameStore(
         rewardItems: [],
         reward: state.overlay === "itemReward" ? 0 : state.reward,
         dungeonQuiz: null,
+        armyQuiz: null,
         activeChest: null,
         question: null,
         feedback: null,
@@ -1209,6 +1230,20 @@ export function createGameStore(
       }
     },
     answer: (answer: number) => {
+      if (state.armyQuiz) {
+        if (state.location?.world !== "underworld" || state.overlay !== "quiz" || !state.question || state.feedback || state.defeatedArmy.includes(state.armyQuiz)) return;
+        if (answer !== state.question.correctAnswer) {
+          set({ feedback: "retry", mathProgress: recordMathAnswer(state.mathProgress, false) }, true, "retry");
+          return;
+        }
+        const count = state.quizCorrectAnswers + 1;
+        const complete = count === REQUIRED_CORRECT_ANSWERS;
+        set({ quizCorrectAnswers: count, feedback: complete ? "complete" : "correct",
+          mathProgress: recordMathAnswer(state.mathProgress, true),
+          defeatedArmy: complete ? [...state.defeatedArmy, state.armyQuiz] : state.defeatedArmy,
+        }, true, complete ? "complete" : "correct");
+        return;
+      }
       if (state.dungeonQuiz) {
         const found = resolveRoom(state.location);
         const c = found?.room.challenge;
@@ -1309,6 +1344,7 @@ export function createGameStore(
             feedback: null,
             askedQuestions: [],
             dungeonQuiz: null,
+        armyQuiz: null,
             activeChest: null,
             quizCorrectAnswers: 0,
             reward: c.reward,
@@ -1411,6 +1447,7 @@ export function createGameStore(
           ...fresh(),
           encounter: null,
           dungeonQuiz: null,
+        armyQuiz: null,
           activeChest: null,
           motion: null,
           activeSecret: null,
@@ -1446,6 +1483,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    defeatedArmy: [...state.defeatedArmy],
     riju: { ...state.riju },
     sidon: { ...state.sidon },
     tulin: { ...state.tulin },

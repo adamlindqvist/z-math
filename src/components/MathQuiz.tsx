@@ -26,6 +26,7 @@ export function MathQuiz() {
     quizCorrectAnswers,
     location,
     dungeonQuiz,
+    armyQuiz,
   } = useGameState();
   const [selection, setSelection] = useState<{
     question: typeof question;
@@ -43,7 +44,7 @@ export function MathQuiz() {
     ? resolveRoom(location)?.room.challenge
     : undefined;
   const required = challenge?.required ?? REQUIRED_CORRECT_ANSWERS;
-  const title = challenge?.title ?? "Kistans mattelås";
+  const title = armyQuiz ? "Demonkungens armé" : challenge?.title ?? "Kistans mattelås";
   useEffect(() => {
     if (feedback === "correct" || feedback === "complete") {
       const timer = setTimeout(() => gameStore.finishQuiz(), 1000);
@@ -211,7 +212,7 @@ export function MathQuiz() {
           )}
           {feedback === "complete" && (
             <div className="mt-0.5 text-lg">
-              {challenge
+              {armyQuiz ? "Bokoblinen försvinner i röd rök!" : challenge
                 ? challenge.reward
                   ? "Skatten är din!"
                   : "Porten är öppen!"

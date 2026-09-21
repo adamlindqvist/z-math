@@ -1,3 +1,4 @@
+import { ArmyPictures } from "./ArmyPictures";
 import { AnimalPicture } from "./AnimalPicture";
 import { RabbitPictures } from "./RabbitPictures";
 import { rabbitsHome } from "../game/rabbits/definitions";
@@ -31,7 +32,7 @@ export function HUD() {
     ? roomSolved(current.room, state.dungeons[current.dungeon.id])
     : false;
   const hint =
-    state.location?.world === "underworld" ? "Stegen leder upp till öknen." :
+    state.location?.world === "underworld" ? (state.defeatedArmy.length === 3 ? "Vägen till Ganondorf är öppen!" : state.defeatedArmy.length === 2 ? "En Bokoblin kvar!" : "Möt de tre Bokoblinerna!") :
     state.location?.world === "water" ? (natureRestored(state.dungeons, "water") ? state.sidon.gateOpened ? "Snäckporten till öknen är öppen!" : "Gå till snäckporten med Sidon!" : "Hjälp Ella. Hitta Vattentemplet!") :
     state.location?.world === "desert" ? (natureRestored(state.dungeons, "desert") ? "Ett hål har öppnats vid templet!" : "Hjälp Gullan. Hitta Ökentemplet!") :
     state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? state.yunoboHelping ? "Yunobo hjälper dig!" : !state.yunobo.rockBroken ? "Gå till stenen med elden!" : "Vägen till Vattenvärlden är fri!" : "Eldtemplet ligger till höger!") :
@@ -68,7 +69,7 @@ export function HUD() {
             className="grid size-16 shrink-0 place-items-center rounded-[20px] bg-[#ffedab] text-forest [&_svg]:size-11! max-[600px]:hidden"
             aria-hidden="true"
           >
-            {state.location?.world === "water" ? <AnimalPicture kind="elephant" /> : state.location?.world === "desert" ? <AnimalPicture kind="giraffe" /> : state.location === null && state.bridgeUnlocked && !rabbitsHome(state.rabbits) ? <Rabbit /> : state.location?.world === "volcano" || (state.location === null && state.bridgeUnlocked) ? <DoorOpen /> : state.location?.castle === "throne" ? <Crown /> : current ? (
+            {state.location?.world === "underworld" ? (state.defeatedArmy.length === 3 ? <Check /> : <Sword />) : state.location?.world === "water" ? <AnimalPicture kind="elephant" /> : state.location?.world === "desert" ? <AnimalPicture kind="giraffe" /> : state.location === null && state.bridgeUnlocked && !rabbitsHome(state.rabbits) ? <Rabbit /> : state.location?.world === "volcano" || (state.location === null && state.bridgeUnlocked) ? <DoorOpen /> : state.location?.castle === "throne" ? <Crown /> : current ? (
               solved ? (
                 <DoorOpen />
               ) : (
@@ -92,7 +93,7 @@ export function HUD() {
           </div>
           <div>
             <p className="text-base font-bold text-[#536d5e] max-[600px]:text-sm">
-              {state.location?.world === "underworld" ? "Underjorden" : state.location?.world === "water" ? "Vattenvärlden" : state.location?.world === "desert" ? "Ökenvärlden" : state.location?.world === "volcano-interior" ? "Vulkanens inre" : state.location?.world === "volcano" ? "Vulkanvärlden" : state.location?.castle
+              {state.location?.world === "underworld" ? "Demonkungens armé" : state.location?.world === "water" ? "Vattenvärlden" : state.location?.world === "desert" ? "Ökenvärlden" : state.location?.world === "volcano-interior" ? "Vulkanens inre" : state.location?.world === "volcano" ? "Vulkanvärlden" : state.location?.castle
                 ? state.location.castle === "hall"
                   ? "Slottets entréhall"
                   : state.location.castle === "throne" ? "Kungasalen" : "Bosses butik"
@@ -101,6 +102,7 @@ export function HUD() {
                   : "Matteäventyret"}
             </p>
             <h2>{hint}</h2>
+            {state.location?.world === "underworld" && <ArmyPictures defeated={state.defeatedArmy} />}
             {state.location === null && state.bridgeUnlocked && !rabbitsHome(state.rabbits) && <div className="mt-2"><RabbitPictures rabbits={state.rabbits} /></div>}
           </div>
         </section>}

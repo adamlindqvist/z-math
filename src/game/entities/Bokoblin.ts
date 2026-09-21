@@ -11,17 +11,19 @@ export class Bokoblin {
   private stepTime = 0;
   private legs: THREE.Group[] = [];
   private materials: THREE.Material[];
-  constructor(unlocked: boolean) {
+  constructor(unlocked: boolean, gloom = false) {
     this.root.name = "Gris";
-    const skin = material("#a95730"),
+    const skin = material(gloom ? "#a92335" : "#a95730"),
       cloth = material("#777348"),
       bone = material("#ece3ac"),
-      snout = material("#e48b40"),
-      dark = material("#44372a"),
-      innerEar = material("#c2b268"),
-      eye = material("#43d5ee"),
+      snout = material(gloom ? "#d32b36" : "#e48b40"),
+      dark = material(gloom ? "#201322" : "#44372a"),
+      innerEar = material(gloom ? "#f03943" : "#c2b268"),
+      eye = material(gloom ? "#ff302d" : "#43d5ee"),
       leather = material("#695035");
-    eye.emissive.set("#219bb9");
+    eye.emissive.set(gloom ? "#ff1616" : "#219bb9");
+    if (gloom) { skin.emissive.set("#b21c30"); skin.emissiveIntensity = 0.45;
+      snout.emissive.set("#ef3440"); snout.emissiveIntensity = 0.25; }
     eye.emissiveIntensity = 0.45;
     this.materials = [skin, cloth, bone, snout, dark, innerEar, eye, leather];
     for (const mat of this.materials) mat.transparent = true;
@@ -216,6 +218,28 @@ export class Bokoblin {
     box(this.root, bone, 0, 0.938, -0.316, 0.105, 0.055, 0.065);
     for (const side of [-1, 1])
       ball(this.root, dark, side * 0.038, 1.018, -0.355, 0.025, 0.029, 0.01);
+
+    if (gloom) {
+      const cracks = material("#ff5145");
+      cracks.emissive.set("#ff271b");
+      cracks.emissiveIntensity = 1.2;
+      cracks.transparent = true;
+      this.materials.push(cracks);
+      // Angular glowing seams follow the forehead and shoulders, away from the eyes.
+      const paths = [
+        [[-0.22, 1.87, -0.20], [-0.12, 1.79, -0.28], [-0.16, 1.72, -0.32], [-0.06, 1.69, -0.34]],
+        [[0.10, 1.90, -0.18], [0.20, 1.80, -0.28], [0.14, 1.75, -0.31]],
+        [[-0.39, 1.30, -0.19], [-0.32, 1.23, -0.24], [-0.42, 1.14, -0.23], [-0.34, 1.07, -0.23]],
+        [[0.39, 1.30, -0.19], [0.31, 1.24, -0.24], [0.40, 1.15, -0.24], [0.34, 1.08, -0.23]],
+      ];
+      for (const points of paths) {
+        for (let i = 1; i < points.length; i++) {
+          mesh(new THREE.TubeGeometry(new THREE.LineCurve3(
+            new THREE.Vector3(...points[i - 1]), new THREE.Vector3(...points[i]),
+          ), 1, 0.016, 4, false), cracks, this.root);
+        }
+      }
+    }
 
     // Merge each moving part separately, preserving its local hip pivot.
     for (const group of [this.root, ...this.legs]) {

@@ -1,3 +1,7 @@
+import { ArmyBarrier } from "./underworld/ArmyBarrier";
+import { gameStore } from "../store/gameStore";
+import { ARMY } from "./underworld/army";
+import { ArmyBokoblin } from "./entities/ArmyBokoblin";
 import * as THREE from "three";
 import { type Area, type Interaction, type Passage, disposeTree } from "./Area";
 import { CollisionSystem } from "./CollisionSystem";
@@ -21,6 +25,8 @@ export class UnderworldArea implements Area {
     sunIntensity: 1.3,
     fog: { color: "#081b20", density: 0.027 },
   };
+  private army = ARMY.map(b => new ArmyBokoblin(gameStore.getState().defeatedArmy.includes(b.id)));
+  private armyBarrier = new ArmyBarrier();
   private motes: THREE.InstancedMesh;
   private ganondorf = new Ganondorf();
   private dummy = new THREE.Object3D();
@@ -31,6 +37,12 @@ export class UnderworldArea implements Area {
   });
   constructor() {
     this.root.name = "underworld";
+    this.army.forEach((guard, i) => {
+      guard.root.name = `army-${ARMY[i].id}`;
+      guard.root.position.set(ARMY[i].x, 0, ARMY[i].z);
+      this.root.add(guard.root);
+    });
+    this.root.add(this.armyBarrier);
     this.ganondorf.root.position.set(0, 0, -22);
     const bossScale = 1.4;
     this.ganondorf.root.scale.setScalar(bossScale);
@@ -302,9 +314,20 @@ export class UnderworldArea implements Area {
     return [{
       ...UNDERWORLD_RETURN,
       target: { kind: "underworldLadder", label: "Klättra upp" },
-    }];
+    }, ...ARMY.filter(b => !gameStore.getState().defeatedArmy.includes(b.id)).map(b => ({
+      x: b.x, z: b.z, target: { kind: "armyBokoblin" as const, id: b.id, label: "Möt Bokoblin" },
+    }))];
   }
-  update(_dt: number, time: number) {
+  update(dt: number, time: number) {
+    const state = gameStore.getState();
+    const remaining = ARMY.filter(b => !state.defeatedArmy.includes(b.id));
+    this.armyBarrier.visible = remaining.length > 0;
+    this.armyBarrier.update(time);
+    this.collision.dynamic = [
+      ...remaining.map(b => ({ x: b.x, z: b.z, halfX: 0.55, halfZ: 0.4 })),
+      ...(remaining.length ? [{ x: 0, z: -17, halfX: 15, halfZ: 0.12 }] : []),
+    ];
+    this.army.forEach((guard, i) => guard.update(dt, time, state.defeatedArmy.includes(ARMY[i].id), !!state.overlay));
     this.ganondorf.update(time);
     this.glow.emissiveIntensity = 1.2 + Math.sin(time * 0.8) * 0.15;
     for (let i = 0; i < this.motes.count; i++) {

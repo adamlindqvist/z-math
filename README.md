@@ -243,9 +243,9 @@ Framsteg, föremål, öppnade kistor och insamlade rupees sparas med **sparversi
 
 ### Underjorden
 
-När Ökentemplet är avklarat öppnas hålet till underjorden automatiskt. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Inga tempel, fiender eller nya utmaningar ingår ännu.
+När Ökentemplet är avklarat öppnas hålet till underjorden automatiskt. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Framför Ganondorf väntar Demonkungens armé: tre röda Bokobliner med varsitt mattequiz (tre rätt). Varje besegrad Bokoblin försvinner i röd rök. En röd dimspärr öppnas när alla tre är besegrade. Besegrade Bokobliner sparas, även efter omladdning; äldre sparningar behåller sina framsteg. Ganondorfs bosskamp ingår ännu inte.
 
-Den gyllene rotporten med en uppåtpil nära landningsplatsen leder tillbaka till öknen, på säkert avstånd från hålet. Platsen sparas och hålet förblir upplåst efter omladdning. Debugmenyn har en genväg till Underjorden som förbereder de tidigare templen inom testsessionen.
+Trästegen med en uppåtpil nära landningsplatsen leder tillbaka till öknen, på säkert avstånd från hålet. Platsen sparas och hålet förblir upplåst efter omladdning. Debugmenyn har en genväg till Underjorden som förbereder de tidigare templen inom testsessionen.
 
 `UnderworldArea` bygger grottmiljön med instansierade smådetaljer. `src/game/underworld/` innehåller schaktet och passagepunkterna. Fallövergången pausar under dialoger och avbryts vid områdesbyte eller återställning.
 
