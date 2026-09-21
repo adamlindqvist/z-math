@@ -12,7 +12,7 @@ it("shows short animal requests, restored-world thanks, pictures and an accessib
   const root = createRoot(host);
   try {
     for (const [world, id, request, thanks] of [
-      ["water", "ella", "Hjälp korallerna!", "Vägen till öknen är öppen!"],
+      ["water", "ella", "Hjälp korallerna!", "Sidon kan öppna snäckporten!"],
       ["desert", "gullan", "Oasen behöver vatten!", "Oasen är grön igen!"],
     ] as const) {
       act(() => {

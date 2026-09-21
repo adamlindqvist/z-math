@@ -1,4 +1,14 @@
-import { volcanoGateOpen, type DungeonProgress } from "../dungeons/definitions";
+import { natureRestored, volcanoGateOpen, type DungeonProgress } from "../dungeons/definitions";
+
+export interface SidonProgress { greeted: boolean; gateOpened: boolean }
+export const freshSidon = (): SidonProgress => ({ greeted: false, gateOpened: false });
+export const hasSidon = (dungeons: Record<string, DungeonProgress>) => natureRestored(dungeons, "water");
+export function parseSidon(value: unknown, unlocked: boolean): SidonProgress {
+  const p = value && typeof value === "object" ? value as Partial<SidonProgress> : undefined;
+  // Before this field existed, completing the temple opened the shell automatically.
+  return { greeted: unlocked && p?.greeted === true,
+    gateOpened: unlocked && (p?.gateOpened === true || p?.gateOpened === undefined) };
+}
 
 export interface TulinProgress { greeted: boolean }
 export const freshTulin = (): TulinProgress => ({ greeted: false });

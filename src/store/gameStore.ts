@@ -1,6 +1,7 @@
 import type { DayPeriod } from "../game/DayNightCycle";
 import { freshYunobo, hasYunobo, parseYunobo, type YunoboProgress } from "../game/companions/definitions";
 import { freshTulin, hasTulin, parseTulin, type TulinProgress } from "../game/companions/definitions";
+import { freshSidon, hasSidon, parseSidon, type SidonProgress } from "../game/companions/definitions";
 import { NATURE_RUPEES } from "../game/nature/layout";
 import { RABBITS, freshRabbits, rabbitsHome, validRabbits, type RabbitId, type RabbitProgress } from "../game/rabbits/definitions";
 import {
@@ -109,6 +110,7 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "sidonGate"; label: string }
   | { kind: "yunoboRock"; label: string }
   | { kind: "underworldLadder"; label: string }
   | { kind: "horse"; action: "mount" | "dismount"; label: string }
@@ -125,6 +127,7 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "sidon"
   | "tulin"
   | "yunobo"
   | "elephant"
@@ -146,6 +149,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  sidon: SidonProgress;
   tulin: TulinProgress;
   yunobo: YunoboProgress;
   mathProgress: MathProgress;
@@ -198,6 +202,7 @@ export interface GameState extends Progress {
   debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
+  sidon: freshSidon(),
   tulin: freshTulin(),
   yunobo: freshYunobo(),
   ...freshInventory(),
@@ -296,6 +301,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      sidon: parseSidon(p.sidon, hasSidon(p.dungeons)),
       tulin: parseTulin(p.tulin, hasTulin(p.dungeons)),
       yunobo: { ...parseYunobo(p.yunobo, hasYunobo(p.dungeons)),
         rockBroken: parseYunobo(p.yunobo, hasYunobo(p.dungeons)).rockBroken || touchedNatureWorld(p, "water") || touchedNatureWorld(p, "desert"),
@@ -389,6 +395,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            sidon: state.sidon,
             tulin: state.tulin,
             yunobo: state.yunobo,
             mathProgress: state.mathProgress,
@@ -512,7 +519,7 @@ export function createGameStore(
       (state.location?.world === "underworld" && destination?.world === "desert") ||
       (state.location?.world === "volcano-interior" && destination?.world === "water" && volcanoGateOpen(state.dungeons) && state.yunobo.rockBroken) ||
       (state.location?.world === "water" && destination?.world === "volcano-interior") ||
-      (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water")) ||
+      (state.location?.world === "water" && destination?.world === "desert" && natureRestored(state.dungeons, "water") && state.sidon.gateOpened) ||
       (state.location?.world === "desert" && destination?.world === "water") ||
       ((state.location?.world === "water" || state.location?.world === "desert") && next?.dungeon.entranceWorld === state.location.world && next.room === next.dungeon.rooms[0]) ||
       ((found?.dungeon.entranceWorld === "water" || found?.dungeon.entranceWorld === "desert") && destination?.world === found.dungeon.entranceWorld && (currentIndex === 0 || (currentIndex === found.dungeon.rooms.length - 1 && roomSolved(found.room, state.dungeons[found.dungeon.id]))));
@@ -721,6 +728,10 @@ export function createGameStore(
       if (!hasTulin(state.dungeons) || state.tulin.greeted || state.overlay || state.motion || state.riding || state.encounter || state.yunoboHelping) return;
       set({ overlay: "tulin", target: null }, false, "discovery");
     },
+    greetSidon: () => {
+      if (!hasSidon(state.dungeons) || state.sidon.greeted || state.overlay || state.motion || state.riding || state.encounter || state.yunoboHelping) return;
+      set({ overlay: "sidon", target: null }, false, "discovery");
+    },
     finishYunoboHelp: () => {
       if (state.yunoboHelping && !state.overlay) set({ yunoboHelping: false }, false, "discovery");
     },
@@ -764,7 +775,7 @@ export function createGameStore(
         update.yunobo = { ...state.yunobo, rockBroken: true };
         update.minibosses = { ...state.minibosses, stone_giant: 3 };
         update = { ...update, ...solveThrough("fire", 2, { ...state, ...update }) };
-        if (natureWorld === "desert") update = { ...update, ...solveThrough("water", 2, { ...state, ...update }) };
+        if (natureWorld === "desert") update = { ...update, ...solveThrough("water", 2, { ...state, ...update }), sidon: { ...state.sidon, gateOpened: true } };
       }
       if (destination?.world === "underworld") update = { ...update, ...solveThrough("desert", 2, { ...state, ...update }) };
       set({
@@ -949,6 +960,11 @@ export function createGameStore(
       if (state.overlay || state.motion || state.yunoboHelping || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "sidonGate") {
+          if (state.location?.world !== "water" || !hasSidon(state.dungeons) || state.sidon.gateOpened) return;
+          set({ sidon: { ...state.sidon, gateOpened: true }, target: null }, true, "discovery");
+          return;
+        }
         if (target.kind === "yunoboRock") {
           if (state.location?.world !== "volcano-interior" || !hasYunobo(state.dungeons) || state.yunobo.rockBroken) return;
           set({ yunobo: { ...state.yunobo, rockBroken: true }, yunoboHelping: true, target: null }, true, "stone");
@@ -1150,6 +1166,7 @@ export function createGameStore(
     },
     close: () =>
       set({
+        ...(state.overlay === "sidon" ? { sidon: { ...state.sidon, greeted: true } } : {}),
         ...(state.overlay === "tulin" ? { tulin: { greeted: true } } : {}),
         ...(state.overlay === "yunobo" ? { yunobo: { ...state.yunobo, greeted: true } } : {}),
         overlay: null,
@@ -1161,7 +1178,7 @@ export function createGameStore(
         feedback: null,
         askedQuestions: [],
         quizCorrectAnswers: 0,
-      }, state.overlay === "yunobo" || state.overlay === "tulin"),
+      }, state.overlay === "yunobo" || state.overlay === "tulin" || state.overlay === "sidon"),
     beginQuiz: () => {
       if (state.dungeonQuiz) return;
       if (
@@ -1418,6 +1435,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    sidon: { ...state.sidon },
     tulin: { ...state.tulin },
     yunobo: { ...state.yunobo },
     mathProgress: { ...state.mathProgress },

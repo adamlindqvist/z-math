@@ -77,6 +77,22 @@ afterEach(() => {
 });
 
 describe("playable controls and interface", () => {
+  it("shows Sidon's greeting and releases held movement before continuing", () => {
+    act(() => {
+      gameStore.openDebug(); gameStore.debugTravelTo({ world: "desert" }); gameStore.closeDebug();
+    });
+    key("KeyW");
+    expect(input.direction().y).toBeLessThan(0);
+    act(() => gameStore.greetSidon());
+    expect(host.querySelector('[role="dialog"]')?.textContent).toContain("Din kompis Sidon!");
+    expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    click("Nu går vi!");
+    expect(gameStore.getState().sidon.greeted).toBe(true);
+    expect(gameStore.getState().overlay).toBeNull();
+    expect(input.direction()).toEqual({ x: 0, y: 0 });
+    act(() => gameStore.debugEndSession());
+  });
   it("calls Tulin from the bridge action button without needing equipped weapons", () => {
     act(() => {
       gameStore.openDebug(); gameStore.debugTravelTo({ dungeon: "moss", room: "treasure" });

@@ -29,7 +29,7 @@ import { heroModel, applyEquipment } from "../src/game/heroModel";
 import { disposeTree } from "../src/game/Area";
 
 type Store = ReturnType<typeof createGameStore>;
-function solveTemple(s: Store, id: string) {
+function solveTemple(s: Store, id: string, openGate = true) {
   const temple = DUNGEONS.find((d) => d.id === id)!;
   for (const room of temple.rooms) {
     s.travelTo({ dungeon: id, room: room.id });
@@ -56,6 +56,7 @@ function solveTemple(s: Store, id: string) {
     }
   }
   s.travelTo({ world: temple.entranceWorld! });
+  if (id === "water" && openGate) { s.setTarget({ kind: "sidonGate", label: "Öppna porten" }); s.interact(); }
 }
 function enterWater(s: Store) {
   completeRabbitQuest(s);
@@ -381,8 +382,9 @@ it("replays the anemone and clam animations without rewards and pauses restorati
       }
     }
     expect(gameStore.getState().rupees).toBe(before);
-    solveTemple(gameStore, "water");
+    solveTemple(gameStore, "water", false);
     const arriving = new WaterArea(true);
+    gameStore.setTarget({ kind: "sidonGate", label: "Öppna porten" }); gameStore.interact();
     gameStore.pause();
     arriving.update(10, 10);
     expect(arriving.collision.free(0, 0)).toBe(false);

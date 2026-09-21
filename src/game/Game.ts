@@ -22,6 +22,7 @@ import { InteractionSystem, pickInteraction } from "./InteractionSystem";
 import { gameStore } from "../store/gameStore";
 import { YunoboCompanion } from "./companions/YunoboCompanion";
 import { TulinCompanion } from "./companions/TulinCompanion";
+import { SidonCompanion } from "./companions/SidonCompanion";
 export class Game {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
@@ -86,6 +87,7 @@ export class Game {
   player = new Player();
   private yunobo = new YunoboCompanion();
   private tulin = new TulinCompanion();
+  private sidon = new SidonCompanion();
   camera = new GameCamera();
   input = new Input();
   interactions: InteractionSystem;
@@ -164,6 +166,7 @@ export class Game {
     this.scene.add(this.player.root);
     this.scene.add(this.yunobo.root);
     this.scene.add(this.tulin.root);
+    this.scene.add(this.sidon.root);
     this.mountArea();
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
@@ -239,6 +242,7 @@ export class Game {
     this.player.position.set(spawn.x, 0, spawn.z);
     this.yunobo.reset(this.player.position, this.world);
     this.tulin.reset(this.player.position, this.world);
+    this.sidon.reset(this.player.position, this.world);
     if (gameStore.getState().location?.dungeon === "fire" && gameStore.getState().location?.room === "light" && spawn.x < 0)
       this.player.root.rotation.y = Math.PI / 2;
     if (gameStore.getState().location?.world === "volcano-interior" && this.previousLocation?.dungeon === "fire")
@@ -306,6 +310,7 @@ export class Game {
     if (this.areaKey === JSON.stringify(gameStore.getState().location)) {
       this.tulin.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
       this.yunobo.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
+      this.sidon.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
     }
     this.camera.update(this.interactions.falling ? new THREE.Vector3(this.player.position.x, 0, this.player.position.z) : this.player.position, dt);
     this.dayNight.update(dt, state, document.hidden);

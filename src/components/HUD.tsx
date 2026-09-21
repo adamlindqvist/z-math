@@ -32,7 +32,7 @@ export function HUD() {
     : false;
   const hint =
     state.location?.world === "underworld" ? "Stegen leder upp till öknen." :
-    state.location?.world === "water" ? (natureRestored(state.dungeons, "water") ? "Snäckporten till öknen är öppen!" : "Hjälp Ella. Hitta Vattentemplet!") :
+    state.location?.world === "water" ? (natureRestored(state.dungeons, "water") ? state.sidon.gateOpened ? "Snäckporten till öknen är öppen!" : "Gå till snäckporten med Sidon!" : "Hjälp Ella. Hitta Vattentemplet!") :
     state.location?.world === "desert" ? (natureRestored(state.dungeons, "desert") ? "Ett hål har öppnats vid templet!" : "Hjälp Gullan. Hitta Ökentemplet!") :
     state.location?.world === "volcano-interior" ? (volcanoGateOpen(state.dungeons) ? state.yunoboHelping ? "Yunobo hjälper dig!" : !state.yunobo.rockBroken ? "Gå till stenen med elden!" : "Vägen till Vattenvärlden är fri!" : "Eldtemplet ligger till höger!") :
     state.location?.world === "volcano" ? (state.minibosses.stone_giant === 3 ? "Vulkanens ingång är öppen!" : "Besegra Stenjätten. Öppna vulkanen!") :

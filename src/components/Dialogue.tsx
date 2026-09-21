@@ -1,6 +1,7 @@
 import { AnimalPicture } from "./AnimalPicture";
 import { YunoboPicture } from "./YunoboPicture";
 import { TulinPicture } from "./TulinPicture";
+import { SidonPicture } from "./SidonPicture";
 import { Heart } from "lucide-react";
 import { natureRestored } from "../game/dungeons/definitions";
 import { RabbitPictures } from "./RabbitPictures";
@@ -166,7 +167,7 @@ export function Modal({
   );
 }
 export function Dialogue() {
-  const { overlay, rabbits, dungeons } = useGameState();
+  const { overlay, rabbits, dungeons, sidon } = useGameState();
   if (
     !overlay ||
     overlay === "pictureClue" ||
@@ -178,6 +179,12 @@ export function Dialogue() {
     overlay === "debug"
   )
     return null;
+  if (overlay === "sidon") return <Modal label="Din nya kompis Sidon" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
+    <SidonPicture />
+    <h2>Din kompis Sidon!</h2>
+    <p>Jag följer med dig!<br />Vi hjälps åt!</p>
+    <Heart aria-hidden="true" className="mx-auto size-12 fill-[#ff9eac] text-[#c75570]" />
+  </Modal>;
   if (overlay === "tulin") return <Modal label="Din nya kompis Tulin" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
     <TulinPicture />
     <h2>Din kompis Tulin!</h2>
@@ -195,7 +202,7 @@ export function Dialogue() {
     return <Modal label={elephant ? "Elefanten Ella" : "Giraffen Gullan"} action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Spela vidare <ArrowRight /></CornerAction>}>
       <AnimalPicture kind={overlay} restored={restored} />
       <h2>{restored ? "Tack för hjälpen!" : elephant ? "Hjälp korallerna!" : "Oasen behöver vatten!"}</h2>
-      <p>{restored ? elephant ? "Färgerna är tillbaka! Vägen till öknen är öppen!" : "Oasen är grön igen! Nu kan jag äta goda blad." : elephant ? "Korallerna har tappat färgen. Hjälp mig i Vattentemplet!" : "Hjälp mig i Ökentemplet!"}</p>
+      <p>{restored ? elephant ? sidon.gateOpened ? "Färgerna är tillbaka! Vägen till öknen är öppen!" : "Färgerna är tillbaka! Sidon kan öppna snäckporten!" : "Oasen är grön igen! Nu kan jag äta goda blad." : elephant ? "Korallerna har tappat färgen. Hjälp mig i Vattentemplet!" : "Hjälp mig i Ökentemplet!"}</p>
       <div className="flex justify-center gap-6 text-teal" aria-hidden="true"><DoorOpen className="size-10"/><ArrowRight className="size-10"/><Sprout className="size-10"/></div>
     </Modal>;
   }

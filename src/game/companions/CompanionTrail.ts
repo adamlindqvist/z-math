@@ -7,7 +7,7 @@ export class CompanionTrail {
   private lastSample = new THREE.Vector3();
   private speed = 0;
   private blockedTime = 0;
-  constructor(private root: THREE.Group, private followDistance = 1.3, private side = -1) {}
+  constructor(private root: THREE.Group, private followDistance = 1.3, private side = -1, private spawnDistance = 0.7) {}
   restart(position: THREE.Vector3) {
     this.trail = [position.clone()];
     this.lastSample.copy(position);
@@ -16,7 +16,7 @@ export class CompanionTrail {
   reset(position: THREE.Vector3, area: Area) {
     this.restart(position);
     this.root.position.copy(position);
-    for (const [dx, dz] of [[this.side * 0.9, 0.7], [-this.side * 0.9, 0.7], [0, 1], [0, -1]]) {
+    for (const [dx, dz] of [[this.side * 0.9, this.spawnDistance], [-this.side * 0.9, this.spawnDistance], [0, 1], [0, -1]]) {
       if (area.collision.free(position.x + dx, position.z + dz, 0.3)) {
         this.root.position.set(position.x + dx, 0, position.z + dz);
         break;

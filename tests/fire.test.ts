@@ -245,6 +245,7 @@ describe("Eldtemplet", () => {
       quiz(gameStore, "water-treasure-lock");
       gameStore.close();
       gameStore.travelTo({ world: "water" });
+      gameStore.setTarget({ kind: "sidonGate", label: "Öppna porten" }); gameStore.interact();
       gameStore.travelTo({ world: "desert" });
       gameStore.travelTo({ dungeon: "desert", room: "light" });
       quiz(gameStore, "desert-light-lock");

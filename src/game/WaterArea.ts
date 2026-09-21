@@ -34,6 +34,7 @@ export class WaterArea implements Area {
   private models = new SeaModels();
   private gate;
   private progress: number;
+  private gateProgress: number;
   private light;
   private seaweed;
   private life;
@@ -55,11 +56,13 @@ export class WaterArea implements Area {
       state = gameStore.getState();
     this.progress =
       natureRestored(state.dungeons, "water") && !animateRestoration ? 1 : 0;
+    this.gateProgress = state.sidon.gateOpened ? 1 : 0;
     this.light = seabed(this.root);
     this.seaweed = reefScenery(this.root, this.collision, m);
     basaltMouth(this.root, this.collision, m);
     waterTemple(this.root, this.collision, m);
     this.gate = shellGate(this.root, this.collision, m);
+    this.gate.group.userData.target = { kind: "sidonGate", label: "Öppna porten" };
     this.life = seaLife(this.root, m);
     // Ella's pale garden is a single recognisable reef, distinct from the healthy perimeter.
     const garden = new THREE.Group();
@@ -162,13 +165,17 @@ export class WaterArea implements Area {
     return [
       { ...WATER_ENTRY, destination: { world: "volcano-interior" } },
       { ...NATURE_TEMPLE, destination: { dungeon: "water", room: "light" } },
-      ...(natureRestored(state.dungeons, "water") && this.progress >= 1
+      ...(state.sidon.gateOpened && this.gateProgress >= 1
         ? [{ ...NATURE_EXIT, destination: { world: "desert" as const } }]
         : []),
     ];
   }
   interactions(state: GameState, position?: THREE.Vector3): Interaction[] {
     return [
+      ...(natureRestored(state.dungeons, "water") && !state.sidon.gateOpened ? [{
+        x: NATURE_EXIT.x, z: NATURE_EXIT.z + 0.6,
+        target: this.gate.group.userData.target,
+      }] : []),
       {
         ...NATURE_CHEST,
         target: {
@@ -203,9 +210,10 @@ export class WaterArea implements Area {
       ? Math.min(1, this.progress + step * 0.45)
       : 0;
     const smooth = this.progress * this.progress * (3 - 2 * this.progress);
-    this.gate.update(smooth);
+    this.gateProgress = state.sidon.gateOpened ? Math.min(1, this.gateProgress + step * 0.45) : 0;
+    this.gate.update(this.gateProgress * this.gateProgress * (3 - 2 * this.gateProgress));
     this.collision.dynamic =
-      this.progress < 1 ? [{ x: 0, z: 0, halfX: 1.45, halfZ: 0.32 }] : [];
+      this.gateProgress < 1 ? [{ x: 0, z: 0, halfX: 1.45, halfZ: 0.32 }] : [];
     for (const entry of this.reefMaterials)
       entry.material.color.set("#b7c6c1").lerp(entry.color, smooth);
     this.light.uniforms.time.value = this.elapsed;
