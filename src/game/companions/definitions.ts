@@ -33,3 +33,11 @@ export function parseYunobo(value: unknown, unlocked: boolean): YunoboProgress {
   const p = value as Partial<YunoboProgress>;
   return { greeted: p.greeted === true, rockBroken: p.rockBroken === true };
 }
+
+export interface RijuProgress { greeted: boolean }
+export const freshRiju = (): RijuProgress => ({ greeted: false });
+export const hasRiju = (dungeons: Record<string, DungeonProgress>) => natureRestored(dungeons, "desert");
+export function parseRiju(value: unknown, unlocked: boolean): RijuProgress {
+  const p = value && typeof value === "object" ? value as Partial<RijuProgress> : undefined;
+  return { greeted: unlocked && p?.greeted === true };
+}

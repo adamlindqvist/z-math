@@ -1,3 +1,4 @@
+import { RijuPicture } from "./RijuPicture";
 import { AnimalPicture } from "./AnimalPicture";
 import { YunoboPicture } from "./YunoboPicture";
 import { TulinPicture } from "./TulinPicture";
@@ -179,6 +180,12 @@ export function Dialogue() {
     overlay === "debug"
   )
     return null;
+  if (overlay === "riju") return <Modal label="Din nya kompis Riju" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
+    <RijuPicture />
+    <h2>Din kompis Riju!</h2>
+    <p>Jag följer med dig!<br />Vi hjälps åt!</p>
+    <Heart aria-hidden="true" className="mx-auto size-12 fill-[#ff9eac] text-[#c75570]" />
+  </Modal>;
   if (overlay === "sidon") return <Modal label="Din nya kompis Sidon" action={<CornerAction closesDialog onActivate={() => gameStore.close()}>Nu går vi! <ArrowRight /></CornerAction>}>
     <SidonPicture />
     <h2>Din kompis Sidon!</h2>

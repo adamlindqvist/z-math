@@ -1,3 +1,4 @@
+import { freshRiju, hasRiju, parseRiju, type RijuProgress } from "../game/companions/definitions";
 import type { DayPeriod } from "../game/DayNightCycle";
 import { freshYunobo, hasYunobo, parseYunobo, type YunoboProgress } from "../game/companions/definitions";
 import { freshTulin, hasTulin, parseTulin, type TulinProgress } from "../game/companions/definitions";
@@ -127,6 +128,7 @@ export type Target =
   | { kind: "secret"; id: SecretId; label: string }
   | { kind: "challenge"; id: string; label: string };
 export type Overlay =
+  | "riju"
   | "sidon"
   | "tulin"
   | "yunobo"
@@ -149,6 +151,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  riju: RijuProgress;
   sidon: SidonProgress;
   tulin: TulinProgress;
   yunobo: YunoboProgress;
@@ -202,6 +205,7 @@ export interface GameState extends Progress {
   debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
+  riju: freshRiju(),
   sidon: freshSidon(),
   tulin: freshTulin(),
   yunobo: freshYunobo(),
@@ -301,6 +305,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      riju: parseRiju(p.riju, hasRiju(p.dungeons)),
       sidon: parseSidon(p.sidon, hasSidon(p.dungeons)),
       tulin: parseTulin(p.tulin, hasTulin(p.dungeons)),
       yunobo: { ...parseYunobo(p.yunobo, hasYunobo(p.dungeons)),
@@ -395,6 +400,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            riju: state.riju,
             sidon: state.sidon,
             tulin: state.tulin,
             yunobo: state.yunobo,
@@ -727,6 +733,10 @@ export function createGameStore(
     greetTulin: () => {
       if (!hasTulin(state.dungeons) || state.tulin.greeted || state.overlay || state.motion || state.riding || state.encounter || state.yunoboHelping) return;
       set({ overlay: "tulin", target: null }, false, "discovery");
+    },
+    greetRiju: () => {
+      if (!hasRiju(state.dungeons) || state.riju.greeted || state.overlay || state.motion || state.riding || state.encounter || state.yunoboHelping) return;
+      set({ overlay: "riju", target: null }, false, "discovery");
     },
     greetSidon: () => {
       if (!hasSidon(state.dungeons) || state.sidon.greeted || state.overlay || state.motion || state.riding || state.encounter || state.yunoboHelping) return;
@@ -1166,6 +1176,7 @@ export function createGameStore(
     },
     close: () =>
       set({
+        ...(state.overlay === "riju" ? { riju: { ...state.riju, greeted: true } } : {}),
         ...(state.overlay === "sidon" ? { sidon: { ...state.sidon, greeted: true } } : {}),
         ...(state.overlay === "tulin" ? { tulin: { greeted: true } } : {}),
         ...(state.overlay === "yunobo" ? { yunobo: { ...state.yunobo, greeted: true } } : {}),
@@ -1178,7 +1189,7 @@ export function createGameStore(
         feedback: null,
         askedQuestions: [],
         quizCorrectAnswers: 0,
-      }, state.overlay === "yunobo" || state.overlay === "tulin" || state.overlay === "sidon"),
+      }, state.overlay === "yunobo" || state.overlay === "tulin" || state.overlay === "sidon" || state.overlay === "riju"),
     beginQuiz: () => {
       if (state.dungeonQuiz) return;
       if (
@@ -1435,6 +1446,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    riju: { ...state.riju },
     sidon: { ...state.sidon },
     tulin: { ...state.tulin },
     yunobo: { ...state.yunobo },

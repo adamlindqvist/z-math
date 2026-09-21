@@ -121,7 +121,7 @@ Eldtemplets slutskatt låser också upp Yunobo. När belöningsdialogen är stä
 
 I Vulkanens inre blockerar en stor sprucken sten med en eldsymbol gången till Vattenvärlden. Gå nära och tryck på stenen eller **Hjälp, Yunobo!** (E på tangentbord). Yunobo rullar ihop sig till en boll och krossar stenen. Vid träffen flyger stenflisor åt sidorna och ett stort dammoln växer och tonar bort. Effekten pausas vid dialoger och spelas inte om vid återbesök. Stenen har sammanhängande ojämna bergsytor och förgrenade sprickor som följer ytan. Grova klippor ramar in öppningen utan raka portstolpar eller överliggare. Vägen öppnas och små lysande blommor syns längs kanterna. Hjälten står stilla under den korta animationen; efteråt fortsätter följet. Stenen ger inga rupees och kan bara krossas en gång. Vägen förblir öppen efter omladdning.
 
-Yunobo låses upp från den befintliga tempelbelöningen även i pågående spel. Sparversion **20** och nyckeln `glantans-skatt-v1` behålls; det valfria fältet `yunobo` sparar hälsningen och den krossade stenen. Sparningar utan fältet behåller alla tidigare framsteg. Sparad krossning eller framsteg i Vattenvärlden och senare världar håller vägen öppen. Följet och stenhjälpen finns i `src/game/companions/`, modellen i `src/game/entities/Yunobo.ts`. Riju och slutbossmötet är ännu inte införda.
+Yunobo låses upp från den befintliga tempelbelöningen även i pågående spel. Sparversion **20** och nyckeln `glantans-skatt-v1` behålls; det valfria fältet `yunobo` sparar hälsningen och den krossade stenen. Sparningar utan fältet behåller alla tidigare framsteg. Sparad krossning eller framsteg i Vattenvärlden och senare världar håller vägen öppen. Följet och stenhjälpen finns i `src/game/companions/`, modellen i `src/game/entities/Yunobo.ts`. Slutbossmötet är ännu inte infört.
 
 ### Stenjätten
 
@@ -243,10 +243,16 @@ Framsteg, föremål, öppnade kistor och insamlade rupees sparas med **sparversi
 
 ### Underjorden
 
-När Ökentemplet är avklarat öppnas ett stort hål väster om templet. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Inga tempel, fiender eller nya utmaningar ingår ännu.
+När Ökentemplet är avklarat öppnas hålet till underjorden automatiskt. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Inga tempel, fiender eller nya utmaningar ingår ännu.
 
 Den gyllene rotporten med en uppåtpil nära landningsplatsen leder tillbaka till öknen, på säkert avstånd från hålet. Platsen sparas och hålet förblir upplåst efter omladdning. Debugmenyn har en genväg till Underjorden som förbereder de tidigare templen inom testsessionen.
 
 `UnderworldArea` bygger grottmiljön med instansierade smådetaljer. `src/game/underworld/` innehåller schaktet och passagepunkterna. Fallövergången pausar under dialoger och avbryts vid områdesbyte eller återställning.
 
 Längst in i underjorden står Ganondorf, byggd av geometriska former i `src/game/entities/Ganondorf.ts`. Han är tills vidare en passiv NPC med en lugn vilorörelse; slutbossens uppgift, dialog och strid är ännu inte införda.
+
+### Kompisen Riju
+
+Riju väntar bredvid Ökentemplet tills slutskatten är öppnad. Sedan hälsar hon och följer spelaren tillsammans med de andra kompisarna. Modellen har rött hår, guldkrona, turkosa smycken, mörk kjol med ljus kant och två böjda silversvärd. Benen rör sig i takt med stegen. Hålet till underjorden öppnas automatiskt efter templet, utan någon handling från Riju.
+
+Det valfria sparfältet `riju` lagrar hälsningen inom version 20. Alla befintliga framsteg behålls. Hålets upplåsning styrs av Ökentemplets slutskatt, även i sparningar från versionen med Rijus blixthjälp.
