@@ -1,9 +1,11 @@
+import { CompanionPortrait } from "./BossHUD";
+import { bossCinematic } from "../game/boss/state";
 import { useEffect, useRef, useState } from "react";
 import { YunoboPicture } from "./YunoboPicture";
 import { TulinPicture } from "./TulinPicture";
 import { SidonPicture } from "./SidonPicture";
 import type { RefObject, PointerEvent } from "react";
-import { Carrot, Rabbit, Hand, MessageCircle, LockKeyhole, Footprints } from "lucide-react";
+import { Carrot, Rabbit, Hand, MessageCircle, LockKeyhole, Footprints, Sword, Sparkles } from "lucide-react";
 import type { Game } from "../game/Game";
 import {
   gameStore,
@@ -12,6 +14,7 @@ import {
 } from "../store/gameStore";
 export function TouchControls({ game }: { game: RefObject<Game | null> }) {
   const state = useGameState();
+  const bossLocked = state.bossActive && bossCinematic(state.boss.stage) && state.boss.stage !== "victory";
   const active = useRef<number | null>(null);
   const lastTouchAction = useRef(-Infinity);
   const primed = useRef(false);
@@ -35,7 +38,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
   const locationKey = JSON.stringify(state.location);
   useEffect(() => {
     reset();
-  }, [state.overlay, state.yunoboHelping, locationKey, state.resetId]);
+  }, [state.overlay, state.yunoboHelping, bossLocked, locationKey, state.resetId]);
   useEffect(() => {
     const hidden = () => {
       if (document.hidden) reset();
@@ -48,7 +51,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
     };
   }, []);
   const move = (e: PointerEvent<HTMLDivElement>) => {
-    if (active.current !== e.pointerId || gameStore.getState().overlay || gameStore.getState().yunoboHelping) return;
+    if (active.current !== e.pointerId || gameStore.getState().overlay || gameStore.getState().yunoboHelping || bossLocked) return;
     const rect = e.currentTarget.getBoundingClientRect();
     let x = e.clientX - rect.left - rect.width / 2,
       y = e.clientY - rect.top - rect.height / 2;
@@ -62,7 +65,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
     if (game.current)
       game.current.input.touch = { x: x / radius, y: y / radius };
   };
-  if (state.overlay) return null;
+  if (state.overlay || bossLocked) return null;
   return (
     <div className="pointer-events-none absolute right-[max(24px,env(safe-area-inset-right))] bottom-[max(20px,env(safe-area-inset-bottom))] left-[max(24px,env(safe-area-inset-left))] z-6 flex items-end justify-center gap-5 [@media(pointer:coarse)]:justify-between max-[600px]:right-4 max-[600px]:left-4 max-[600px]:gap-3">
       <div className="pointer-events-auto hidden text-center [@media(pointer:coarse)]:block">
@@ -100,6 +103,8 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
       {(!state.location || state.target) && (
         <button
           className="cursor-pointer touch-manipulation font-extrabold transition duration-150 enabled:active:translate-y-[3px] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-teal disabled:cursor-default motion-reduce:transition-none pointer-events-auto flex min-h-[88px] max-w-[310px] items-center gap-3.5 rounded-[28px] border-[3px] border-white bg-sunshine p-4 text-2xl text-ink shadow-[0_6px_0_#a8782c] disabled:bg-[#fffbeed9] disabled:text-[#546a5c] disabled:shadow-none [&_svg]:size-9 [&_kbd]:rounded-lg [&_kbd]:border-2 [&_kbd]:border-[#a8782c] [&_kbd]:px-2 [&_kbd]:py-1 [&_kbd]:text-base [@media(pointer:coarse)]:mb-7 [@media(pointer:coarse)]:[&_kbd]:hidden max-[600px]:max-w-[180px] max-[600px]:gap-1.5 max-[600px]:p-2.5 max-[600px]:text-xl"
+          data-testid="action-button"
+          data-boss-action={state.target && typeof state.target === "object" && state.target.kind === "bossAction" ? state.target.action : undefined}
           onPointerDown={(event) => {
             if (event.pointerType === "touch") {
               if (actionPointer.current !== null) return;
@@ -136,7 +141,7 @@ export function TouchControls({ game }: { game: RefObject<Game | null> }) {
           disabled={!state.target || !!state.motion || state.yunoboHelping}
         >
           <span className="grid size-12 shrink-0 place-items-center max-[600px]:w-8">
-            {typeof state.target === "object" && state.target?.kind === "sidonGate" ? <SidonPicture small /> : state.target === "bokoblin" && hasBridgeEquipment(state) ? <TulinPicture small /> : typeof state.target === "object" && state.target?.kind === "yunoboRock" ? <YunoboPicture /> : typeof state.target === "object" && state.target?.kind === "horse" ? (
+            {typeof state.target === "object" && state.target?.kind === "bossAction" ? (state.target.action === "companion" ? <CompanionPortrait index={state.boss.teamHits} /> : state.target.action === "sword" ? <Sword className={state.boss.stage === "final_ready" ? "size-12 text-[#bf6a14] motion-safe:animate-pulse" : ""} /> : <Sparkles />) : typeof state.target === "object" && state.target?.kind === "sidonGate" ? <SidonPicture small /> : state.target === "bokoblin" && hasBridgeEquipment(state) ? <TulinPicture small /> : typeof state.target === "object" && state.target?.kind === "yunoboRock" ? <YunoboPicture /> : typeof state.target === "object" && state.target?.kind === "horse" ? (
               state.riding ? <Footprints /> : <span aria-hidden="true" className="text-4xl">🐴</span>
             ) : typeof state.target === "object" && state.target?.kind === "rabbit" ? (
               state.target.label === "Mata" ? <Carrot /> : state.target.label === "Följ med" ? <Rabbit /> : <Hand />

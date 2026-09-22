@@ -1,0 +1,64 @@
+// @vitest-environment jsdom
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { gameStore } from "../src/store/gameStore";
+import { TouchControls } from "../src/components/TouchControls";
+import { HUD } from "../src/components/HUD";
+import { Input } from "../src/game/Input";
+import type { Game } from "../src/game/Game";
+import { bossAction } from "../src/game/boss/GanondorfEncounter";
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+let host: HTMLDivElement, root: Root, input: Input;
+const advance = () => act(() => { gameStore.advanceBoss(gameStore.getState().boss, "elapsed"); gameStore.setTarget(bossAction()); });
+const pointer = (element: Element, type: string, id: number, x: number, y: number) => act(() => {
+  const event = new Event(type, { bubbles: true });
+  Object.assign(event, { pointerId: id, pointerType: "touch", clientX: x, clientY: y });
+  element.dispatchEvent(event);
+});
+beforeEach(() => {
+  gameStore.reset(); gameStore.openDebug();
+  gameStore.debugTravelTo({ dungeon: "moss", room: "treasure" }); gameStore.debugCompleteCurrentRoom();
+  gameStore.debugTravelTo({ world: "underworld" }); gameStore.debugPrepareBoss(); gameStore.closeDebug();
+  gameStore.setBossPresence(true);
+  input = new Input(); host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host);
+  act(() => root.render(<><HUD /><TouchControls game={{ current: { input } as Game }} /></>));
+});
+afterEach(() => { act(() => root.unmount()); input.dispose(); host.remove(); gameStore.debugEndSession(); gameStore.reset(); });
+it("supports simultaneous movement and sword input, cancellation, and cinematic input reset", () => {
+  advance();
+  expect(host.querySelector('[data-testid="action-button"]')).toBeNull();
+  advance(); advance();
+  expect(gameStore.getState().boss.stage).toBe("companion_ready");
+  act(() => gameStore.interact()); advance();
+  expect(gameStore.getState().boss.stage).toBe("team_opening");
+  const stick = host.querySelector('[data-testid="joystick"]')!;
+  Object.assign(stick, { setPointerCapture: () => {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 160, height: 160 }) });
+  pointer(stick, "pointerdown", 1, 130, 80);
+  expect(input.direction().x).toBeGreaterThan(0);
+  const button = host.querySelector('[data-testid="action-button"]')!;
+  const swing = gameStore.getState().bossSwing;
+  pointer(button, "pointerdown", 2, 400, 600); pointer(button, "pointerup", 2, 400, 600);
+  expect(gameStore.getState().bossSwing).toBe(swing + 1);
+  expect(input.direction().x).toBeGreaterThan(0);
+  pointer(stick, "pointercancel", 1, 130, 80); expect(input.direction()).toEqual({ x: 0, y: 0 });
+  act(() => gameStore.advanceBoss(gameStore.getState().boss, "swordHit"));
+  advance(); advance();
+  act(() => gameStore.setTarget(bossAction()));
+  const companion = host.querySelector('[data-testid="action-button"]')!;
+  expect(companion.textContent).toContain("Sidon!");
+  act(() => { input.keys.add("KeyW"); gameStore.interact(); });
+  expect(input.direction()).toEqual({ x: 0, y: 0 });
+  expect(host.querySelector('[data-testid="action-button"]')).toBeNull();
+});
+it("pausing releases held controls and leaves encounter progress intact", () => {
+  advance(); const before = gameStore.getState().boss;
+  act(() => { input.keys.add("KeyW"); input.touch = { x: 1, y: 0 }; gameStore.pause(); });
+  expect(input.direction()).toEqual({ x: 0, y: 0 });
+  expect(host.querySelector('[data-testid="joystick"]')).toBeNull();
+  act(() => gameStore.advanceBoss(before, "elapsed"));
+  expect(gameStore.getState().boss).toBe(before);
+  act(() => gameStore.pause());
+  expect(host.querySelector('[data-testid="joystick"]')).not.toBeNull();
+  expect(host.querySelector('[data-testid="action-button"]')).toBeNull();
+});

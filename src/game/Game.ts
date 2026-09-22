@@ -84,6 +84,9 @@ export class Game {
       gameStore.interact();
     }
   };
+  private focused = true;
+  private focusLost = () => { this.focused = false; this.input.reset(); };
+  private focusGained = () => { this.focused = true; this.last = 0; };
   private previousDungeon: string | null = null;
   player = new Player();
   private yunobo = new YunoboCompanion();
@@ -141,6 +144,8 @@ export class Game {
     this.renderer.domElement.addEventListener("pointerup", this.pointerUp);
     this.renderer.domElement.addEventListener("pointercancel", this.cancelTap);
     window.addEventListener("blur", this.cancelTap);
+    window.addEventListener("blur", this.focusLost);
+    window.addEventListener("focus", this.focusGained);
     document.addEventListener("visibilitychange", this.visibilityTap);
     this.renderer.domElement.addEventListener("pointermove", this.pointerMove);
     this.renderer.domElement.addEventListener(
@@ -279,7 +284,7 @@ export class Game {
     }
   }
   private tick = (now: number) => {
-    const dt = Math.min(this.last ? (now - this.last) / 1000 : 0, 0.04);
+    const dt = !this.focused || document.hidden ? 0 : Math.min(this.last ? (now - this.last) / 1000 : 0, 0.04);
     this.last = now;
     this.time += dt;
     const state = gameStore.getState();
@@ -287,6 +292,7 @@ export class Game {
       const previous = JSON.parse(this.areaKey);
       this.previousLocation = previous;
       this.previousDungeon = previous?.dungeon ?? null;
+      this.world.bossEncounter?.release(this.player, [this.yunobo, this.sidon, this.tulin, this.riju], this.world, this.camera);
       this.world.dispose();
       this.world = this.createArea();
       this.mountArea();
@@ -299,7 +305,7 @@ export class Game {
     }
     this.world.update(dt, this.time, this.player.position);
     const riding = this.world.riding?.update(dt, this.player, this.input) ?? false;
-    if (!this.interactions.falling && !riding && !gameStore.getState().overlay && !gameStore.getState().motion && !gameStore.getState().yunoboHelping)
+    if (!this.interactions.falling && !riding && !gameStore.getState().overlay && !gameStore.getState().motion && !gameStore.getState().yunoboHelping && !this.world.bossEncounter?.locksMovement)
       this.player.update(
         dt,
         this.input,
@@ -310,11 +316,18 @@ export class Game {
       );
     this.interactions.update(this.player.position, this.world, this.time, dt);
     // Area switches are mounted next frame; don't animate in the old coordinate system.
-    if (this.areaKey === JSON.stringify(gameStore.getState().location)) {
+    if (this.areaKey === JSON.stringify(gameStore.getState().location) && !gameStore.getState().bossActive) {
       this.tulin.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
       this.yunobo.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
       this.sidon.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
       this.riju.update(document.hidden ? 0 : dt, this.player.position, this.world, this.interactions.falling);
+    }
+    this.world.bossEncounter?.updateActors(dt, this.player, [this.yunobo, this.sidon, this.tulin, this.riju], this.world, this.camera);
+    if (this.world.bossEncounter) {
+      const darkness = this.world.bossEncounter.darkness;
+      this.ambient.intensity = 1.15 * (1 - darkness * 0.5);
+      this.sun.intensity = 1.3 * (1 - darkness * 0.55);
+      this.scene.background = new THREE.Color("#081b20").lerp(new THREE.Color("#100d23"), darkness);
     }
     this.camera.update(this.interactions.falling ? new THREE.Vector3(this.player.position.x, 0, this.player.position.z) : this.player.position, dt);
     this.dayNight.update(dt, state, document.hidden);
@@ -341,6 +354,8 @@ export class Game {
       this.cancelTap,
     );
     window.removeEventListener("blur", this.cancelTap);
+    window.removeEventListener("blur", this.focusLost);
+    window.removeEventListener("focus", this.focusGained);
     document.removeEventListener("visibilitychange", this.visibilityTap);
     this.renderer.domElement.removeEventListener(
       "pointermove",

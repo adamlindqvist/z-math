@@ -1,3 +1,4 @@
+import { freshBoss, parseBoss, resumeBoss, transitionBoss, bossMath, bossOpening, bossDefeated, type BossProgress, type BossEvent } from "../game/boss/state";
 import { ARMY, parseArmy, type ArmyId } from "../game/underworld/army";
 import { freshRiju, hasRiju, parseRiju, type RijuProgress } from "../game/companions/definitions";
 import type { DayPeriod } from "../game/DayNightCycle";
@@ -112,6 +113,7 @@ export const REQUIRED_CORRECT_ANSWERS = 3;
 export const hasBridgeEquipment = (state: Inventory) =>
   state.items.includes("temple-sword") && state.items.includes("temple-shield");
 export type Target =
+  | { kind: "bossAction"; action: "companion" | "sword" | "finish"; label: string }
   | { kind: "sidonGate"; label: string }
   | { kind: "yunoboRock"; label: string }
   | { kind: "underworldLadder"; label: string }
@@ -153,6 +155,7 @@ export type Overlay =
   | "inventory"
   | "itemReward";
 export interface Progress extends Inventory {
+  boss: BossProgress;
   defeatedArmy: ArmyId[];
   riju: RijuProgress;
   sidon: SidonProgress;
@@ -174,6 +177,11 @@ export interface Progress extends Inventory {
   talkedToNpc: boolean;
 }
 export interface GameState extends Progress {
+  bossActive: boolean;
+  bossQuiz: BossProgress | null;
+  bossSwing: number;
+  bossFeedback: string;
+  bossVictoryReady: boolean;
   yunoboHelping: boolean;
   riding: boolean;
   horseAction: "mount" | "dismount" | null;
@@ -209,6 +217,7 @@ export interface GameState extends Progress {
   debugDayPeriod: { period: DayPeriod } | null;
 }
 const fresh = (): Progress => ({
+  boss: freshBoss(),
   defeatedArmy: [],
   riju: freshRiju(),
   sidon: freshSidon(),
@@ -310,6 +319,7 @@ export function parseSave(raw: string | null): Progress {
     )
       return fresh();
     return {
+      boss: resumeBoss(parseBoss(p.boss)),
       defeatedArmy: parseArmy(p.defeatedArmy),
       riju: parseRiju(p.riju, hasRiju(p.dungeons)),
       sidon: parseSidon(p.sidon, hasSidon(p.dungeons)),
@@ -349,6 +359,7 @@ export function createGameStore(
     savingAvailable = false;
   }
   let state: GameState = {
+    bossActive: false, bossQuiz: null, bossSwing: 0, bossFeedback: "", bossVictoryReady: false,
     yunoboHelping: false,
     riding: false,
     horseAction: null,
@@ -397,10 +408,12 @@ export function createGameStore(
     sound?: SoundEvent,
   ) => {
     if (("location" in update && JSON.stringify(update.location) !== JSON.stringify(state.location)) || "resetId" in update) {
+      update.bossActive = false; update.bossQuiz = null; update.bossFeedback = ""; update.bossVictoryReady = false;
       update.yunoboHelping = false;
       update = { ...update, riding: false, horseAction: null, ridingMessage: "", followingRabbits: [], rabbitCare: null, rabbitNextCare: { cream: "feed", brown: "feed", gray: "feed" } };
     }
     if (("overlay" in update && update.overlay !== "quiz") || "location" in update) update.armyQuiz = null;
+    if ("overlay" in update && update.overlay !== "quiz") update.bossQuiz = null;
     state = { ...state, ...update };
     if (persist && storage && !state.debugActive) {
       try {
@@ -408,6 +421,7 @@ export function createGameStore(
           SAVE_KEY,
           JSON.stringify({
             version: SAVE_VERSION,
+            boss: state.boss,
             defeatedArmy: state.defeatedArmy,
             riju: state.riju,
             sidon: state.sidon,
@@ -583,8 +597,46 @@ export function createGameStore(
         true,
       );
   };
+  const openBossQuiz = () => {
+    if (!state.bossActive || state.overlay || !bossMath(state.boss.stage)) return;
+    const question = generateQuestion(state.boss.mathLevel, Math.random, [], undefined, 4);
+    set({ bossQuiz: state.boss, overlay: "quiz", question, feedback: null,
+      askedQuestions: [question.key], quizCorrectAnswers: 0, dungeonQuiz: null, armyQuiz: null, activeChest: null });
+  };
+  const advanceBoss = (expected: BossProgress, event: BossEvent) => {
+    if (!state.bossActive || state.boss !== expected || state.overlay || state.location?.world !== "underworld") return;
+    const boss = transitionBoss(expected, event);
+    if (boss === expected) return;
+    const sound: SoundEvent = boss.stage === "victory" ? "bossVictory" : boss.stage === "transformation" ? "bossTransform" : event === "swordHit" ? "bossHit" : event === "activate" ? "bossPower" : "bossPulse";
+    const remaining = expected.stage === "team_opening" ? 4 - boss.teamHits : 3 - boss.demonHits;
+    const bossFeedback = event === "swordHit"
+      ? remaining === 0 ? "Fullträff! Sista träffen klar!" : `Träff! ${remaining} ${remaining === 1 ? "träff" : "träffar"} kvar.`
+      : "";
+    set({ boss, bossFeedback, target: null, bossVictoryReady: false }, true, sound);
+  };
   return {
     getState: () => state,
+    setBossPresence: (present: boolean) => {
+      if (state.location?.world !== "underworld" || state.overlay || state.motion) return;
+      const allowed = state.defeatedArmy.length === 3 && hasYunobo(state.dungeons) && hasSidon(state.dungeons) && hasTulin(state.dungeons) && hasRiju(state.dungeons);
+      const active = present && allowed && state.boss.stage !== "completed";
+      if (active === state.bossActive) return;
+      let boss = resumeBoss(state.boss);
+      if (active && boss.stage === "unstarted") boss = { ...freshBoss(), stage: "intro", mathLevel: state.mathProgress.level };
+      // The earned adventure sword is equipped if the child put it away.
+      const weapon = state.equipment.weapon ?? (["fire-sword", "temple-sword", "wooden-sword"] as const).find(id => state.items.includes(id)) ?? null;
+      set({ bossActive: active, boss, bossQuiz: null, bossFeedback: "", bossVictoryReady: false, target: null,
+        ...(active ? { equipment: { ...state.equipment, weapon } } : {}) }, true);
+    },
+    advanceBoss,
+    openBossQuiz,
+    setBossFeedback: (message: string) => set({ bossFeedback: message }),
+    clearBossFeedback: (expected: string) => { if (state.bossFeedback === expected) set({ bossFeedback: "" }); },
+    bossCue: (event: SoundEvent) => { if (state.bossActive && !state.overlay) emitSound(event); },
+    readyBossVictory: (expected: BossProgress) => {
+      if (state.bossActive && state.boss === expected && bossDefeated(expected) && !state.bossVictoryReady)
+        set({ bossVictoryReady: true });
+    },
     updateMinibossPresence: (id: MinibossId, distance: number) => {
       if (
         state.location?.world !== "volcano" || state.overlay ||
@@ -673,6 +725,7 @@ export function createGameStore(
       set({ equipment: { ...state.equipment, [slot]: id } }, true);
     },
     unequipItem: (slot: EquipmentSlot) => {
+      if (slot === "weapon" && state.bossActive) return;
       if (!["head", "body", "weapon", "shield"].includes(slot)) return;
       set(
         {
@@ -819,6 +872,13 @@ export function createGameStore(
         rewardItems: [],
         quizCorrectAnswers: 0,
       });
+    },
+    debugPrepareBoss: () => {
+      if (state.overlay !== "debug" || !state.debugActive || state.location?.world !== "underworld") return;
+      set({ boss: { ...freshBoss(), stage: "intro", mathLevel: state.mathProgress.level },
+        defeatedArmy: ARMY.map(b => b.id),
+        yunobo: { ...state.yunobo, greeted: true }, sidon: { ...state.sidon, greeted: true },
+        tulin: { greeted: true }, riju: { greeted: true }, resetId: state.resetId + 1 });
     },
     debugCompleteCurrentRoom: () => {
       if (state.overlay !== "debug") return;
@@ -979,9 +1039,20 @@ export function createGameStore(
       set({ riding, ridingMessage, horseAction: null, target: null });
     },
     interact: () => {
+      if (state.bossActive && !state.overlay && !state.motion) {
+        const stage = state.boss.stage;
+        if (stage === "companion_ready" || stage === "final_ready") advanceBoss(state.boss, "activate");
+        else if (bossOpening(stage)) set({ bossSwing: state.bossSwing + 1, bossFeedback: "" });
+        else if (stage === "victory" && state.bossVictoryReady) {
+          advanceBoss(state.boss, "finish");
+          set({ bossActive: false, target: null });
+        }
+        return;
+      }
       if (state.overlay || state.motion || state.yunoboHelping || !state.target) return;
       if (typeof state.target === "object") {
         const target = state.target;
+        if (target.kind === "bossAction") return;
         if (target.kind === "sidonGate") {
           if (state.location?.world !== "water" || !hasSidon(state.dungeons) || state.sidon.gateOpened) return;
           set({ sidon: { ...state.sidon, gateOpened: true }, target: null }, true, "discovery");
@@ -1230,6 +1301,16 @@ export function createGameStore(
       }
     },
     answer: (answer: number) => {
+      if (state.bossQuiz) {
+        if (!state.bossActive || state.boss !== state.bossQuiz || state.overlay !== "quiz" || !state.question || state.feedback || !state.question.answers.includes(answer)) return;
+        if (answer !== state.question.correctAnswer) {
+          set({ feedback: "retry", mathProgress: recordMathAnswer(state.mathProgress, false) }, true, "retry");
+        } else {
+          set({ boss: transitionBoss(state.boss, "solved"), feedback: "complete", quizCorrectAnswers: 1,
+            mathProgress: recordMathAnswer(state.mathProgress, true) }, true, "correct");
+        }
+        return;
+      }
       if (state.armyQuiz) {
         if (state.location?.world !== "underworld" || state.overlay !== "quiz" || !state.question || state.feedback || state.defeatedArmy.includes(state.armyQuiz)) return;
         if (answer !== state.question.correctAnswer) {
@@ -1327,11 +1408,19 @@ export function createGameStore(
     },
     // A wrong answer is followed by a fresh question, so guessing through the
     // buttons never gets the child to the next star.
-    replaceQuestion: () => {
+    replaceQuestion: (expected?: MathQuestion) => {
+      if (expected && state.question !== expected) return;
+      if (state.bossQuiz && state.overlay === "quiz" && state.feedback === "retry") { set({ feedback: null }); return; }
       if (state.overlay !== "quiz" || state.feedback !== "retry") return;
       set(askQuestion(quizQuestion(state.askedQuestions)));
     },
-    finishQuiz: () => {
+    finishQuiz: (expected?: MathQuestion) => {
+      if (expected && state.question !== expected) return;
+      if (state.bossQuiz) {
+        if (state.overlay === "quiz" && state.feedback === "complete")
+          set({ overlay: null, bossQuiz: null, question: null, feedback: null, askedQuestions: [], quizCorrectAnswers: 0 });
+        return;
+      }
       if (state.dungeonQuiz) {
         const c = resolveRoom(state.location)?.room.challenge;
         if (!c) return;
@@ -1483,6 +1572,7 @@ export const useGameState = () =>
 
 function copyProgress(state: Progress): Progress {
   return {
+    boss: { ...state.boss },
     defeatedArmy: [...state.defeatedArmy],
     riju: { ...state.riju },
     sidon: { ...state.sidon },

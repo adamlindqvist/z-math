@@ -27,6 +27,7 @@ export interface PushHint {
   dz: number;
 }
 export interface Area {
+  bossEncounter?: import("./boss/GanondorfEncounter").GanondorfEncounter;
   riding?: import("./horse/HorseRiding").HorseRiding;
   environment?: import("./environment").AreaEnvironment;
   root: THREE.Group;

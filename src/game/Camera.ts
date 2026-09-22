@@ -1,5 +1,6 @@
 import { PerspectiveCamera, Vector3 } from "three";
 export class GameCamera {
+  cinematicFocus: Vector3 | null = null;
   camera = new PerspectiveCamera(39, 1, 0.1, 120);
   private focus = new Vector3(-1, 0, 0);
   private offset = new Vector3(8.33, 12.6, 14.28);
@@ -41,7 +42,7 @@ export class GameCamera {
                 Math.max(0, position.z - 4) * 0.7 +
                 Math.min(0, position.z + 8) * 0.7,
             );
-    this.focus.lerp(desired, 1 - Math.exp(-dt * 3));
+    this.focus.lerp(this.cinematicFocus ?? desired, 1 - Math.exp(-dt * 3));
     const zoom =
       this.mode === "room"
         ? this.camera.aspect < 1

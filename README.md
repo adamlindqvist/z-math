@@ -243,16 +243,31 @@ Framsteg, föremål, öppnade kistor och insamlade rupees sparas med **sparversi
 
 ### Underjorden
 
-När Ökentemplet är avklarat öppnas hålet till underjorden automatiskt. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Framför Ganondorf väntar Demonkungens armé: tre röda Bokobliner med varsitt mattequiz (tre rätt). Varje besegrad Bokoblin försvinner i röd rök. En röd dimspärr öppnas när alla tre är besegrade. Besegrade Bokobliner sparas, även efter omladdning; äldre sparningar behåller sina framsteg. Ganondorfs bosskamp ingår ännu inte.
+När Ökentemplet är avklarat öppnas hålet till underjorden automatiskt. Sanden sjunker undan och röda glödsprickor och ringar visar schaktets djup medan mjuk röd rök stiger ur öppningen. Gå över öppningen för att falla ner i **Underjorden**, den sista världen. Här finns mörka klippväggar, stora vridna rötter, blå grästuvor, lysande svampar och små vita ljuspartiklar som regnar långsamt nedåt. Breda stigar och mjukt ljus gör miljön lätt att utforska. Framför Ganondorf väntar Demonkungens armé: tre röda Bokobliner med varsitt mattequiz (tre rätt). Varje besegrad Bokoblin försvinner i röd rök. En röd dimspärr öppnas när alla tre är besegrade. Besegrade Bokobliner sparas, även efter omladdning; äldre sparningar behåller sina framsteg. Efter armén väntar slutstriden med Ganondorf.
 
 Trästegen med en uppåtpil nära landningsplatsen leder tillbaka till öknen, på säkert avstånd från hålet. Platsen sparas och hålet förblir upplåst efter omladdning. Debugmenyn har en genväg till Underjorden som förbereder de tidigare templen inom testsessionen.
 
 `UnderworldArea` bygger grottmiljön med instansierade smådetaljer. `src/game/underworld/` innehåller schaktet och passagepunkterna. Fallövergången pausar under dialoger och avbryts vid områdesbyte eller återställning.
 
-Längst in i underjorden står Ganondorf, byggd av geometriska former i `src/game/entities/Ganondorf.ts`. Han är tills vidare en passiv NPC med en lugn vilorörelse; slutbossens uppgift, dialog och strid är ännu inte införda.
+Längst in i underjorden står Ganondorf, byggd av geometriska former i `src/game/entities/Ganondorf.ts`. Han har två former och en komplett, barnvänlig slutstrid.
 
 ### Kompisen Riju
 
 Riju väntar bredvid Ökentemplet tills slutskatten är öppnad. Sedan hälsar hon och följer spelaren tillsammans med de andra kompisarna. Modellen har rött hår, guldkrona, turkosa smycken, mörk kjol med ljus kant och två böjda silversvärd. Benen rör sig i takt med stegen. Hålet till underjorden öppnas automatiskt efter templet, utan någon handling från Riju.
 
 Det valfria sparfältet `riju` lagrar hälsningen inom version 20. Alla befintliga framsteg behålls. Hålets upplåsning styrs av Ökentemplets slutskatt, även i sparningar från versionen med Rijus blixthjälp.
+
+
+### Slutstriden med Ganondorf
+
+Gå nära Ganondorf med alla fyra kompisar efter att armén besegrats. Flytta Link med den vanliga styrspaken (eller WASD/piltangenter); använd samma hand-/svärdknapp eller E/mellanslag för nästa handling. Det finns inga extra förmågeknappar eller sikten.
+
+Först hjälper Yunobo, Sidon, Tulin och Riju i tur och ordning. Två långsamma attacker följs av ett hinder, en mattefråga och kompisens lysande knapp. Kompisen bryter skyddet; gå nära och slå med svärdet. Efter förvandlingen kämpar Link ensam: undvik två eller tre tydligt markerade attacker, lös en fråga och slå bort ett av tre mörka hjärtan. Öppningar väntar tills barnet träffar. Fel svar ger vänlig omprövning av samma fråga. Träffar ger bara lätt knuff och tillfälligt skydd, aldrig förlorade framsteg.
+
+Kompisarnas symboler tänds gradvis. I slutet återvänder de automatiskt och öppnar för Links sista slag. Tryck på **Slå!** från valfri plats för en automatisk slutattack. Efter firandet låter **Fortsätt äventyret** barnet utforska vidare. Ganondorf återkommer inte efter segern.
+
+`src/game/boss/` skiljer tillstånd och sparpunkter från attackregler, effekter och scenregi. Spelarens svärd använder befintlig utrustning; kompisarnas befintliga modeller regisseras tillfälligt av områdets encounter. Frågor använder ordinarie quiz och generator, med fyra alternativ och samma svårighetsnivå genom hela striden. Dialoger, paus, dold flik och tappat fokus fryser striden. Alla effekter är enkla geometriska former och ljuden använder spelets befintliga ljudmotor.
+
+Det valfria fältet `boss` utökar sparversion 20 utan att nollställa befintliga sparningar. Avklarade delar, rätta svar, öppningar och seger sparas; animationer återupptas vid säkra gränser. Segern är berättelsens belöning och ger inga extra rupees. Utan tillgänglig lagring fungerar striden fortfarande under den aktuella sessionen.
+
+För utveckling: öppna debugmenyn och välj **Slutstriden med Ganondorf**. Genvägen förbereder alla förkunskaper och startar striden i den tillfälliga testsessionen, utan att skriva över barnets sparning. `tests/boss.test.ts` går igenom hela striden, attackregler, sparpunkter, omförsök och skydd mot dubbla eller gamla händelser.

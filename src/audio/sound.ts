@@ -3,6 +3,12 @@ import type { SoundEvent } from "./types";
 export const SOUND_KEY = "legend-of-matte-sound";
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
 const melodies: Record<Exclude<SoundEvent, "stone" | "mechanism" | "wind">, number[]> = {
+  bossWarning: [220, 277, 330],
+  bossTransform: [110, 147, 175, 220, 294],
+  bossPower: [392, 587, 784, 1175],
+  bossHit: [165, 330, 659],
+  bossVictory: [523, 659, 784, 1047, 784, 1047, 1319],
+  bossPulse: [147, 220],
   click: [1200, 620],
   metal: [370, 790, 410],
   plop: [240, 120],

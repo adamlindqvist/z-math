@@ -117,6 +117,13 @@ export default function DebugMenu() {
             </button>
           ))}
           {(["water", "desert", "underworld"] as const).map(world => <button key={world} className={actionClass} onClick={() => gameStore.debugTravelTo({ world })} aria-current={state.location?.world === world ? "location" : undefined}><DoorOpen aria-hidden="true" />{world === "water" ? "Vattenvärlden" : world === "desert" ? "Ökenvärlden" : "Underjorden"}</button>)}
+          <button className={actionClass} onClick={() => {
+            gameStore.debugTravelTo({ dungeon: "moss", room: "treasure" });
+            gameStore.debugCompleteCurrentRoom();
+            gameStore.debugTravelTo({ world: "underworld" });
+            gameStore.debugPrepareBoss();
+            gameStore.closeDebug();
+          }}><ShieldCheck aria-hidden="true" /> Slutstriden med Ganondorf</button>
           {DUNGEONS.flatMap((dungeon) =>
             dungeon.rooms.map((room) => {
               const selected =

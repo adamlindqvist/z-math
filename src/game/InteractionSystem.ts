@@ -1,3 +1,4 @@
+import { bossAction } from "./boss/GanondorfEncounter";
 import * as THREE from "three";
 import { gameStore, type Target } from "../store/gameStore";
 import type { Area, Interaction } from "./Area";
@@ -54,6 +55,11 @@ export class InteractionSystem {
         this.fall = null;
         position.y = 0;
       }
+      return;
+    }
+    if (state.bossActive) {
+      this.ring.visible = this.arrow.visible = false;
+      gameStore.setTarget(bossAction());
       return;
     }
     const choices = world

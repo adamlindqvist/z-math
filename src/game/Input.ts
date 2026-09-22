@@ -1,3 +1,4 @@
+import { bossCinematic } from "./boss/state";
 import { gameStore } from "../store/gameStore";
 export class Input {
   keys = new Set<string>();
@@ -21,7 +22,7 @@ export class Input {
       )
     )
       e.preventDefault();
-    if (gameStore.getState().overlay || gameStore.getState().yunoboHelping) return;
+    if (gameStore.getState().overlay || gameStore.getState().yunoboHelping || gameStore.getState().bossActive && bossCinematic(gameStore.getState().boss.stage) && gameStore.getState().boss.stage !== "victory") return;
     this.keys.add(e.code);
     if (["KeyE", "Space"].includes(e.code) && !e.repeat) gameStore.interact();
   };
@@ -46,7 +47,7 @@ export class Input {
       const state = gameStore.getState();
       const location = JSON.stringify(state.location);
       if (
-        state.overlay || state.yunoboHelping ||
+        state.overlay || state.yunoboHelping || state.bossActive && bossCinematic(state.boss.stage) ||
         location !== this.location ||
         state.resetId !== this.resetId
       )

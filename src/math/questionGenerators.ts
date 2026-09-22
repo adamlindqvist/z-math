@@ -42,6 +42,7 @@ export function generateQuestion(
   random: () => number = Math.random,
   asked: readonly string[] = [],
   fixedCategory?: MathQuestion["category"],
+  answerCount: 3 | 4 = 3,
 ): MathQuestion {
   // Counting can remain active when the child levels up within a quiz,
   // although new quizzes at that level introduce arithmetic instead.
@@ -91,7 +92,7 @@ export function generateQuestion(
     ...(category === "subtraction" ? { removedCount: b } : {}),
     answerDots: true,
     answers: shuffle(
-      [correctAnswer, ...shuffle(wrong, random).slice(0, 2)],
+      [correctAnswer, ...shuffle(wrong, random).slice(0, answerCount - 1)],
       random,
     ),
   };

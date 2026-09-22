@@ -1,3 +1,5 @@
+import { GanondorfEncounter } from "./boss/GanondorfEncounter";
+import { BOSS_CENTER } from "./boss/state";
 import { ArmyBarrier } from "./underworld/ArmyBarrier";
 import { gameStore } from "../store/gameStore";
 import { ARMY } from "./underworld/army";
@@ -9,11 +11,11 @@ import { material, mesh } from "./models";
 import { UNDERWORLD_RETURN } from "./underworld/layout";
 import { Ganondorf } from "./entities/Ganondorf";
 
-/** A quiet cavern to explore: broad paths, luminous roots and no hazards. */
+/** Cavern approach and the final boss clearing beyond the army gate. */
 export class UnderworldArea implements Area {
   root = new THREE.Group();
-  collision = new CollisionSystem(15, 19, -7);
-  spawn = { x: 0, z: 4 };
+  collision = new CollisionSystem(15, 25, -11);
+  get spawn() { return gameStore.getState().boss.stage !== "unstarted" && gameStore.getState().boss.stage !== "completed" ? { x: 0, z: BOSS_CENTER.z + 6 } : { x: 0, z: 4 }; }
   cameraMode = "follow" as const;
   rupees = [];
   environment = {
@@ -29,6 +31,7 @@ export class UnderworldArea implements Area {
   private armyBarrier = new ArmyBarrier();
   private motes: THREE.InstancedMesh;
   private ganondorf = new Ganondorf();
+  readonly bossEncounter = new GanondorfEncounter(this.ganondorf);
   private dummy = new THREE.Object3D();
   private glow = new THREE.MeshStandardMaterial({
     color: "#95e7d6",
@@ -43,17 +46,17 @@ export class UnderworldArea implements Area {
       this.root.add(guard.root);
     });
     this.root.add(this.armyBarrier);
-    this.ganondorf.root.position.set(0, 0, -22);
+    this.ganondorf.root.position.set(0, 0, BOSS_CENTER.z);
     const bossScale = 1.4;
     this.ganondorf.root.scale.setScalar(bossScale);
-    this.root.add(this.ganondorf.root);
-    this.collision.addEllipse(0, -22, 0.85 * bossScale, 0.7 * bossScale);
+    this.root.add(this.ganondorf.root, this.bossEncounter.effects.root);
+    this.collision.addEllipse(0, BOSS_CENTER.z, 0.85 * bossScale, 0.7 * bossScale);
     const stone = material("#284549"),
       bark = material("#365951");
     const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
-    const floor = new THREE.PlaneGeometry(38, 46, 38, 46);
+    const floor = new THREE.PlaneGeometry(38, 54, 38, 46);
     floor.rotateX(-Math.PI / 2);
-    floor.translate(0, -0.04, -7);
+    floor.translate(0, -0.04, -11);
     const colors: number[] = [];
     const dark = new THREE.Color("#203b42"),
       light = new THREE.Color("#56817b");
@@ -78,7 +81,7 @@ export class UnderworldArea implements Area {
       const side = i % 4,
         n = Math.floor(i / 4);
       const x = side < 2 ? (side ? 15 : -15) : -15 + (n * 30) / 21;
-      const z = side < 2 ? -26 + (n * 38) / 21 : side === 2 ? -26 : 12;
+      const z = side < 2 ? -36 + (n * 48) / 21 : side === 2 ? -36 : 12;
       const h = z > 8 ? 1.1 : 4.5 + Math.sin(i * 2) * 1.2;
       this.dummy.position.set(x, h * 0.45, z);
       this.dummy.scale.set(1.9, h * 0.65, 1.6);
@@ -94,8 +97,8 @@ export class UnderworldArea implements Area {
       [-8, 1, 7],
       [8, -5, 8],
       [-7, -12, 9],
-      [6, -19, 10],
-      [-10, -22, 8],
+      [11, -24, 10],
+      [-11, -27, 8],
     ].entries()) {
       const points = [
         new THREE.Vector3(x, 0, z),
@@ -318,7 +321,7 @@ export class UnderworldArea implements Area {
       x: b.x, z: b.z, target: { kind: "armyBokoblin" as const, id: b.id, label: "Möt Bokoblin" },
     }))];
   }
-  update(dt: number, time: number) {
+  update(dt: number, time: number, playerPosition?: THREE.Vector3) {
     const state = gameStore.getState();
     const remaining = ARMY.filter(b => !state.defeatedArmy.includes(b.id));
     this.armyBarrier.visible = remaining.length > 0;
@@ -328,7 +331,11 @@ export class UnderworldArea implements Area {
       ...(remaining.length ? [{ x: 0, z: -17, halfX: 15, halfZ: 0.12 }] : []),
     ];
     this.army.forEach((guard, i) => guard.update(dt, time, state.defeatedArmy.includes(ARMY[i].id), !!state.overlay));
-    this.ganondorf.update(time);
+    this.bossEncounter.update(dt, playerPosition);
+    const bossCollider = this.collision.ellipses.find(o => o.x === 0 && o.z === BOSS_CENTER.z);
+    const defeated = state.boss.stage === "victory" || state.boss.stage === "completed";
+    if (bossCollider && defeated) this.collision.ellipses.splice(this.collision.ellipses.indexOf(bossCollider), 1);
+    if (!bossCollider && !defeated) this.collision.addEllipse(0, BOSS_CENTER.z, 0.85 * 1.4, 0.7 * 1.4);
     this.glow.emissiveIntensity = 1.2 + Math.sin(time * 0.8) * 0.15;
     for (let i = 0; i < this.motes.count; i++) {
       // Each speck falls steadily, then reappears above the cavern floor.

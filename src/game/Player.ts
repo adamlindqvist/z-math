@@ -8,6 +8,47 @@ export class Player {
   model = heroModel();
   root = new Group();
   private phase = 0;
+  private swingAge = 1;
+  private swingDelivered = true;
+  private protection = 0;
+  private knock = new Vector3();
+  private swordRests = new Map<string, { x: number; z: number }>();
+  attackToward(target: { x: number; z: number }) {
+    if (this.swingAge < 0.6) return false;
+    this.root.rotation.y = Math.atan2(target.x - this.position.x, target.z - this.position.z);
+    this.swingAge = 0;
+    this.swingDelivered = false;
+    return true;
+  }
+  pushBack(from: { x: number; z: number }) {
+    if (this.protection > 0) return false;
+    this.protection = 2;
+    this.knock.set(this.position.x - from.x, 0, this.position.z - from.z);
+    if (this.knock.lengthSq() < 0.01) this.knock.z = 1;
+    this.knock.normalize().multiplyScalar(4);
+    return true;
+  }
+  /** Advances the existing hero model, returning one impact per sword swing. */
+  updateCombat(dt: number, collision: CollisionSystem) {
+    this.protection = Math.max(0, this.protection - dt);
+    collision.move(this.position, this.knock.x * dt, this.knock.z * dt);
+    this.knock.multiplyScalar(Math.exp(-dt * 9));
+    this.swingAge += dt;
+    for (const name of ["wood-sword", "sword", "fire-sword"]) {
+      const sword = this.model.root.getObjectByName(name)!;
+      if (!this.swordRests.has(name)) this.swordRests.set(name, { x: sword.rotation.x, z: sword.rotation.z });
+      const rest = this.swordRests.get(name)!;
+      const swing = this.swingAge < 0.6 ? Math.sin(this.swingAge / 0.6 * Math.PI) : 0;
+      // The hero already faces the target in attackToward. Pitching the blade
+      // forward therefore makes the cut travel toward it instead of through
+      // the hero's torso.
+      sword.rotation.x = rest.x + swing * 1.55;
+      sword.rotation.z = rest.z + swing * 0.18;
+    }
+    this.model.root.rotation.z = this.protection > 1.65 ? Math.sin(this.protection * 30) * 0.08 : 0;
+    if (!this.swingDelivered && this.swingAge >= 0.18) { this.swingDelivered = true; return true; }
+    return false;
+  }
   constructor() {
     this.root.add(this.model.root);
     this.reset();
@@ -35,6 +76,7 @@ export class Player {
     this.model.body.position.y = 0.65;
   }
   reset() {
+    this.swingAge = 1; this.swingDelivered = true; this.protection = 0; this.knock.set(0, 0, 0);
     this.setRiding(false);
     this.root.position.set(-6.2, 0, 2.9);
     this.root.rotation.y = 0.35;

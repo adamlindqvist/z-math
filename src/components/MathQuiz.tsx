@@ -27,6 +27,7 @@ export function MathQuiz() {
     location,
     dungeonQuiz,
     armyQuiz,
+    bossQuiz,
   } = useGameState();
   const [selection, setSelection] = useState<{
     question: typeof question;
@@ -43,18 +44,18 @@ export function MathQuiz() {
   const challenge = dungeonQuiz
     ? resolveRoom(location)?.room.challenge
     : undefined;
-  const required = challenge?.required ?? REQUIRED_CORRECT_ANSWERS;
-  const title = armyQuiz ? "Demonkungens armé" : challenge?.title ?? "Kistans mattelås";
+  const required = bossQuiz ? 1 : challenge?.required ?? REQUIRED_CORRECT_ANSWERS;
+  const title = bossQuiz ? "Bryt Ganondorfs magi" : armyQuiz ? "Demonkungens armé" : challenge?.title ?? "Kistans mattelås";
   useEffect(() => {
     if (feedback === "correct" || feedback === "complete") {
-      const timer = setTimeout(() => gameStore.finishQuiz(), 1000);
+      const timer = setTimeout(() => gameStore.finishQuiz(question ?? undefined), 1000);
       return () => clearTimeout(timer);
     }
     if (feedback === "retry") {
-      const timer = setTimeout(() => gameStore.replaceQuestion(), RETRY_DELAY);
+      const timer = setTimeout(() => gameStore.replaceQuestion(question ?? undefined), RETRY_DELAY);
       return () => clearTimeout(timer);
     }
-  }, [feedback]);
+  }, [feedback, question]);
   if (overlay !== "quiz" || !question) return null;
   return (
     <Modal
@@ -137,7 +138,7 @@ export function MathQuiz() {
       )}
       <p>{question.category === "subtraction" ? "Hur många är kvar?" : "Tryck på rätt antal."}</p>
       <div
-        className={`grid gap-4 max-[600px]:gap-2.5 ${question.answerDots ? "grid-cols-3" : "grid-cols-2"}`}
+        className={`grid gap-4 max-[600px]:gap-2.5 ${question.answers.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}
       >
         {question.answers.map((answer) => (
           <button
@@ -204,7 +205,7 @@ export function MathQuiz() {
             {isCorrect
               ? "Rätt! Bra jobbat!"
               : feedback === "retry"
-                ? "Inte rätt. Nu kommer en ny fråga!"
+                ? bossQuiz ? "Prova igen! Du klarar det." : "Inte rätt. Nu kommer en ny fråga!"
                 : "Räkna gärna på fingrarna."}
           </div>
           {feedback === "retry" && (
@@ -212,7 +213,7 @@ export function MathQuiz() {
           )}
           {feedback === "complete" && (
             <div className="mt-0.5 text-lg">
-              {armyQuiz ? "Bokoblinen försvinner i röd rök!" : challenge
+              {bossQuiz ? "Magin öppnar sig!" : armyQuiz ? "Bokoblinen försvinner i röd rök!" : challenge
                 ? challenge.reward
                   ? "Skatten är din!"
                   : "Porten är öppen!"
